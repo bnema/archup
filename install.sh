@@ -57,7 +57,7 @@ if [ ! -d "$ARCHUP_INSTALL" ]; then
   done
 
   echo "Downloading preflight..."
-  for file in all.sh guards.sh begin.sh detect-environment.sh; do
+  for file in all.sh guards.sh begin.sh identify.sh detect-environment.sh; do
     curl -sL "$GITHUB_RAW/install/preflight/$file" -o "$ARCHUP_INSTALL/preflight/$file"
   done
 
@@ -87,8 +87,14 @@ if [ ! -d "$ARCHUP_INSTALL" ]; then
   done
 
   echo "Downloading post-install..."
-  for file in all.sh boot-logo.sh verify.sh unmount.sh; do
+  for file in all.sh boot-logo.sh snapper.sh verify.sh unmount.sh; do
     curl -sL "$GITHUB_RAW/install/post-install/$file" -o "$ARCHUP_INSTALL/post-install/$file"
+  done
+
+  echo "Downloading post-boot..."
+  mkdir -p "$ARCHUP_INSTALL/post-boot"
+  for file in all.sh snapper.sh ssh-keygen.sh archup-first-boot.service; do
+    curl -sL "$GITHUB_RAW/install/post-boot/$file" -o "$ARCHUP_INSTALL/post-boot/$file"
   done
 
   echo "Downloading presets..."
