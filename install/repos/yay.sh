@@ -6,8 +6,8 @@ echo
 
 # Ask if user wants AUR support
 if ! gum confirm "Enable AUR support (install yay)?" --padding "0 0 1 $PADDING_LEFT"; then
-  gum style --foreground 3 --padding "0 0 1 $PADDING_LEFT" "⊘ Skipping AUR support"
-  echo "AUR: disabled" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+  gum style --foreground 3 --padding "0 0 1 $PADDING_LEFT" "[SKIP] Skipping AUR support"
+  echo "AUR: disabled"
   export ARCHUP_AUR="disabled"
   return 0
 fi
@@ -24,8 +24,8 @@ arch-chroot /mnt pacman -S --noconfirm --needed base-devel git
 USERNAME=$(arch-chroot /mnt ls /home | head -1)
 
 if [ -z "$USERNAME" ]; then
-  gum style --foreground 1 --padding "1 0 1 $PADDING_LEFT" "✗ Error: Could not find user for yay installation"
-  echo "ERROR: No user found for yay installation" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+  gum style --foreground 1 --padding "1 0 1 $PADDING_LEFT" "[ERROR] Error: Could not find user for yay installation"
+  echo "ERROR: No user found for yay installation"
   export ARCHUP_AUR="failed"
   return 1
 fi
@@ -41,11 +41,11 @@ arch-chroot /mnt rm -rf /tmp/yay-bin
 
 # Verify installation
 if arch-chroot /mnt su - "$USERNAME" -c "yay --version" >/dev/null 2>&1; then
-  gum style --foreground 2 --padding "1 0 1 $PADDING_LEFT" "✓ yay installed successfully"
-  echo "AUR: enabled (yay installed for user: $USERNAME)" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+  gum style --foreground 2 --padding "1 0 1 $PADDING_LEFT" "[OK] yay installed successfully"
+  echo "AUR: enabled (yay installed for user: $USERNAME)"
 else
-  gum style --foreground 1 --padding "1 0 1 $PADDING_LEFT" "✗ yay installation failed"
-  echo "ERROR: yay installation failed" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+  gum style --foreground 1 --padding "1 0 1 $PADDING_LEFT" "[ERROR] yay installation failed"
+  echo "ERROR: yay installation failed"
   export ARCHUP_AUR="failed"
   return 1
 fi

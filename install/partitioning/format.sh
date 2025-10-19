@@ -4,8 +4,8 @@
 gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Formatting partitions..."
 
 # Format EFI partition as FAT32
-mkfs.fat -F32 -n EFI "$ARCHUP_EFI_PART"
-echo "Formatted $ARCHUP_EFI_PART as FAT32" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+mkfs.fat -F32 -n EFI "$ARCHUP_EFI_PART" 2>&1
+echo "Formatted $ARCHUP_EFI_PART as FAT32" >> "$ARCHUP_INSTALL_LOG_FILE"
 
 # Handle root partition - with or without encryption
 if [ "$ARCHUP_ENCRYPTION" = "enabled" ]; then
@@ -40,8 +40,8 @@ if [ "$ARCHUP_ENCRYPTION" = "enabled" ]; then
   # Format the encrypted container with btrfs
   mkfs.btrfs -f -L ROOT "$ARCHUP_CRYPT_ROOT"
 
-  echo "Created LUKS container on $ARCHUP_ROOT_PART" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
-  echo "Formatted $ARCHUP_CRYPT_ROOT as btrfs" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+  echo "Created LUKS container on $ARCHUP_ROOT_PART" >> "$ARCHUP_INSTALL_LOG_FILE"
+  echo "Formatted $ARCHUP_CRYPT_ROOT as btrfs" >> "$ARCHUP_INSTALL_LOG_FILE"
 
   # Mount temporarily to create subvolumes
   mount "$ARCHUP_CRYPT_ROOT" /mnt
@@ -49,7 +49,7 @@ if [ "$ARCHUP_ENCRYPTION" = "enabled" ]; then
 else
   # No encryption - format directly with btrfs
   mkfs.btrfs -f -L ROOT "$ARCHUP_ROOT_PART"
-  echo "Formatted $ARCHUP_ROOT_PART as btrfs" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+  echo "Formatted $ARCHUP_ROOT_PART as btrfs" >> "$ARCHUP_INSTALL_LOG_FILE"
 
   # Mount temporarily to create subvolumes
   mount "$ARCHUP_ROOT_PART" /mnt
@@ -61,10 +61,11 @@ gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Creating btrfs subvolu
 btrfs subvolume create /mnt/@
 btrfs subvolume create /mnt/@home
 
-echo "Created btrfs subvolume: @" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
-echo "Created btrfs subvolume: @home" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+echo "Created btrfs subvolume: @" >> "$ARCHUP_INSTALL_LOG_FILE"
+echo "Created btrfs subvolume: @home" >> "$ARCHUP_INSTALL_LOG_FILE"
 
 # Unmount temporary mount
 umount /mnt
 
-gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "✓ Partitions formatted and subvolumes created"
+gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "[OK] Partitions formatted and subvolumes created"
+echo "Partitions formatted and subvolumes created successfully" >> "$ARCHUP_INSTALL_LOG_FILE"

@@ -1,8 +1,7 @@
 #!/bin/bash
-# Error handling utilities for archup installer
-# Adapted from Omarchy errors.sh
+# Error handling for archup installer - improved with logging and interactivity
 
-# GitHub issue tracker for bug reports
+# QR code for GitHub issues
 QR_CODE='
 █▀▀▀▀▀█ ▀▄██▀▄▀ █▀▀▀▀▀█
 █ ███ █ ▄▀ ▀▄▄▄ █ ███ █
@@ -16,21 +15,30 @@ QR_CODE='
 █ ▀▀▀ █ ▄▀▄▄ █▄▄▀▄▀█ ▀█
 ▀▀▀▀▀▀▀ ▀▀▀▀▀   ▀▀▀ ▀▀▀'
 
-# Track if we're already handling an error to prevent double-trapping
+# Track error handling state
 ERROR_HANDLING=false
 
-# Cursor is usually hidden while we install
+# Show cursor
 show_cursor() {
   printf "\033[?25h"
 }
 
-# Display truncated log lines from the install log
+# Hide cursor
+hide_cursor() {
+  printf "\033[?25l"
+}
+
+# Display truncated log lines
 show_log_tail() {
   if [[ -f $ARCHUP_INSTALL_LOG_FILE ]]; then
-    local log_lines=$(($TERM_HEIGHT - $LOGO_HEIGHT - 35))
+    local log_lines=$((TERM_HEIGHT - LOGO_HEIGHT - 35))
     local max_line_width=$((LOGO_WIDTH - 4))
 
-    tail -n $log_lines "$ARCHUP_INSTALL_LOG_FILE" | while IFS= read -r line; do
+    echo
+    gum style --foreground 3 "Recent log entries:"
+    echo
+
+    tail -n $log_lines "$ARCHUP_INSTALL_LOG_FILE" 2>/dev/null | while IFS= read -r line; do
       if ((${#line} > max_line_width)); then
         local truncated_line="${line:0:$max_line_width}..."
       else
@@ -44,12 +52,11 @@ show_log_tail() {
   fi
 }
 
-# Display the failed command or script name
+# Display failed script or command
 show_failed_script_or_command() {
   if [[ -n ${CURRENT_SCRIPT:-} ]]; then
     gum style "Failed script: $CURRENT_SCRIPT"
   else
-    # Truncate long command lines to fit the display
     local cmd="$BASH_COMMAND"
     local max_cmd_width=$((LOGO_WIDTH - 4))
 
@@ -57,24 +64,23 @@ show_failed_script_or_command() {
       cmd="${cmd:0:$max_cmd_width}..."
     fi
 
-    gum style "$cmd"
+    gum style "Command: $cmd"
   fi
 }
 
-# Save original stdout and stderr for trap to use
+# Save original file descriptors
 save_original_outputs() {
   exec 3>&1 4>&2
 }
 
-# Restore stdout and stderr to original (saved in FD 3 and 4)
-# This ensures output goes to screen, not log file
+# Restore original file descriptors
 restore_outputs() {
   if [ -e /proc/self/fd/3 ] && [ -e /proc/self/fd/4 ]; then
     exec 1>&3 2>&4
   fi
 }
 
-# Error handler
+# Main error handler
 catch_errors() {
   # Prevent recursive error handling
   if [[ $ERROR_HANDLING == true ]]; then
@@ -83,52 +89,62 @@ catch_errors() {
     ERROR_HANDLING=true
   fi
 
-  # Store exit code immediately before it gets overwritten
+  # Store exit code immediately (BEFORE any other commands!)
   local exit_code=$?
+  local failed_command="${BASH_COMMAND}"
+  local failed_script="${CURRENT_SCRIPT:-}"
 
+  # Log error to file IMMEDIATELY with direct file write
+  # This must happen before any stdout/stderr restoration
+  {
+    echo ""
+    echo "=== INSTALLATION ERROR ==="
+    echo "Timestamp: $(date '+%Y-%m-%d %H:%M:%S')"
+    echo "Exit Code: $exit_code"
+    if [[ -n "$failed_script" ]]; then
+      echo "Failed Script: $failed_script"
+    fi
+    echo "Failed Command: $failed_command"
+    echo "=== END ERROR ==="
+    echo ""
+  } >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
+
+  # Stop background log monitor
   stop_log_output
   restore_outputs
 
+  # Clear and show error screen
   clear_logo
   show_cursor
 
   gum style --foreground 1 --padding "1 0 1 $PADDING_LEFT" "archup installation stopped!"
   show_log_tail
 
+  echo
   gum style "This command halted with exit code $exit_code:"
   show_failed_script_or_command
+  echo
 
   gum style "$QR_CODE"
   echo
-  gum style "Report issues at ${ARCHUP_REPO_URL:-https://github.com/bnema/archup}/issues"
+  gum style "Check logs: $ARCHUP_INSTALL_LOG_FILE"
+  gum style "Report issues: ${ARCHUP_REPO_URL:-https://github.com/bnema/archup}/issues"
+  echo
 
-  # Offer options menu
+  # Interactive menu
   while true; do
-    options=()
+    options=("View full log" "Exit")
 
-    # Add upload option if internet is available
-    if ping -c 1 -W 1 1.1.1.1 >/dev/null 2>&1; then
-      options+=("Upload log for support")
-    fi
-
-    # Add remaining options
-    options+=("View full log")
-    options+=("Exit")
-
-    choice=$(gum choose "${options[@]}" --header "What would you like to do?" --height 6 --padding "1 $PADDING_LEFT")
+    choice=$(gum choose "${options[@]}" --header "What would you like to do?" --height 4 --padding "0 0 0 $PADDING_LEFT")
 
     case "$choice" in
     "View full log")
       if command -v less &>/dev/null; then
         less "$ARCHUP_INSTALL_LOG_FILE"
       else
-        tail "$ARCHUP_INSTALL_LOG_FILE"
+        cat "$ARCHUP_INSTALL_LOG_FILE" | tail -n 100
       fi
-      ;;
-    "Upload log for support")
-      # Future: implement log upload (curl to pastebin service)
-      gum style --foreground 3 "Log upload not yet implemented"
-      gum style "Please manually upload: $ARCHUP_INSTALL_LOG_FILE"
+      clear_logo
       ;;
     "Exit" | "")
       exit 1
@@ -137,11 +153,11 @@ catch_errors() {
   done
 }
 
-# Exit handler - ensures cleanup happens on any exit
+# Exit handler
 exit_handler() {
   local exit_code=$?
 
-  # Only run if we're exiting with an error and haven't already handled it
+  # Only run if exiting with error and not already handled
   if [[ $exit_code -ne 0 && $ERROR_HANDLING != true ]]; then
     catch_errors
   else
@@ -154,5 +170,5 @@ exit_handler() {
 trap catch_errors ERR INT TERM
 trap exit_handler EXIT
 
-# Save original outputs in case we trap
+# Save original outputs for restoration
 save_original_outputs

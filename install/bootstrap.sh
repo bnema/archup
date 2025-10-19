@@ -5,6 +5,12 @@
 
 set -e
 
+# Clean up old log file to ensure fresh logs for this attempt
+if [ -f "$ARCHUP_INSTALL_LOG_FILE" ]; then
+  rm -f "$ARCHUP_INSTALL_LOG_FILE"
+  echo "Cleared previous installation log"
+fi
+
 echo "=== ArchUp Bootstrap ==="
 echo "Installing essential dependencies..."
 
@@ -22,13 +28,13 @@ pacman -Sy --noconfirm
 if ! command -v gum &>/dev/null; then
     echo "Installing gum for interactive TUI..."
     pacman -S --needed --noconfirm gum
-    echo "✓ gum installed"
+    echo "[OK] gum installed"
 else
-    echo "✓ gum already available"
+    echo "[OK] gum already available"
 fi
 
 # Any other critical dependencies that preflight needs can go here
 # Example: pacman -S --needed --noconfirm other-tool
 
-echo "✓ Bootstrap complete!"
+echo "[OK] Bootstrap complete!"
 echo

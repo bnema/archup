@@ -28,9 +28,9 @@ else
   export ARCHUP_ROOT_PART="${ARCHUP_DISK}2"
 fi
 
-gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "✓ Partitions created"
+gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "[OK] Partitions created"
 gum style --padding "0 0 0 $PADDING_LEFT" "  EFI: $ARCHUP_EFI_PART (512MB)"
 gum style --padding "0 0 1 $PADDING_LEFT" "  Root: $ARCHUP_ROOT_PART"
 
-echo "EFI partition: $ARCHUP_EFI_PART" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
-echo "Root partition: $ARCHUP_ROOT_PART" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+echo "EFI partition: $ARCHUP_EFI_PART" >> "$ARCHUP_INSTALL_LOG_FILE"
+echo "Root partition: $ARCHUP_ROOT_PART" >> "$ARCHUP_INSTALL_LOG_FILE"

@@ -2,7 +2,7 @@
 # archup - Fast, minimal Arch Linux auto-installer
 # Main installation orchestrator
 
-set -eEo pipefail
+set -eo pipefail
 
 # Export global paths
 export ARCHUP_PATH="${ARCHUP_PATH:-$HOME/.local/share/archup}"
@@ -64,7 +64,7 @@ if [ ! -d "$ARCHUP_INSTALL" ]; then
   echo "Downloading presets..."
   curl -sL "$GITHUB_RAW/install/presets/barebone.packages" -o "$ARCHUP_INSTALL/presets/barebone.packages"
 
-  echo "✓ All files downloaded successfully"
+  echo "[OK] All files downloaded successfully"
   echo ""
 fi
 
@@ -74,16 +74,20 @@ source "$ARCHUP_INSTALL/bootstrap.sh"
 # Source all helper utilities (now safe to use gum)
 source "$ARCHUP_INSTALL/helpers/all.sh"
 
-# Display logo and start installation
+# Display logo
 clear_logo
-start_install_log
 
 # ============================================================
 # PHASE 1: BAREBONE INSTALLER - BASIC
 # ============================================================
 
-# Preflight validation
+# Preflight validation (interactive prompts BEFORE logging starts)
 source "$ARCHUP_INSTALL/preflight/all.sh"
+
+# Start log monitor AFTER all interactive prompts
+gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Installing..."
+echo
+start_install_log
 
 # Partitioning (auto GPT, ext4, no encryption)
 source "$ARCHUP_INSTALL/partitioning/all.sh"

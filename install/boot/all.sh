@@ -1,5 +1,4 @@
 #!/bin/bash
-# Bootloader phase orchestrator
-# archup uses Limine exclusively for its superior btrfs and snapshot support
+# Bootloader installation phase
 
 run_logged "$ARCHUP_INSTALL/boot/limine.sh"

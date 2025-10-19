@@ -15,8 +15,8 @@ echo
 KERNEL_CHOICE=$(gum choose --padding "0 0 1 $PADDING_LEFT" "linux" "linux-lts" "linux-zen")
 export ARCHUP_KERNEL="$KERNEL_CHOICE"
 
-gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "✓ Selected: $ARCHUP_KERNEL"
-echo "Kernel: $ARCHUP_KERNEL" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "[OK] Selected: $ARCHUP_KERNEL"
+echo "Kernel: $ARCHUP_KERNEL" >> "$ARCHUP_INSTALL_LOG_FILE"
 
 # Detect CPU vendor
 gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Detecting CPU vendor..."
@@ -32,17 +32,17 @@ elif [ "$CPU_VENDOR" = "AuthenticAMD" ]; then
 else
   MICROCODE=""
   CPU_TYPE="Unknown"
-  gum style --foreground 3 --padding "0 0 1 $PADDING_LEFT" "⚠ Unknown CPU vendor: $CPU_VENDOR"
+  gum style --foreground 3 --padding "0 0 1 $PADDING_LEFT" "[WARN] Unknown CPU vendor: $CPU_VENDOR"
 fi
 
 if [ -n "$MICROCODE" ]; then
   export ARCHUP_MICROCODE="$MICROCODE"
-  gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "✓ Detected: $CPU_TYPE CPU"
+  gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "[OK] Detected: $CPU_TYPE CPU"
   gum style --padding "0 0 1 $PADDING_LEFT" "  Microcode: $MICROCODE"
-  echo "CPU: $CPU_TYPE, Microcode: $MICROCODE" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+  echo "CPU: $CPU_TYPE, Microcode: $MICROCODE" >> "$ARCHUP_INSTALL_LOG_FILE"
 else
   export ARCHUP_MICROCODE=""
-  echo "CPU: Unknown, no microcode" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+  echo "CPU: Unknown, no microcode" >> "$ARCHUP_INSTALL_LOG_FILE"
 fi
 
 # AMD-specific tuning (P-State driver selection)
@@ -78,13 +78,13 @@ if [ "$CPU_TYPE" = "AMD" ]; then
   fi
 
   # Remove duplicates and sort
-  AVAILABLE_MODES=($(printf '%s\n' "${AVAILABLE_MODES[@]}" | sort -u))
+  mapfile -t AVAILABLE_MODES < <(printf '%s\n' "${AVAILABLE_MODES[@]}" | sort -u)
 
   # Display detected modes
   if [ ${#AVAILABLE_MODES[@]} -gt 0 ]; then
-    gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "✓ Detected ${#AVAILABLE_MODES[@]} available mode(s): ${AVAILABLE_MODES[*]}"
+    gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "[OK] Detected ${#AVAILABLE_MODES[@]} available mode(s): ${AVAILABLE_MODES[*]}"
   else
-    gum style --foreground 3 --padding "0 0 0 $PADDING_LEFT" "⚠ Could not detect available modes, using defaults"
+    gum style --foreground 3 --padding "0 0 0 $PADDING_LEFT" "[WARN] Could not detect available modes, using defaults"
     AVAILABLE_MODES=("passive")
   fi
 
@@ -111,8 +111,8 @@ if [ "$CPU_TYPE" = "AMD" ]; then
 
   AMD_PSTATE=$(gum choose --padding "0 0 1 $PADDING_LEFT" "${AVAILABLE_MODES[@]}")
   export ARCHUP_AMD_PSTATE="$AMD_PSTATE"
-  gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "✓ P-State: $AMD_PSTATE"
-  echo "AMD P-State: $AMD_PSTATE (kernel parameter)" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+  gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "[OK] P-State: $AMD_PSTATE"
+  echo "AMD P-State: $AMD_PSTATE (kernel parameter)" >> "$ARCHUP_INSTALL_LOG_FILE"
 
   # Prepare kernel parameters for AMD P-State
   export ARCHUP_AMD_KERNEL_PARAMS="amd_pstate=$AMD_PSTATE"
@@ -121,4 +121,4 @@ else
   export ARCHUP_AMD_KERNEL_PARAMS=""
 fi
 
-gum style --foreground 2 --padding "1 0 1 $PADDING_LEFT" "✓ Kernel configuration complete"
+gum style --foreground 2 --padding "1 0 1 $PADDING_LEFT" "[OK] Kernel configuration complete"

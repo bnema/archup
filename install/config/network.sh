@@ -45,10 +45,10 @@ PreSharedKey=$ARCHUP_WIFI_PASSPHRASE
 AutoConnect=true
 EOF
 
-  gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "✓ WiFi credentials migrated: $ARCHUP_WIFI_SSID"
-  echo "WiFi credentials migrated: $ARCHUP_WIFI_SSID (auto-connect enabled)" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+  gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "[OK] WiFi credentials migrated: $ARCHUP_WIFI_SSID"
+  echo "WiFi credentials migrated: $ARCHUP_WIFI_SSID (auto-connect enabled)" >> "$ARCHUP_INSTALL_LOG_FILE"
 fi
 
-gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "✓ Network configured (DHCP)"
+gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "[OK] Network configured (DHCP)"
 
-echo "Enabled systemd-networkd and iwd" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+echo "Enabled systemd-networkd and iwd" >> "$ARCHUP_INSTALL_LOG_FILE"

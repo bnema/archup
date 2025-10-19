@@ -46,3 +46,13 @@ clear_logo() {
   printf "\033[H\033[2J" # Clear screen and move cursor to top-left
   gum style --foreground 4 --padding "1 0 0 $PADDING_LEFT" "$(<"$LOGO_PATH")"
 }
+
+# Show cursor (used in cleanup)
+show_cursor() {
+  printf "\033[?25h"
+}
+
+# Hide cursor (used during installation)
+hide_cursor() {
+  printf "\033[?25l"
+}

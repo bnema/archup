@@ -17,20 +17,20 @@ fi
 arch-chroot /mnt ln -sf "/usr/share/zoneinfo/$ARCHUP_TIMEZONE" /etc/localtime
 arch-chroot /mnt hwclock --systohc
 
-gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "✓ Timezone set to: $ARCHUP_TIMEZONE"
+gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "[OK] Timezone set to: $ARCHUP_TIMEZONE"
 
 # Set locale to en_US.UTF-8
 echo "en_US.UTF-8 UTF-8" > /mnt/etc/locale.gen
 arch-chroot /mnt locale-gen
 echo "LANG=en_US.UTF-8" > /mnt/etc/locale.conf
 
-gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "✓ Locale set to: en_US.UTF-8"
+gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "[OK] Locale set to: en_US.UTF-8"
 
 # Set console keyboard layout (detected from ISO)
 if [ -n "$ARCHUP_KEYMAP" ]; then
   echo "KEYMAP=$ARCHUP_KEYMAP" > /mnt/etc/vconsole.conf
-  gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "✓ Console keymap set to: $ARCHUP_KEYMAP"
-  echo "Console keymap: $ARCHUP_KEYMAP" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+  gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "[OK] Console keymap set to: $ARCHUP_KEYMAP"
+  echo "Console keymap: $ARCHUP_KEYMAP" >> "$ARCHUP_INSTALL_LOG_FILE"
 fi
 
 # Ask for hostname
@@ -52,8 +52,8 @@ cat > /mnt/etc/hosts <<EOF
 127.0.1.1   $ARCHUP_HOSTNAME.localdomain $ARCHUP_HOSTNAME
 EOF
 
-gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "✓ Hostname set to: $ARCHUP_HOSTNAME"
+gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "[OK] Hostname set to: $ARCHUP_HOSTNAME"
 
-echo "Timezone: $ARCHUP_TIMEZONE" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
-echo "Locale: en_US.UTF-8" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
-echo "Hostname: $ARCHUP_HOSTNAME" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+echo "Timezone: $ARCHUP_TIMEZONE" >> "$ARCHUP_INSTALL_LOG_FILE"
+echo "Locale: en_US.UTF-8" >> "$ARCHUP_INSTALL_LOG_FILE"
+echo "Hostname: $ARCHUP_HOSTNAME" >> "$ARCHUP_INSTALL_LOG_FILE"

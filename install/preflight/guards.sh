@@ -3,8 +3,9 @@
 # Validates system requirements before installation
 
 abort() {
-  gum style --foreground 1 --padding "1 0 0 $PADDING_LEFT" "❌ archup install requires: $1"
+  gum style --foreground 1 --padding "1 0 0 $PADDING_LEFT" "archup install requires: $1"
   echo
+  echo "Preflight check failed: $1"
   gum confirm "Proceed anyway on your own accord and without assistance?" --padding "0 0 0 $PADDING_LEFT" || exit 1
 }
 
@@ -38,4 +39,4 @@ if bootctl status 2>/dev/null | grep -q 'Secure Boot: enabled'; then
 fi
 
 # Cleared all guards
-gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "✓ All preflight checks passed"
+gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "All preflight checks passed"

@@ -1,7 +1,11 @@
 #!/bin/bash
-# Logging utilities for archup installer
-# Adapted from Omarchy logging.sh
+# Logging system for archup installer - fixes variable export issues
+# Uses background process for log display instead of exec redirection
 
+# Global variable for monitor background process
+monitor_pid=""
+
+# Background process to monitor and display log in real-time
 start_log_output() {
   local ANSI_SAVE_CURSOR="\033[s"
   local ANSI_RESTORE_CURSOR="\033[u"
@@ -14,6 +18,7 @@ start_log_output() {
   printf $ANSI_SAVE_CURSOR
   printf $ANSI_HIDE_CURSOR
 
+  # Start background monitor process
   (
     local log_lines=20
     local max_line_width=$((LOGO_WIDTH - 4))
@@ -32,7 +37,7 @@ start_log_output() {
           line="${line:0:$max_line_width}..."
         fi
 
-        # Add clear line escape and formatted output for each line
+        # Add formatted output for each line
         if [ -n "$line" ]; then
           output+="${ANSI_CLEAR_LINE}${ANSI_GRAY}${PADDING_LEFT_SPACES}  → ${line}${ANSI_RESET}\n"
         else
@@ -41,7 +46,6 @@ start_log_output() {
       done
 
       printf "${ANSI_RESTORE_CURSOR}%b" "$output"
-
       sleep 0.1
     done
   ) &
@@ -61,8 +65,9 @@ start_install_log() {
   chmod 666 "$ARCHUP_INSTALL_LOG_FILE"
 
   export ARCHUP_START_TIME=$(date '+%Y-%m-%d %H:%M:%S')
+  echo "=== archup Installation Started: $ARCHUP_START_TIME ===" >> "$ARCHUP_INSTALL_LOG_FILE"
 
-  echo "=== archup Installation Started: $ARCHUP_START_TIME ===" >>"$ARCHUP_INSTALL_LOG_FILE"
+  # Start background log display (NO exec redirection!)
   start_log_output
 }
 
@@ -72,9 +77,8 @@ stop_install_log() {
 
   if [[ -n ${ARCHUP_INSTALL_LOG_FILE:-} ]]; then
     ARCHUP_END_TIME=$(date '+%Y-%m-%d %H:%M:%S')
-    echo "=== archup Installation Completed: $ARCHUP_END_TIME ===" >>"$ARCHUP_INSTALL_LOG_FILE"
-    echo "" >>"$ARCHUP_INSTALL_LOG_FILE"
-    echo "=== Installation Time Summary ===" >>"$ARCHUP_INSTALL_LOG_FILE"
+    echo "" >> "$ARCHUP_INSTALL_LOG_FILE"
+    echo "=== archup Installation Completed: $ARCHUP_END_TIME ===" >> "$ARCHUP_INSTALL_LOG_FILE"
 
     if [ -n "$ARCHUP_START_TIME" ]; then
       ARCHUP_START_EPOCH=$(date -d "$ARCHUP_START_TIME" +%s)
@@ -84,9 +88,9 @@ stop_install_log() {
       ARCHUP_MINS=$((ARCHUP_DURATION / 60))
       ARCHUP_SECS=$((ARCHUP_DURATION % 60))
 
-      echo "archup:      ${ARCHUP_MINS}m ${ARCHUP_SECS}s" >>"$ARCHUP_INSTALL_LOG_FILE"
+      echo "Duration: ${ARCHUP_MINS}m ${ARCHUP_SECS}s" >> "$ARCHUP_INSTALL_LOG_FILE"
     fi
-    echo "=================================" >>"$ARCHUP_INSTALL_LOG_FILE"
+    echo "=================================" >> "$ARCHUP_INSTALL_LOG_FILE"
   fi
 }
 
@@ -95,18 +99,18 @@ run_logged() {
 
   export CURRENT_SCRIPT="$script"
 
-  echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting: $script" >>"$ARCHUP_INSTALL_LOG_FILE"
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting: $script" >> "$ARCHUP_INSTALL_LOG_FILE"
 
-  # Use bash -c to create a clean subshell
-  bash -c "source '$script'" </dev/null >>"$ARCHUP_INSTALL_LOG_FILE" 2>&1
+  # Use bash -c to create a clean subshell and redirect output to log
+  bash -c "source '$script'" </dev/null >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 
   local exit_code=$?
 
   if [ $exit_code -eq 0 ]; then
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Completed: $script" >>"$ARCHUP_INSTALL_LOG_FILE"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Completed: $script" >> "$ARCHUP_INSTALL_LOG_FILE"
     unset CURRENT_SCRIPT
   else
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Failed: $script (exit code: $exit_code)" >>"$ARCHUP_INSTALL_LOG_FILE"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Failed: $script (exit code: $exit_code)" >> "$ARCHUP_INSTALL_LOG_FILE"
   fi
 
   return $exit_code

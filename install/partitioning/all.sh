@@ -1,7 +1,7 @@
 #!/bin/bash
-# Partitioning phase orchestrator
+# Partitioning phase
 
-run_logged "$ARCHUP_INSTALL/partitioning/detect-disk.sh"
-run_logged "$ARCHUP_INSTALL/partitioning/partition.sh"
-run_logged "$ARCHUP_INSTALL/partitioning/format.sh"
-run_logged "$ARCHUP_INSTALL/partitioning/mount.sh"
+source "$ARCHUP_INSTALL/partitioning/detect-disk.sh"     # Interactive (gum confirm)
+run_logged "$ARCHUP_INSTALL/partitioning/partition.sh"   # Non-interactive
+run_logged "$ARCHUP_INSTALL/partitioning/format.sh"      # Non-interactive
+run_logged "$ARCHUP_INSTALL/partitioning/mount.sh"       # Non-interactive

@@ -17,7 +17,7 @@ if [ "$ARCHUP_ENCRYPTION" = "enabled" ]; then
   # Regenerate initramfs
   arch-chroot /mnt mkinitcpio -P
 
-  echo "Updated mkinitcpio.conf with encrypt hook" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+  echo "Updated mkinitcpio.conf with encrypt hook"
 
   # Kernel parameters for encrypted boot
   KERNEL_PARAMS="cryptdevice=UUID=$ROOT_UUID:cryptroot root=/dev/mapper/cryptroot rootflags=subvol=@ rw"
@@ -30,7 +30,7 @@ fi
 # Add AMD-specific kernel parameters if configured
 if [ -n "$ARCHUP_AMD_KERNEL_PARAMS" ]; then
   KERNEL_PARAMS="$KERNEL_PARAMS $ARCHUP_AMD_KERNEL_PARAMS"
-  echo "Added AMD kernel params: $ARCHUP_AMD_KERNEL_PARAMS" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+  echo "Added AMD kernel params: $ARCHUP_AMD_KERNEL_PARAMS"
 fi
 
 # Install Limine to the disk (UEFI)
@@ -82,10 +82,10 @@ arch-chroot /mnt efibootmgr --create \
   --label "archup" \
   --loader "\\EFI\\BOOT\\BOOTX64.EFI"
 
-gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "✓ Limine installed and configured"
+gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "[OK] Limine installed and configured"
 
 if [ "$ARCHUP_ENCRYPTION" = "enabled" ]; then
-  echo "Installed Limine with encrypted root (UUID: $ROOT_UUID)" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+  echo "Installed Limine with encrypted root (UUID: $ROOT_UUID)"
 else
-  echo "Installed Limine with root UUID: $ROOT_UUID" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+  echo "Installed Limine with root UUID: $ROOT_UUID"
 fi

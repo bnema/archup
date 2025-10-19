@@ -10,24 +10,24 @@ mapfile -t packages < <(grep -v '^#' "$ARCHUP_INSTALL/presets/barebone.packages"
 # Add kernel (selected in kernel.sh)
 if [ -n "$ARCHUP_KERNEL" ]; then
   packages+=("$ARCHUP_KERNEL")
-  echo "Adding kernel: $ARCHUP_KERNEL" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+  echo "Adding kernel: $ARCHUP_KERNEL" >> "$ARCHUP_INSTALL_LOG_FILE"
 fi
 
 # Add microcode (detected in kernel.sh)
 if [ -n "$ARCHUP_MICROCODE" ]; then
   packages+=("$ARCHUP_MICROCODE")
-  echo "Adding microcode: $ARCHUP_MICROCODE" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+  echo "Adding microcode: $ARCHUP_MICROCODE" >> "$ARCHUP_INSTALL_LOG_FILE"
 fi
 
 # Add cryptsetup if encryption is enabled
 if [ "$ARCHUP_ENCRYPTION" = "enabled" ]; then
   packages+=("cryptsetup")
-  echo "Adding cryptsetup for LUKS encryption" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+  echo "Adding cryptsetup for LUKS encryption" >> "$ARCHUP_INSTALL_LOG_FILE"
 fi
 
 # Install base system
 pacstrap /mnt "${packages[@]}"
 
-gum style --foreground 2 --padding "1 0 1 $PADDING_LEFT" "✓ Base system installed"
+gum style --foreground 2 --padding "1 0 1 $PADDING_LEFT" "[OK] Base system installed"
 
-echo "Installed ${#packages[@]} packages" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+echo "Installed ${#packages[@]} packages" >> "$ARCHUP_INSTALL_LOG_FILE"

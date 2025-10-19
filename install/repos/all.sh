@@ -1,5 +1,5 @@
 #!/bin/bash
-# Repository setup phase orchestrator
+# Repository setup phase
 
-run_logged "$ARCHUP_INSTALL/repos/yay.sh"
-run_logged "$ARCHUP_INSTALL/repos/chaotic.sh"
+source "$ARCHUP_INSTALL/repos/yay.sh"         # Interactive (gum confirm)
+source "$ARCHUP_INSTALL/repos/chaotic.sh"     # Interactive (gum confirm)

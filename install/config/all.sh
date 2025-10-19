@@ -1,6 +1,6 @@
 #!/bin/bash
-# Configuration phase orchestrator
+# Configuration phase
 
-run_logged "$ARCHUP_INSTALL/config/system.sh"
-run_logged "$ARCHUP_INSTALL/config/user.sh"
-run_logged "$ARCHUP_INSTALL/config/network.sh"
+source "$ARCHUP_INSTALL/config/system.sh"          # Interactive (gum input)
+source "$ARCHUP_INSTALL/config/user.sh"            # Interactive (gum input)
+run_logged "$ARCHUP_INSTALL/config/network.sh"     # Non-interactive

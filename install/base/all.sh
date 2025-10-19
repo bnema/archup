@@ -1,6 +1,6 @@
 #!/bin/bash
-# Base installation phase orchestrator
+# Base installation phase
 
-run_logged "$ARCHUP_INSTALL/base/kernel.sh"
-run_logged "$ARCHUP_INSTALL/base/pacstrap.sh"
-run_logged "$ARCHUP_INSTALL/base/fstab.sh"
+source "$ARCHUP_INSTALL/base/kernel.sh"           # Interactive (gum choose)
+run_logged "$ARCHUP_INSTALL/base/pacstrap.sh"     # Non-interactive
+run_logged "$ARCHUP_INSTALL/base/fstab.sh"        # Non-interactive

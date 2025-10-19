@@ -43,8 +43,8 @@ echo "$ARCHUP_USERNAME:$ARCHUP_PASSWORD" | arch-chroot /mnt chpasswd
 echo "%wheel ALL=(ALL:ALL) ALL" > /mnt/etc/sudoers.d/wheel
 chmod 440 /mnt/etc/sudoers.d/wheel
 
-gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "✓ User created: $ARCHUP_USERNAME"
-gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "✓ Sudo enabled for wheel group"
+gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "[OK] User created: $ARCHUP_USERNAME"
+gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "[OK] Sudo enabled for wheel group"
 
-echo "Created user: $ARCHUP_USERNAME" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
-echo "Enabled sudo for wheel group" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+echo "Created user: $ARCHUP_USERNAME"
+echo "Enabled sudo for wheel group"
