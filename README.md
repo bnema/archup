@@ -9,6 +9,7 @@
 ✅ **Phase 2: Add btrfs + LUKS Encryption - COMPLETE**
 ✅ **Phase 3: Limine Bootloader - COMPLETE**
 ✅ **Phase 4: Kernel Selection + Microcode - COMPLETE**
+✅ **Phase 5: Repository Setup (AUR + Chaotic) - COMPLETE**
 
 ### Completed
 - ✅ Project structure created
@@ -29,6 +30,8 @@
 - ✅ Kernel selection (linux, linux-lts, linux-zen)
 - ✅ Auto-detected CPU microcode (intel-ucode or amd-ucode)
 - ✅ AMD P-State driver selection (active/guided/passive)
+- ✅ Optional AUR support (yay helper installation)
+- ✅ Optional Chaotic-AUR repository
 
 ### Project Structure
 ```
@@ -142,7 +145,9 @@ sudo ./install.sh
 9. Installs base packages with pacstrap (kernel + microcode + cryptsetup if encrypted)
 10. Configures system (timezone, locale, hostname, user)
 11. Installs Limine bootloader (with encryption and AMD tuning if enabled)
-12. Creates bootable minimal Arch system with btrfs
+12. Optionally installs yay AUR helper (if user enables AUR support)
+13. Optionally adds Chaotic-AUR repository (pre-built AUR packages)
+14. Creates bootable minimal Arch system with btrfs
 
 ## Environment Variables
 
@@ -152,11 +157,10 @@ sudo ./install.sh
 
 ## Next Steps
 
-**Phase 5: Repository Setup (AUR + Chaotic)** (Week 3-4)
-- [ ] Ask user to enable AUR support (install yay)
-- [ ] Ask user to enable Chaotic-AUR repository
-- [ ] Test yay installation from AUR
-- [ ] Test Chaotic-AUR package installation
+**Phase 6: Barebone Preset Complete + Testing** (Week 4)
+- [ ] Add keyboard layout + WiFi migration from ISO
+- [ ] Test matrix for all combinations
+- [ ] Production-ready barebone installer
 
 ## Reference
 

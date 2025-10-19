@@ -36,13 +36,12 @@ source "$ARCHUP_INSTALL/config/all.sh"
 # Bootloader installation
 source "$ARCHUP_INSTALL/boot/all.sh"
 
+# Repository setup (AUR + Chaotic)
+source "$ARCHUP_INSTALL/repos/all.sh"
+
 # ============================================================
 # FUTURE PHASES (TO BE IMPLEMENTED)
 # ============================================================
-# Phase 2: Add btrfs + LUKS encryption
-# Phase 3: Add Limine bootloader option
-# Phase 4: Kernel selection + microcode
-# Phase 5: Repository setup (AUR + Chaotic)
 # Phase 6: Barebone preset testing
 # Phase 7: Default preset (GUI)
 
