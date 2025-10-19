@@ -1,21 +1,9 @@
 #!/bin/bash
-# Add Chaotic-AUR repository
-
-gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Chaotic-AUR Repository"
-echo
-
-# Ask if user wants Chaotic-AUR
-if ! gum confirm "Enable Chaotic-AUR repository?" --padding "0 0 1 $PADDING_LEFT"; then
-  gum style --foreground 3 --padding "0 0 1 $PADDING_LEFT" "[SKIP] Skipping Chaotic-AUR"
-  echo "Chaotic-AUR: disabled"
-  export ARCHUP_CHAOTIC="disabled"
-  return 0
-fi
-
-export ARCHUP_CHAOTIC="enabled"
+# Add Chaotic-AUR repository (required for limine-snapper-sync and other packages)
 
 gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Adding Chaotic-AUR repository..."
-gum style --padding "0 0 1 $PADDING_LEFT" "Installing keyring and mirrorlist..."
+
+export ARCHUP_CHAOTIC="enabled"
 
 # Install Chaotic-AUR keyring and mirrorlist
 arch-chroot /mnt pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
