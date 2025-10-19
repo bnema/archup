@@ -8,6 +8,12 @@ set -e
 echo "=== ArchUp Bootstrap ==="
 echo "Installing essential dependencies..."
 
+# Fix TERM for better gum compatibility in VMs
+if [ "$TERM" = "linux" ] || [ -z "$TERM" ]; then
+    export TERM=xterm-256color
+    echo "Set TERM=xterm-256color for better TUI compatibility"
+fi
+
 # Sync package database (required on fresh ISO boot)
 echo "Syncing package database..."
 pacman -Sy --noconfirm
