@@ -10,7 +10,10 @@ export ARCHUP_INSTALL="$ARCHUP_PATH/install"
 export ARCHUP_INSTALL_LOG_FILE="/var/log/archup-install.log"
 export ARCHUP_REPO_URL="${ARCHUP_REPO_URL:-https://github.com/bnema/archup}"
 
-# Source all helper utilities
+# Bootstrap: Install gum and essential dependencies (plain text, no gum usage)
+source "$ARCHUP_INSTALL/bootstrap.sh"
+
+# Source all helper utilities (now safe to use gum)
 source "$ARCHUP_INSTALL/helpers/all.sh"
 
 # Display logo and start installation

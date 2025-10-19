@@ -1,11 +1,7 @@
 #!/bin/bash
 # Presentation utilities for archup installer
 # Adapted from Omarchy presentation.sh
-
-# Ensure we have gum available
-if ! command -v gum &>/dev/null; then
-  sudo pacman -S --needed --noconfirm gum
-fi
+# NOTE: Requires gum to be installed via bootstrap.sh first!
 
 # Get terminal size from /dev/tty (works in all scenarios: direct, sourced, or piped)
 if [ -e /dev/tty ]; then
