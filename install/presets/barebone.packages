@@ -1,0 +1,28 @@
+# archup barebone preset (~15 packages)
+# Minimal CLI-only system for advanced users
+
+# Core System
+base
+linux
+linux-firmware
+btrfs-progs
+
+# Microcode (one will be selected based on CPU detection)
+# intel-ucode
+# amd-ucode
+
+# Boot (one will be selected based on user choice)
+# limine
+# systemd-boot
+
+# Networking
+iwd
+
+# Essential Tools
+sudo
+neovim
+man-db
+git
+
+# Encryption (added if LUKS enabled)
+# cryptsetup
