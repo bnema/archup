@@ -44,7 +44,22 @@ export GUM_CONFIRM_PADDING="$PADDING"
 
 clear_logo() {
   printf "\033[H\033[2J" # Clear screen and move cursor to top-left
-  gum style --foreground 4 --padding "1 0 0 $PADDING_LEFT" "$(<"$LOGO_PATH")"
+
+  # ANSI color codes: cyan=36, white=37
+  local CYAN="\033[36m"
+  local WHITE="\033[37m"
+  local RESET="\033[0m"
+  local split_pos=34
+
+  # Print with padding and color split
+  printf "\n" # Top padding
+  while IFS= read -r line; do
+    if [ -n "$line" ]; then
+      printf "%s${CYAN}%s${WHITE}%s${RESET}\n" "$PADDING_LEFT_SPACES" "${line:0:$split_pos}" "${line:$split_pos}"
+    else
+      printf "\n"
+    fi
+  done < "$LOGO_PATH"
 }
 
 # Show cursor (used in cleanup)
