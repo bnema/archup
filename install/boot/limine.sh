@@ -1,0 +1,85 @@
+#!/bin/bash
+# Install and configure Limine bootloader
+
+gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Installing Limine bootloader..."
+
+# Determine root device UUID and prepare kernel parameters
+if [ "$ARCHUP_ENCRYPTION" = "enabled" ]; then
+  # For encrypted setups, we need the root partition UUID (before LUKS)
+  ROOT_UUID=$(blkid -s UUID -o value "$ARCHUP_ROOT_PART")
+
+  # Update mkinitcpio.conf to add encrypt hook
+  gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Configuring initramfs for encryption..."
+
+  # Add encrypt hook before filesystems hook
+  sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block encrypt filesystems fsck)/' /mnt/etc/mkinitcpio.conf
+
+  # Regenerate initramfs
+  arch-chroot /mnt mkinitcpio -P
+
+  echo "Updated mkinitcpio.conf with encrypt hook" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+
+  # Kernel parameters for encrypted boot
+  KERNEL_PARAMS="cryptdevice=UUID=$ROOT_UUID:cryptroot root=/dev/mapper/cryptroot rootflags=subvol=@ rw"
+else
+  # For non-encrypted setups, use the root partition UUID directly
+  ROOT_UUID=$(blkid -s UUID -o value "$ARCHUP_ROOT_PART")
+  KERNEL_PARAMS="root=UUID=$ROOT_UUID rootflags=subvol=@ rw"
+fi
+
+# Install Limine to the disk (UEFI)
+arch-chroot /mnt limine bios-install "$ARCHUP_DISK"
+
+# Create Limine configuration directory
+mkdir -p /mnt/boot/EFI/BOOT
+
+# Create Limine configuration with proper syntax
+cat > /mnt/boot/EFI/BOOT/limine.conf <<EOF
+# archup - Limine bootloader configuration
+# Docs: https://github.com/limine-bootloader/limine/blob/trunk/CONFIG.md
+
+timeout: 5
+default_entry: 0
+interface_branding: archup
+interface_branding_colour: 6
+graphics: yes
+quiet: yes
+
+# Arch Linux
+:Arch Linux
+protocol: linux
+kernel_path: boot():/vmlinuz-linux
+module_path: boot():/initramfs-linux.img
+cmdline: $KERNEL_PARAMS
+
+# Arch Linux (fallback)
+:Arch Linux (fallback)
+protocol: linux
+kernel_path: boot():/vmlinuz-linux
+module_path: boot():/initramfs-linux-fallback.img
+cmdline: $KERNEL_PARAMS
+EOF
+
+# Copy Limine EFI bootloader
+cp /mnt/usr/share/limine/BOOTX64.EFI /mnt/boot/EFI/BOOT/
+
+gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Creating UEFI boot entry..."
+
+# Detect EFI partition number (usually 1)
+EFI_PART_NUM=$(echo "$ARCHUP_EFI_PART" | grep -o '[0-9]*$' | sed 's/^p//')
+
+# Add UEFI boot entry using efibootmgr
+# Limine doesn't automatically create NVRAM entry, we need to do it manually
+arch-chroot /mnt efibootmgr --create \
+  --disk "$ARCHUP_DISK" \
+  --part "$EFI_PART_NUM" \
+  --label "archup" \
+  --loader "\\EFI\\BOOT\\BOOTX64.EFI"
+
+gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "✓ Limine installed and configured"
+
+if [ "$ARCHUP_ENCRYPTION" = "enabled" ]; then
+  echo "Installed Limine with encrypted root (UUID: $ROOT_UUID)" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+else
+  echo "Installed Limine with root UUID: $ROOT_UUID" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+fi

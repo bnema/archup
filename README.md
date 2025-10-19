@@ -7,6 +7,7 @@
 ✅ **Phase 0: Core Infrastructure - COMPLETE**
 ✅ **Phase 1: Barebone Installer - Basic - COMPLETE**
 ✅ **Phase 2: Add btrfs + LUKS Encryption - COMPLETE**
+✅ **Phase 3: Limine Bootloader - COMPLETE**
 
 ### Completed
 - ✅ Project structure created
@@ -15,12 +16,12 @@
 - ✅ Barebone package list (~15 packages)
 - ✅ Logo designed
 - ✅ System guards (vanilla Arch, UEFI, x86_64, Secure Boot checks)
-- ✅ Bootloader selection (systemd-boot or limine)
+- ✅ Limine bootloader (exclusive - superior btrfs support)
 - ✅ Auto-partitioning (GPT, EFI + root)
 - ✅ Base system installation (pacstrap + fstab)
 - ✅ System configuration (timezone, locale, hostname, user creation)
 - ✅ Network configuration (systemd-networkd + iwd)
-- ✅ Bootloader installation (systemd-boot with boot entries)
+- ✅ Limine bootloader installation with UEFI boot entries
 - ✅ btrfs filesystem with subvolumes (@ for root, @home for home)
 - ✅ LUKS encryption with Argon2id (optional, 2000ms iteration)
 - ✅ Encrypted boot support (mkinitcpio hooks)
@@ -127,15 +128,14 @@ sudo ./install.sh
 
 **What the installer does:**
 1. Validates system (vanilla Arch ISO, UEFI, x86_64)
-2. Asks for bootloader preference (systemd-boot or limine)
-3. Asks for encryption preference (optional LUKS with Argon2id)
-4. Selects installation disk (auto-partitions with GPT)
-5. Formats partitions (FAT32 EFI + btrfs root with optional LUKS)
-6. Creates btrfs subvolumes (@ for root, @home for home)
-7. Installs ~15 base packages with pacstrap (+ cryptsetup if encrypted)
-8. Configures system (timezone, locale, hostname, user)
-9. Installs systemd-boot bootloader (with encryption support if enabled)
-10. Creates bootable minimal Arch system
+2. Asks for encryption preference (optional LUKS with Argon2id)
+3. Selects installation disk (auto-partitions with GPT)
+4. Formats partitions (FAT32 EFI + btrfs root with optional LUKS)
+5. Creates btrfs subvolumes (@ for root, @home for home)
+6. Installs ~15 base packages with pacstrap (+ cryptsetup if encrypted)
+7. Configures system (timezone, locale, hostname, user)
+8. Installs Limine bootloader (with encryption support if enabled)
+9. Creates bootable minimal Arch system with btrfs
 
 ## Environment Variables
 
@@ -145,12 +145,12 @@ sudo ./install.sh
 
 ## Next Steps
 
-**Phase 3: Add Limine Bootloader Option** (Week 3)
-- [ ] Support Limine as alternative to systemd-boot
-- [ ] Create install/boot/limine.sh script
-- [ ] Configure limine.conf for UEFI
-- [ ] Add encryption support for Limine
-- [ ] Test both bootloaders with encryption
+**Phase 4: Kernel Selection + Microcode** (Week 3)
+- [ ] Let user choose kernel (linux, linux-lts, linux-zen)
+- [ ] Auto-detect CPU (Intel/AMD)
+- [ ] Auto-install appropriate microcode (intel-ucode/amd-ucode)
+- [ ] For AMD: Add pstate and governor selection
+- [ ] Test all kernels boot successfully
 
 ## Reference
 

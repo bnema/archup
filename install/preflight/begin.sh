@@ -13,20 +13,12 @@ if ! gum confirm "Ready to begin installation?" --padding "0 0 1 $PADDING_LEFT";
   exit 0
 fi
 
-# Ask for bootloader preference (Phase 1 requirement)
-gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Bootloader Selection"
-gum style --padding "0 0 0 $PADDING_LEFT" "archup supports modern bootloaders for UEFI systems:"
-echo
+# archup uses Limine bootloader exclusively
+gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Bootloader: Limine"
+gum style --padding "0 0 1 $PADDING_LEFT" "archup uses Limine for superior btrfs and snapshot support"
 
-ARCHUP_BOOTLOADER=$(gum choose \
-  "systemd-boot" \
-  "limine" \
-  --header "Select bootloader:" \
-  --height 4 \
-  --padding "0 0 0 $PADDING_LEFT")
-
-export ARCHUP_BOOTLOADER
-echo "Selected bootloader: $ARCHUP_BOOTLOADER" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+export ARCHUP_BOOTLOADER="limine"
+echo "Bootloader: limine" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
 
 # Ask for encryption preference (Phase 2)
 echo

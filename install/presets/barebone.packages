@@ -11,9 +11,9 @@ btrfs-progs
 # intel-ucode
 # amd-ucode
 
-# Boot (one will be selected based on user choice)
-# limine
-# systemd-boot
+# Bootloader
+limine
+efibootmgr
 
 # Networking
 iwd
