@@ -1,6 +1,6 @@
 # archup
 
-**A fast, minimal Arch Linux auto-installer alternative to archinstall**
+**A minimal, slightly opinionated Arch Linux installer.**
 
 ## Project Status
 

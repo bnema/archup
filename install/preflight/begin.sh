@@ -4,7 +4,7 @@
 
 # Display welcome message
 gum style --foreground 4 --padding "1 0 1 $PADDING_LEFT" "Welcome to ArchUp!"
-gum style --padding "0 0 0 $PADDING_LEFT" "A fast, minimal Arch Linux auto-installer"
+gum style --padding "0 0 0 $PADDING_LEFT" "A minimal, slightly opinionated Arch Linux installer."
 echo
 
 # Confirm installation start

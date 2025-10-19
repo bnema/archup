@@ -5,4 +5,4 @@
   ██║░░██║██║░░██║╚█████╔╝██║░░██║╚██████╔╝██║░░░░░
   ╚═╝░░╚═╝╚═╝░░╚═╝░╚════╝░╚═╝░░╚═╝░╚═════╝░╚═╝░░░░░
 
-  A fast, minimal Arch Linux auto-installer
+  A minimal, slightly opinionated Arch Linux installer.
