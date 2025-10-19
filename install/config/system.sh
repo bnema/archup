@@ -2,29 +2,10 @@
 # System configuration (timezone, locale, hostname)
 
 gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "System Configuration"
-echo
 
-# Fetch timezone from IP
-DETECTED_TIMEZONE=$(curl -s "https://ipapi.co/timezone/" 2>/dev/null)
-
-if [ -n "$DETECTED_TIMEZONE" ]; then
-  # Show detected timezone and ask for confirmation
-  gum style --foreground 3 --padding "0 0 0 $PADDING_LEFT" "Detected timezone: $DETECTED_TIMEZONE"
-
-  if gum confirm --padding "0 0 0 $PADDING_LEFT" "Is this correct?"; then
-    ARCHUP_TIMEZONE="$DETECTED_TIMEZONE"
-  else
-    # Ask for manual timezone entry
-    ARCHUP_TIMEZONE=$(gum input --placeholder "Enter timezone (e.g., America/New_York)" \
-      --prompt "Timezone: " \
-      --padding "0 0 0 $PADDING_LEFT")
-  fi
-else
-  # Fallback to manual entry if API fails
-  gum style --foreground 3 --padding "0 0 0 $PADDING_LEFT" "Unable to detect timezone automatically"
-  ARCHUP_TIMEZONE=$(gum input --placeholder "Enter timezone (e.g., America/New_York)" \
-    --prompt "Timezone: " \
-    --padding "0 0 0 $PADDING_LEFT")
+# Read timezone from config (already set in preflight/identify.sh)
+if [ -z "$ARCHUP_TIMEZONE" ]; then
+  ARCHUP_TIMEZONE=$(config_get "ARCHUP_TIMEZONE")
 fi
 
 if [ -z "$ARCHUP_TIMEZONE" ]; then
@@ -51,13 +32,13 @@ if [ -n "$ARCHUP_KEYMAP" ]; then
   echo "Console keymap: $ARCHUP_KEYMAP" >> "$ARCHUP_INSTALL_LOG_FILE"
 fi
 
-# Ask for hostname
-ARCHUP_HOSTNAME=$(gum input --placeholder "Enter hostname" \
-  --prompt "Hostname: " \
-  --padding "0 0 0 $PADDING_LEFT")
+# Read hostname from config (already set in preflight/identify.sh)
+if [ -z "$ARCHUP_HOSTNAME" ]; then
+  ARCHUP_HOSTNAME=$(config_get "ARCHUP_HOSTNAME")
+fi
 
 if [ -z "$ARCHUP_HOSTNAME" ]; then
-  ARCHUP_HOSTNAME="archlinux"
+  ARCHUP_HOSTNAME="archup"
 fi
 
 # Set hostname
