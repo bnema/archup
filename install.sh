@@ -45,7 +45,7 @@ if [ ! -d "$ARCHUP_INSTALL" ]; then
   GITHUB_RAW="$ARCHUP_RAW_URL"
 
   # Create directory structure
-  mkdir -p "$ARCHUP_INSTALL"/{helpers,preflight,partitioning,base,config,boot,repos,presets}
+  mkdir -p "$ARCHUP_INSTALL"/{helpers,preflight,partitioning,base,config,boot,repos,post-install,presets}
 
   echo "Downloading core files..."
   curl -sL "$GITHUB_RAW/install/bootstrap.sh" -o "$ARCHUP_INSTALL/bootstrap.sh"
@@ -84,6 +84,11 @@ if [ ! -d "$ARCHUP_INSTALL" ]; then
   echo "Downloading repos..."
   for file in all.sh yay.sh chaotic.sh; do
     curl -sL "$GITHUB_RAW/install/repos/$file" -o "$ARCHUP_INSTALL/repos/$file"
+  done
+
+  echo "Downloading post-install..."
+  for file in all.sh boot-logo.sh verify.sh unmount.sh; do
+    curl -sL "$GITHUB_RAW/install/post-install/$file" -o "$ARCHUP_INSTALL/post-install/$file"
   done
 
   echo "Downloading presets..."
@@ -131,6 +136,9 @@ source "$ARCHUP_INSTALL/boot/all.sh"
 
 # Repository setup (AUR + Chaotic)
 source "$ARCHUP_INSTALL/repos/all.sh"
+
+# Post-install (boot logo, unmount drives)
+source "$ARCHUP_INSTALL/post-install/all.sh"
 
 # ============================================================
 # FUTURE PHASES (TO BE IMPLEMENTED)
