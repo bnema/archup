@@ -5,6 +5,8 @@
 base
 linux-firmware
 btrfs-progs
+snapper
+snap-pac
 
 # Kernel (selected dynamically by kernel.sh)
 # linux / linux-lts / linux-zen
