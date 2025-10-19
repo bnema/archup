@@ -1,20 +1,6 @@
 #!/bin/bash
 # Error handling for ArchUp installer - improved with logging and interactivity
 
-# QR code for GitHub issues
-QR_CODE='
-█▀▀▀▀▀█ ▀▄██▀▄▀ █▀▀▀▀▀█
-█ ███ █ ▄▀ ▀▄▄▄ █ ███ █
-█ ▀▀▀ █ ▄ ▄▀  █ █ ▀▀▀ █
-▀▀▀▀▀▀▀ █ ▀▄▀ ▀ ▀▀▀▀▀▀▀
-▀  ▄▄▄▀█▀▄ ▄█▄█▄ ▀▄▀▀█▀
-▄▀██▀▄▀ ▄█▀ ▄ ▄█▀▄▀▄▀█▀
-▀▄▀▄█ ▀▄██  ▀█▄█▀█▀ ▀▀█
-█▀▀▀▀▀█ ▄▄ ▀█  █ ▀ █▄█▀
-█ ███ █ ▀▀▄▀▀▄█▀██▀█▄█▄
-█ ▀▀▀ █ ▄▀▄▄ █▄▄▀▄▀█ ▀█
-▀▀▀▀▀▀▀ ▀▀▀▀▀   ▀▀▀ ▀▀▀'
-
 # Track error handling state
 ERROR_HANDLING=false
 
@@ -125,8 +111,6 @@ catch_errors() {
   show_failed_script_or_command
   echo
 
-  gum style "$QR_CODE"
-  echo
   gum style "Check logs: $ARCHUP_INSTALL_LOG_FILE"
   gum style "Report issues: ${ARCHUP_REPO_URL:-https://github.com/bnema/ArchUp}/issues"
   echo
