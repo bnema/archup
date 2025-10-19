@@ -84,21 +84,12 @@ archup/
 ### Quick Install (from Arch ISO)
 
 ```bash
-# Download and run archup installer
-wget -O- https://raw.githubusercontent.com/bnema/archup/main/install.sh | bash
-```
-
-Or download first, then run:
-
-```bash
-# Download the installer
-wget https://raw.githubusercontent.com/bnema/archup/main/install.sh
-
-# Make it executable
+# Download the installation script (curl is available by default on Arch ISO)
+curl -L https://raw.githubusercontent.com/bnema/archup/main/install.sh -o install.sh
 chmod +x install.sh
 
-# Run the installer
-./install.sh
+# Run the installer (it will download all required files)
+sudo ./install.sh
 ```
 
 **Note:** Phase 1 complete! The installer can now install a minimal bootable Arch Linux system. Ready for VM testing.
@@ -119,20 +110,16 @@ make check-syntax
 make check-shellcheck
 ```
 
-### Testing Installation (Phase 1)
+### Testing Installation
 To test the installer in a VM (QEMU/KVM recommended):
 
 ```bash
 # Boot Arch ISO in VM with UEFI enabled
 # Connect to internet
-# Download archup
-git clone https://github.com/bnema/archup.git
-cd archup
 
-# Set the archup path
-export ARCHUP_PATH=$(pwd)
-
-# Run the installer
+# Download and run installer (automatically downloads all required files)
+curl -L https://raw.githubusercontent.com/bnema/archup/main/install.sh -o install.sh
+chmod +x install.sh
 sudo ./install.sh
 ```
 
