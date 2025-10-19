@@ -57,8 +57,8 @@ stop_log_output() {
 }
 
 start_install_log() {
-  sudo touch "$ARCHUP_INSTALL_LOG_FILE"
-  sudo chmod 666 "$ARCHUP_INSTALL_LOG_FILE"
+  touch "$ARCHUP_INSTALL_LOG_FILE"
+  chmod 666 "$ARCHUP_INSTALL_LOG_FILE"
 
   export ARCHUP_START_TIME=$(date '+%Y-%m-%d %H:%M:%S')
 
