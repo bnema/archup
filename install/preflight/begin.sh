@@ -28,4 +28,18 @@ ARCHUP_BOOTLOADER=$(gum choose \
 export ARCHUP_BOOTLOADER
 echo "Selected bootloader: $ARCHUP_BOOTLOADER" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
 
+# Ask for encryption preference (Phase 2)
+echo
+gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Disk Encryption"
+gum style --padding "0 0 0 $PADDING_LEFT" "LUKS encryption protects your data with Argon2id (2000ms iteration)"
+echo
+
+if gum confirm "Enable full-disk encryption?" --padding "0 0 1 $PADDING_LEFT"; then
+  export ARCHUP_ENCRYPTION="enabled"
+  echo "Encryption: enabled" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+else
+  export ARCHUP_ENCRYPTION="disabled"
+  echo "Encryption: disabled" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+fi
+
 gum style --foreground 2 --padding "1 0 1 $PADDING_LEFT" "✓ Configuration saved"

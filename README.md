@@ -6,6 +6,7 @@
 
 ✅ **Phase 0: Core Infrastructure - COMPLETE**
 ✅ **Phase 1: Barebone Installer - Basic - COMPLETE**
+✅ **Phase 2: Add btrfs + LUKS Encryption - COMPLETE**
 
 ### Completed
 - ✅ Project structure created
@@ -15,11 +16,14 @@
 - ✅ Logo designed
 - ✅ System guards (vanilla Arch, UEFI, x86_64, Secure Boot checks)
 - ✅ Bootloader selection (systemd-boot or limine)
-- ✅ Auto-partitioning (GPT, EFI + root with ext4)
+- ✅ Auto-partitioning (GPT, EFI + root)
 - ✅ Base system installation (pacstrap + fstab)
 - ✅ System configuration (timezone, locale, hostname, user creation)
 - ✅ Network configuration (systemd-networkd + iwd)
 - ✅ Bootloader installation (systemd-boot with boot entries)
+- ✅ btrfs filesystem with subvolumes (@ for root, @home for home)
+- ✅ LUKS encryption with Argon2id (optional, 2000ms iteration)
+- ✅ Encrypted boot support (mkinitcpio hooks)
 
 ### Project Structure
 ```
@@ -123,12 +127,15 @@ sudo ./install.sh
 
 **What the installer does:**
 1. Validates system (vanilla Arch ISO, UEFI, x86_64)
-2. Selects installation disk (auto-partitions with GPT)
-3. Formats partitions (FAT32 EFI + ext4 root)
-4. Installs ~15 base packages with pacstrap
-5. Configures system (timezone, locale, hostname, user)
-6. Installs systemd-boot bootloader
-7. Creates bootable minimal Arch system
+2. Asks for bootloader preference (systemd-boot or limine)
+3. Asks for encryption preference (optional LUKS with Argon2id)
+4. Selects installation disk (auto-partitions with GPT)
+5. Formats partitions (FAT32 EFI + btrfs root with optional LUKS)
+6. Creates btrfs subvolumes (@ for root, @home for home)
+7. Installs ~15 base packages with pacstrap (+ cryptsetup if encrypted)
+8. Configures system (timezone, locale, hostname, user)
+9. Installs systemd-boot bootloader (with encryption support if enabled)
+10. Creates bootable minimal Arch system
 
 ## Environment Variables
 
@@ -138,12 +145,12 @@ sudo ./install.sh
 
 ## Next Steps
 
-**Phase 2: Add btrfs + LUKS Encryption** (Week 2-3)
-- [ ] Replace ext4 with btrfs filesystem
-- [ ] Add LUKS full-disk encryption option
-- [ ] Configure Argon2id with 2000ms iteration time
-- [ ] Create btrfs subvolumes (@ for root, @home for home)
-- [ ] Update bootloader for encrypted boot
+**Phase 3: Add Limine Bootloader Option** (Week 3)
+- [ ] Support Limine as alternative to systemd-boot
+- [ ] Create install/boot/limine.sh script
+- [ ] Configure limine.conf for UEFI
+- [ ] Add encryption support for Limine
+- [ ] Test both bootloaders with encryption
 
 ## Reference
 
