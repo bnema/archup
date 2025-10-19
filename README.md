@@ -85,7 +85,8 @@ archup/
 
 ```bash
 # Download the installation script (curl is available by default on Arch ISO)
-curl -L https://raw.githubusercontent.com/bnema/archup/main/install.sh -o install.sh
+# Note: Using 'dev' branch for testing - change to 'main' for stable release
+curl -L https://raw.githubusercontent.com/bnema/archup/dev/install.sh -o install.sh
 chmod +x install.sh
 
 # Run the installer (it will download all required files)

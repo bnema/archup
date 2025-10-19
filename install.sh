@@ -9,7 +9,7 @@ export ARCHUP_PATH="${ARCHUP_PATH:-$HOME/.local/share/archup}"
 export ARCHUP_INSTALL="$ARCHUP_PATH/install"
 export ARCHUP_INSTALL_LOG_FILE="/var/log/archup-install.log"
 export ARCHUP_REPO_URL="${ARCHUP_REPO_URL:-https://github.com/bnema/archup}"
-export ARCHUP_RAW_URL="https://raw.githubusercontent.com/bnema/archup/main"
+export ARCHUP_RAW_URL="${ARCHUP_RAW_URL:-https://raw.githubusercontent.com/bnema/archup/dev}"
 
 # Download installer files if not present (for curl-based installation)
 if [ ! -d "$ARCHUP_INSTALL" ]; then
