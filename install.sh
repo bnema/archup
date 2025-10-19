@@ -17,34 +17,38 @@ source "$ARCHUP_INSTALL/helpers/all.sh"
 clear_logo
 start_install_log
 
-# Phase 0 test: Display welcome message
-gum style --foreground 4 --padding "1 0 1 $PADDING_LEFT" "Welcome to archup!"
-gum style --padding "0 0 0 $PADDING_LEFT" "Phase 0: Testing helper utilities..."
+# ============================================================
+# PHASE 1: BAREBONE INSTALLER - BASIC
+# ============================================================
 
-# Test logging
-echo "Testing logging functionality..." | tee -a "$ARCHUP_INSTALL_LOG_FILE"
-sleep 1
+# Preflight validation
+source "$ARCHUP_INSTALL/preflight/all.sh"
 
-# Test gum styling
-gum style --foreground 2 --padding "1 0 0 $PADDING_LEFT" "✓ Helpers loaded successfully"
-gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "✓ Logging initialized"
-gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "✓ Error handling ready"
-gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "✓ Presentation utilities working"
+# Partitioning (auto GPT, ext4, no encryption)
+source "$ARCHUP_INSTALL/partitioning/all.sh"
 
-# Test confirmation prompt
-if gum confirm "Continue with Phase 0 test?"; then
-  gum style --foreground 4 --padding "1 0 0 $PADDING_LEFT" "Great! Phase 0 infrastructure is ready."
-  gum style --padding "0 0 0 $PADDING_LEFT" "Next steps:"
-  gum style --padding "0 0 0 $PADDING_LEFT" "  • Phase 1: Preflight validation"
-  gum style --padding "0 0 0 $PADDING_LEFT" "  • Phase 2: Partitioning & encryption"
-  gum style --padding "0 0 0 $PADDING_LEFT" "  • Phase 3: Base installation"
-  echo
-else
-  gum style --foreground 3 --padding "1 0 1 $PADDING_LEFT" "Installation cancelled by user"
-  exit 0
-fi
+# Base system installation
+source "$ARCHUP_INSTALL/base/all.sh"
+
+# System configuration
+source "$ARCHUP_INSTALL/config/all.sh"
+
+# Bootloader installation
+source "$ARCHUP_INSTALL/boot/all.sh"
+
+# ============================================================
+# FUTURE PHASES (TO BE IMPLEMENTED)
+# ============================================================
+# Phase 2: Add btrfs + LUKS encryption
+# Phase 3: Add Limine bootloader option
+# Phase 4: Kernel selection + microcode
+# Phase 5: Repository setup (AUR + Chaotic)
+# Phase 6: Barebone preset testing
+# Phase 7: Default preset (GUI)
 
 # Stop logging and cleanup
 stop_install_log
 
-gum style --foreground 2 --padding "1 0 1 $PADDING_LEFT" "Phase 0 complete! ✓"
+gum style --foreground 2 --padding "1 0 1 $PADDING_LEFT" "ArchUp installation complete!"
+gum style --padding "0 0 0 $PADDING_LEFT" "You can now reboot into your new Arch Linux system."
+echo

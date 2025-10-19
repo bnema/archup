@@ -5,13 +5,21 @@
 ## Project Status
 
 ✅ **Phase 0: Core Infrastructure - COMPLETE**
+✅ **Phase 1: Barebone Installer - Basic - COMPLETE**
 
 ### Completed
 - ✅ Project structure created
 - ✅ Helper utilities implemented (logging, errors, presentation, chroot)
 - ✅ Main orchestrator (install.sh)
-- ✅ Barebone package list
+- ✅ Barebone package list (~15 packages)
 - ✅ Logo designed
+- ✅ System guards (vanilla Arch, UEFI, x86_64, Secure Boot checks)
+- ✅ Bootloader selection (systemd-boot or limine)
+- ✅ Auto-partitioning (GPT, EFI + root with ext4)
+- ✅ Base system installation (pacstrap + fstab)
+- ✅ System configuration (timezone, locale, hostname, user creation)
+- ✅ Network configuration (systemd-networkd + iwd)
+- ✅ Bootloader installation (systemd-boot with boot entries)
 
 ### Project Structure
 ```
@@ -26,13 +34,30 @@ archup/
 │   │   ├── errors.sh         # Trap handlers, error display
 │   │   ├── presentation.sh   # UI helpers (cursor, colors)
 │   │   └── chroot.sh         # Chroot utilities
-│   ├── preflight/            # (Phase 1 - TODO)
-│   ├── partitioning/         # (Phase 2 - TODO)
-│   ├── base/                 # (Phase 3 - TODO)
-│   ├── config/               # (Phase 4 - TODO)
-│   ├── security/             # (Phase 5 - TODO)
-│   ├── bootloader/           # (Phase 6 - TODO)
-│   ├── post-install/         # (Phase 7 - TODO)
+│   ├── preflight/            # Phase 1 ✅
+│   │   ├── all.sh            # Preflight orchestrator
+│   │   ├── guards.sh         # System validation
+│   │   └── begin.sh          # Welcome and bootloader selection
+│   ├── partitioning/         # Phase 1 ✅
+│   │   ├── all.sh            # Partitioning orchestrator
+│   │   ├── detect-disk.sh    # Disk selection
+│   │   ├── partition.sh      # GPT partitioning (EFI + root)
+│   │   ├── format.sh         # Format as FAT32 + ext4
+│   │   └── mount.sh          # Mount partitions to /mnt
+│   ├── base/                 # Phase 1 ✅
+│   │   ├── all.sh            # Base installation orchestrator
+│   │   ├── pacstrap.sh       # Install base packages
+│   │   └── fstab.sh          # Generate fstab
+│   ├── config/               # Phase 1 ✅
+│   │   ├── all.sh            # Configuration orchestrator
+│   │   ├── system.sh         # Timezone, locale, hostname
+│   │   ├── user.sh           # User creation and sudo setup
+│   │   └── network.sh        # Network configuration
+│   ├── boot/                 # Phase 1 ✅
+│   │   ├── all.sh            # Bootloader orchestrator
+│   │   └── systemd-boot.sh   # systemd-boot installation
+│   ├── security/             # (Future - TODO)
+│   ├── post-install/         # (Future - TODO)
 │   └── presets/
 │       └── barebone.packages # Minimal package list (~15 packages)
 ├── bin/                      # (Future utilities)
@@ -61,7 +86,7 @@ chmod +x install.sh
 ./install.sh
 ```
 
-**Note:** Currently in Phase 0 development. Full installation not yet available.
+**Note:** Phase 1 complete! The installer can now install a minimal bootable Arch Linux system. Ready for VM testing.
 
 ---
 
@@ -79,16 +104,31 @@ make check-syntax
 make check-shellcheck
 ```
 
-### Testing Installation (Phase 0)
-Currently in development. To test Phase 0:
+### Testing Installation (Phase 1)
+To test the installer in a VM (QEMU/KVM recommended):
 
 ```bash
-# Set the archup path
-export ARCHUP_PATH=/path/to/archup
+# Boot Arch ISO in VM with UEFI enabled
+# Connect to internet
+# Download archup
+git clone https://github.com/bnema/archup.git
+cd archup
 
-# Run the installer (currently just tests helpers)
-./install.sh
+# Set the archup path
+export ARCHUP_PATH=$(pwd)
+
+# Run the installer
+sudo ./install.sh
 ```
+
+**What the installer does:**
+1. Validates system (vanilla Arch ISO, UEFI, x86_64)
+2. Selects installation disk (auto-partitions with GPT)
+3. Formats partitions (FAT32 EFI + ext4 root)
+4. Installs ~15 base packages with pacstrap
+5. Configures system (timezone, locale, hostname, user)
+6. Installs systemd-boot bootloader
+7. Creates bootable minimal Arch system
 
 ## Environment Variables
 
@@ -98,12 +138,12 @@ export ARCHUP_PATH=/path/to/archup
 
 ## Next Steps
 
-**Phase 1: Preflight Validation** (Week 1)
-- [ ] Guards (vanilla Arch check)
-- [ ] UEFI check
-- [ ] x86_64 architecture check
-- [ ] Secure Boot disabled check
-- [ ] Begin installation (display logo, start log)
+**Phase 2: Add btrfs + LUKS Encryption** (Week 2-3)
+- [ ] Replace ext4 with btrfs filesystem
+- [ ] Add LUKS full-disk encryption option
+- [ ] Configure Argon2id with 2000ms iteration time
+- [ ] Create btrfs subvolumes (@ for root, @home for home)
+- [ ] Update bootloader for encrypted boot
 
 ## Reference
 
