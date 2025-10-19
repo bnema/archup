@@ -4,10 +4,28 @@
 gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "System Configuration"
 echo
 
-# Ask for timezone
-ARCHUP_TIMEZONE=$(gum input --placeholder "Enter timezone (e.g., America/New_York)" \
-  --prompt "Timezone: " \
-  --padding "0 0 0 $PADDING_LEFT")
+# Fetch timezone from IP
+DETECTED_TIMEZONE=$(curl -s "https://ipapi.co/timezone/" 2>/dev/null)
+
+if [ -n "$DETECTED_TIMEZONE" ]; then
+  # Show detected timezone and ask for confirmation
+  gum style --foreground 3 --padding "0 0 0 $PADDING_LEFT" "Detected timezone: $DETECTED_TIMEZONE"
+
+  if gum confirm --padding "0 0 0 $PADDING_LEFT" "Is this correct?"; then
+    ARCHUP_TIMEZONE="$DETECTED_TIMEZONE"
+  else
+    # Ask for manual timezone entry
+    ARCHUP_TIMEZONE=$(gum input --placeholder "Enter timezone (e.g., America/New_York)" \
+      --prompt "Timezone: " \
+      --padding "0 0 0 $PADDING_LEFT")
+  fi
+else
+  # Fallback to manual entry if API fails
+  gum style --foreground 3 --padding "0 0 0 $PADDING_LEFT" "Unable to detect timezone automatically"
+  ARCHUP_TIMEZONE=$(gum input --placeholder "Enter timezone (e.g., America/New_York)" \
+    --prompt "Timezone: " \
+    --padding "0 0 0 $PADDING_LEFT")
+fi
 
 if [ -z "$ARCHUP_TIMEZONE" ]; then
   ARCHUP_TIMEZONE="UTC"
