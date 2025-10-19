@@ -3,13 +3,14 @@
 
 # Core System
 base
-linux
 linux-firmware
 btrfs-progs
 
-# Microcode (one will be selected based on CPU detection)
-# intel-ucode
-# amd-ucode
+# Kernel (selected dynamically by kernel.sh)
+# linux / linux-lts / linux-zen
+
+# Microcode (selected dynamically based on CPU detection)
+# intel-ucode / amd-ucode
 
 # Bootloader
 limine

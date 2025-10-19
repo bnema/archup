@@ -27,6 +27,12 @@ else
   KERNEL_PARAMS="root=UUID=$ROOT_UUID rootflags=subvol=@ rw"
 fi
 
+# Add AMD-specific kernel parameters if configured
+if [ -n "$ARCHUP_AMD_KERNEL_PARAMS" ]; then
+  KERNEL_PARAMS="$KERNEL_PARAMS $ARCHUP_AMD_KERNEL_PARAMS"
+  echo "Added AMD kernel params: $ARCHUP_AMD_KERNEL_PARAMS" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+fi
+
 # Install Limine to the disk (UEFI)
 arch-chroot /mnt limine bios-install "$ARCHUP_DISK"
 

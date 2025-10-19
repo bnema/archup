@@ -8,6 +8,7 @@
 ✅ **Phase 1: Barebone Installer - Basic - COMPLETE**
 ✅ **Phase 2: Add btrfs + LUKS Encryption - COMPLETE**
 ✅ **Phase 3: Limine Bootloader - COMPLETE**
+✅ **Phase 4: Kernel Selection + Microcode - COMPLETE**
 
 ### Completed
 - ✅ Project structure created
@@ -25,6 +26,9 @@
 - ✅ btrfs filesystem with subvolumes (@ for root, @home for home)
 - ✅ LUKS encryption with Argon2id (optional, 2000ms iteration)
 - ✅ Encrypted boot support (mkinitcpio hooks)
+- ✅ Kernel selection (linux, linux-lts, linux-zen)
+- ✅ Auto-detected CPU microcode (intel-ucode or amd-ucode)
+- ✅ AMD P-State driver selection (active/guided/passive)
 
 ### Project Structure
 ```
@@ -129,13 +133,16 @@ sudo ./install.sh
 **What the installer does:**
 1. Validates system (vanilla Arch ISO, UEFI, x86_64)
 2. Asks for encryption preference (optional LUKS with Argon2id)
-3. Selects installation disk (auto-partitions with GPT)
-4. Formats partitions (FAT32 EFI + btrfs root with optional LUKS)
-5. Creates btrfs subvolumes (@ for root, @home for home)
-6. Installs ~15 base packages with pacstrap (+ cryptsetup if encrypted)
-7. Configures system (timezone, locale, hostname, user)
-8. Installs Limine bootloader (with encryption support if enabled)
-9. Creates bootable minimal Arch system with btrfs
+3. Asks for kernel choice (linux, linux-lts, or linux-zen)
+4. Auto-detects CPU and selects microcode (Intel/AMD)
+5. For AMD: Asks for P-State driver mode (active/guided/passive)
+6. Selects installation disk (auto-partitions with GPT)
+7. Formats partitions (FAT32 EFI + btrfs root with optional LUKS)
+8. Creates btrfs subvolumes (@ for root, @home for home)
+9. Installs base packages with pacstrap (kernel + microcode + cryptsetup if encrypted)
+10. Configures system (timezone, locale, hostname, user)
+11. Installs Limine bootloader (with encryption and AMD tuning if enabled)
+12. Creates bootable minimal Arch system with btrfs
 
 ## Environment Variables
 
@@ -145,12 +152,11 @@ sudo ./install.sh
 
 ## Next Steps
 
-**Phase 4: Kernel Selection + Microcode** (Week 3)
-- [ ] Let user choose kernel (linux, linux-lts, linux-zen)
-- [ ] Auto-detect CPU (Intel/AMD)
-- [ ] Auto-install appropriate microcode (intel-ucode/amd-ucode)
-- [ ] For AMD: Add pstate and governor selection
-- [ ] Test all kernels boot successfully
+**Phase 5: Repository Setup (AUR + Chaotic)** (Week 3-4)
+- [ ] Ask user to enable AUR support (install yay)
+- [ ] Ask user to enable Chaotic-AUR repository
+- [ ] Test yay installation from AUR
+- [ ] Test Chaotic-AUR package installation
 
 ## Reference
 
