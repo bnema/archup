@@ -36,15 +36,16 @@ fi
 # Install Limine to the disk (BIOS - optional, will fail on UEFI-only systems)
 arch-chroot /mnt limine bios-install "$ARCHUP_DISK" >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1 || true
 
-# Create Limine configuration directory
+# Create Limine configuration directory (Limine searches in /EFI/limine/)
 mkdir -p /mnt/boot/EFI/BOOT
+mkdir -p /mnt/boot/EFI/limine
 
 # Create Limine configuration with proper syntax
-cat > /mnt/boot/EFI/BOOT/limine.conf <<EOF
+cat > /mnt/boot/EFI/limine/limine.conf <<EOF
 # ArchUp - Limine bootloader configuration
 # Docs: https://github.com/limine-bootloader/limine/blob/trunk/CONFIG.md
 
-timeout: 5
+timeout: 0
 default_entry: 0
 interface_branding: ArchUp
 interface_branding_colour: 6
@@ -53,17 +54,17 @@ quiet: yes
 
 # Arch Linux
 :Arch Linux
-protocol: linux
-kernel_path: boot():/vmlinuz-linux
-module_path: boot():/initramfs-linux.img
-cmdline: $KERNEL_PARAMS
+    protocol: linux
+    kernel_path: boot():/vmlinuz-linux
+    module_path: boot():/initramfs-linux.img
+    cmdline: $KERNEL_PARAMS
 
 # Arch Linux (fallback)
 :Arch Linux (fallback)
-protocol: linux
-kernel_path: boot():/vmlinuz-linux
-module_path: boot():/initramfs-linux-fallback.img
-cmdline: $KERNEL_PARAMS
+    protocol: linux
+    kernel_path: boot():/vmlinuz-linux
+    module_path: boot():/initramfs-linux-fallback.img
+    cmdline: $KERNEL_PARAMS
 EOF
 
 # Copy Limine EFI bootloader
