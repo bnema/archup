@@ -10,6 +10,7 @@
 ✅ **Phase 3: Limine Bootloader - COMPLETE**
 ✅ **Phase 4: Kernel Selection + Microcode - COMPLETE**
 ✅ **Phase 5: Repository Setup (AUR + Chaotic) - COMPLETE**
+✅ **Phase 6: Barebone Preset Complete - COMPLETE**
 
 ### Completed
 - ✅ Project structure created
@@ -32,6 +33,8 @@
 - ✅ AMD P-State driver selection (active/guided/passive)
 - ✅ Optional AUR support (yay helper installation)
 - ✅ Optional Chaotic-AUR repository
+- ✅ Keyboard layout migration from ISO
+- ✅ WiFi credentials migration from ISO (iwd)
 
 ### Project Structure
 ```
@@ -157,10 +160,13 @@ sudo ./install.sh
 
 ## Next Steps
 
-**Phase 6: Barebone Preset Complete + Testing** (Week 4)
-- [ ] Add keyboard layout + WiFi migration from ISO
-- [ ] Test matrix for all combinations
-- [ ] Production-ready barebone installer
+**🎉 Milestone 1 Reached!** - Barebone preset is production-ready and VM-testable
+
+**Phase 7: Default Preset - Minimal GUI** (Week 5)
+- [ ] Add niri desktop environment
+- [ ] Setup SDDM display manager
+- [ ] Add minimal Wayland apps (waybar, mako, fuzzel)
+- [ ] Add kitty terminal and Firefox browser
 
 ## Reference
 

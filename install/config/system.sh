@@ -26,6 +26,13 @@ echo "LANG=en_US.UTF-8" > /mnt/etc/locale.conf
 
 gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "✓ Locale set to: en_US.UTF-8"
 
+# Set console keyboard layout (detected from ISO)
+if [ -n "$ARCHUP_KEYMAP" ]; then
+  echo "KEYMAP=$ARCHUP_KEYMAP" > /mnt/etc/vconsole.conf
+  gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "✓ Console keymap set to: $ARCHUP_KEYMAP"
+  echo "Console keymap: $ARCHUP_KEYMAP" | tee -a "$ARCHUP_INSTALL_LOG_FILE"
+fi
+
 # Ask for hostname
 ARCHUP_HOSTNAME=$(gum input --placeholder "Enter hostname" \
   --prompt "Hostname: " \
