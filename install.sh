@@ -156,5 +156,13 @@ source "$ARCHUP_INSTALL/post-install/all.sh"
 stop_install_log
 
 gum style --foreground 2 --padding "1 0 1 $PADDING_LEFT" "ArchUp installation complete!"
-gum style --padding "0 0 0 $PADDING_LEFT" "You can now reboot into your new Arch Linux system."
 echo
+
+CHOICE=$(gum choose --header "What would you like to do?" --header.padding "0 0 0 $PADDING_LEFT" "Reboot" "Close")
+
+if [ "$CHOICE" = "Reboot" ]; then
+  gum style --padding "0 0 1 $PADDING_LEFT" "Rebooting system..."
+  reboot
+else
+  gum style --padding "0 0 1 $PADDING_LEFT" "Installation complete. You can manually reboot when ready."
+fi
