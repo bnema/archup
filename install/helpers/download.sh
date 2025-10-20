@@ -58,7 +58,7 @@ download_archup_files() {
 
   # Post-install
   download_section "Downloading post-install scripts..." "post-install" \
-    all.sh boot-logo.sh plymouth.sh snapper.sh post-boot-setup.sh hooks.sh verify.sh unmount.sh
+    all.sh boot-logo.sh plymouth.sh snapper.sh post-boot-setup.sh hooks.sh shell-config.sh verify.sh unmount.sh
 
   # Post-boot
   download_section "Downloading post-boot scripts..." "post-boot" \
