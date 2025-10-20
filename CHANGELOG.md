@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - **Curl-pipe installation**: Fixed curl-based one-liner installation by auto-detecting piped input, re-executing with TTY for interactive prompts, and running bootstrap before downloads
 - **Cleanup flag**: Fixed --cleanup flag to run after helper files are downloaded
+- **Verification script**: Disabled ERR trap during verification to properly show all failures and prompt user, use dynamic kernel name instead of hardcoded linux, made fallback initramfs optional
 
 ## [0.1.0] - 2025-10-21
 

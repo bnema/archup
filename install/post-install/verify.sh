@@ -1,6 +1,10 @@
 #!/bin/bash
 # Post-install verification: Ensure everything is configured correctly
 
+# Disable exit-on-error and ERR trap for this script since we handle failures gracefully
+set +e
+trap - ERR
+
 #######################################
 # Description: Verify installation components
 # Globals:
@@ -55,9 +59,18 @@ verify_dir() {
     return 1
   fi
 }
-verify_file "/boot/vmlinuz-linux" "Kernel"
-verify_file "/boot/initramfs-linux.img" "Initramfs"
-verify_file "/boot/initramfs-linux-fallback.img" "Fallback initramfs"
+# Use the selected kernel name from config
+KERNEL_NAME="${ARCHUP_KERNEL:-linux}"
+
+verify_file "/boot/vmlinuz-${KERNEL_NAME}" "Kernel"
+verify_file "/boot/initramfs-${KERNEL_NAME}.img" "Initramfs"
+
+# Fallback initramfs is optional
+if [ -f "/mnt/boot/initramfs-${KERNEL_NAME}-fallback.img" ]; then
+  echo "[OK] Fallback initramfs: /boot/initramfs-${KERNEL_NAME}-fallback.img" >> "$ARCHUP_INSTALL_LOG_FILE"
+else
+  echo "[WARN] Fallback initramfs not generated (optional)" >> "$ARCHUP_INSTALL_LOG_FILE"
+fi
 
 verify_file "/boot/EFI/limine/BOOTX64.EFI" "Limine bootloader"
 verify_file "/boot/EFI/limine/limine.conf" "Limine configuration"
@@ -128,3 +141,7 @@ else
   gum style --foreground 3 --padding "0 0 1 $PADDING_LEFT" "[WARN] Continuing despite verification errors"
   echo "User chose to continue despite verification errors" >> "$ARCHUP_INSTALL_LOG_FILE"
 fi
+
+# Re-enable exit-on-error and ERR trap for subsequent scripts
+set -e
+trap 'catch_errors' ERR
