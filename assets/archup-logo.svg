@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 240" width="1000" height="240">
+  <defs>
+    <style>
+      text {
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 32px;
+        fill: #1793D1;
+        white-space: pre;
+        text-anchor: middle;
+      }
+    </style>
+  </defs>
+  <text x="500" y="40">░█████╗░██████╗░░█████╗░██╗░░██╗██╗░░░██╗██████╗░</text>
+  <text x="500" y="80">██╔══██╗██╔══██╗██╔══██╗██║░░██║██║░░░██║██╔══██╗</text>
+  <text x="500" y="120">███████║██████╔╝██║░░╚═╝███████║██║░░░██║██████╔╝</text>
+  <text x="500" y="160">██╔══██║██╔══██╗██║░░██╗██╔══██║██║░░░██║██╔═══╝░</text>
+  <text x="500" y="200">██║░░██║██║░░██║╚█████╔╝██║░░██║╚██████╔╝██║░░░░░</text>
+  <text x="500" y="240">╚═╝░░╚═╝╚═╝░░╚═╝░╚════╝░╚═╝░░╚═╝░╚═════╝░╚═╝░░░░░</text>
+</svg>

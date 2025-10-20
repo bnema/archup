@@ -1,20 +1,22 @@
-# ArchUp
+<p align="center">
+  <img src="assets/archup-logo.svg" alt="ArchUp Logo" width="600">
+</p>
 
 ## What Is ArchUp?
 
-ArchUp is a minimal, slightly opinionated Arch Linux installer focused on Wayland window managers. It provides a barebone base system with smart defaults and optional layers to build your ideal desktop environment.
+ArchUp is a minimal, slightly opinionated Arch Linux installer focused on Wayland window managers. It provides a barebone base system with sane defaults and an optional CLI to build your ideal desktop environment.
 
-- **Barebone first** - Install just the essentials
-- **User choice** - Every layer is optional; you decide what to install when
+- **Barebone first** - Install just the essentials and stop here if you want
+- **User choice** - Every layer is optional; you decide what to install from a supported list of apps
 - **Lightweight focused** - Only Wayland compositors (Niri, Hyprland, Sway, River)
 - **Smart foundation** - Critical desktop infrastructure pre-configured (graphics, audio, Wayland, BT, printing)
 - **Hardware detection** - Auto-detects GPU and installs correct drivers
-- **Sane defaults** - One coherent dark/light theme across all apps (customizable later)
+- **Coherent UI** - One dark/light theme across all apps (customizable later)
 - **Just works** - All infrastructure configured; focus on your workflow, not setup
 
 ## What ArchUp Is NOT
 
-- **Not a desktop environment** - We don't package KDE, GNOME, or other bloated DEs
+- **Not a desktop environment** - We won't support KDE, GNOME, or other full-fledged DEs
 - **Not a distro** - It's an installer, not a custom Arch spin
 - **Not bloated** - We provide the minimum to get you started
 - **Not an Omarchy copy** - We respect Omarchy's architecture but keep it minimal
