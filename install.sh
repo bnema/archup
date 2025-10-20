@@ -8,6 +8,7 @@ set -eo pipefail
 export ARCHUP_PATH="${ARCHUP_PATH:-$HOME/.local/share/archup}"
 export ARCHUP_INSTALL="$ARCHUP_PATH/install"
 export ARCHUP_INSTALL_LOG_FILE="/var/log/archup-install.log"
+export ARCHUP_INSTALL_CONFIG="/var/log/archup-install.conf"
 export ARCHUP_REPO_URL="${ARCHUP_REPO_URL:-https://github.com/bnema/archup}"
 export ARCHUP_RAW_URL="${ARCHUP_RAW_URL:-https://raw.githubusercontent.com/bnema/archup/dev}"
 
@@ -51,7 +52,7 @@ if [ ! -d "$ARCHUP_INSTALL" ]; then
   curl -sL "$GITHUB_RAW/logo.txt" -o "$ARCHUP_PATH/logo.txt"
 
   echo "Downloading helpers..."
-  for file in all.sh logging.sh errors.sh presentation.sh chroot.sh cleanup.sh; do
+  for file in all.sh config.sh logging.sh errors.sh presentation.sh chroot.sh cleanup.sh; do
     curl -sL "$GITHUB_RAW/install/helpers/$file" -o "$ARCHUP_INSTALL/helpers/$file"
   done
 

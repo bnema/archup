@@ -22,6 +22,7 @@ if [ -z "$DETECTED_KEYMAP" ] || [ "$DETECTED_KEYMAP" = "(unset)" ]; then
 fi
 
 export ARCHUP_KEYMAP="$DETECTED_KEYMAP"
+config_set "ARCHUP_KEYMAP" "$ARCHUP_KEYMAP"
 gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "[OK] Keyboard layout: $ARCHUP_KEYMAP"
 echo "Keyboard layout detected: $ARCHUP_KEYMAP" >> "$ARCHUP_INSTALL_LOG_FILE"
 
@@ -59,6 +60,10 @@ if [ "$HAS_ETHERNET" = false ] && command -v iwctl >/dev/null 2>&1; then
       export ARCHUP_WIFI_SSID="$WIFI_SSID"
       export ARCHUP_WIFI_DEVICE="$WIFI_DEVICE"
       export ARCHUP_WIFI_PASSPHRASE="$WIFI_PASSPHRASE"
+
+      config_set "ARCHUP_WIFI_SSID" "$WIFI_SSID"
+      config_set "ARCHUP_WIFI_DEVICE" "$WIFI_DEVICE"
+      config_set "ARCHUP_WIFI_PASSPHRASE" "$WIFI_PASSPHRASE"
 
       gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "[OK] WiFi network: $WIFI_SSID (device: $WIFI_DEVICE)"
       echo "WiFi detected: SSID=$WIFI_SSID, device=$WIFI_DEVICE" >> "$ARCHUP_INSTALL_LOG_FILE"

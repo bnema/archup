@@ -19,25 +19,15 @@ gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Bootloader: Limine"
 gum style --padding "0 0 1 $PADDING_LEFT" "ArchUp uses Limine for superior btrfs and snapshot support"
 
 export ARCHUP_BOOTLOADER="limine"
+config_set "ARCHUP_BOOTLOADER" "limine"
 echo "Bootloader: limine" >> "$ARCHUP_INSTALL_LOG_FILE"
 
-# Ask for encryption preference (Phase 2)
+# Ask for user credentials first (will be used for user account, root, and encryption)
 echo
-gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Disk Encryption"
-gum style --padding "0 0 0 $PADDING_LEFT" "LUKS encryption protects your data with Argon2id (2000ms iteration)"
-echo
-
-if gum confirm "Enable full-disk encryption?" --padding "0 0 1 $PADDING_LEFT"; then
-  export ARCHUP_ENCRYPTION="enabled"
-  echo "Encryption: enabled" >> "$ARCHUP_INSTALL_LOG_FILE"
-else
-  export ARCHUP_ENCRYPTION="disabled"
-  echo "Encryption: disabled" >> "$ARCHUP_INSTALL_LOG_FILE"
-fi
-
-# Ask for user credentials (will be used for user account, root, and encryption)
-echo
-gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "User Account"
+gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "User Account & Security"
+gum style --padding "0 0 0 $PADDING_LEFT" "Create account with sudo privileges. This password will be used for:"
+gum style --padding "0 0 0 $PADDING_LEFT" "  • User login with sudo access"
+gum style --padding "0 0 0 $PADDING_LEFT" "  • Disk encryption (LUKS) if enabled"
 echo
 
 # Ask for username
@@ -70,11 +60,28 @@ done
 export ARCHUP_USERNAME
 export ARCHUP_PASSWORD
 
+# Save to config file (passwords are never logged)
+config_set "ARCHUP_USERNAME" "$ARCHUP_USERNAME"
+config_set "ARCHUP_PASSWORD" "$ARCHUP_PASSWORD"
+
 gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "[OK] User: $ARCHUP_USERNAME"
 echo "User: $ARCHUP_USERNAME" >> "$ARCHUP_INSTALL_LOG_FILE"
 
-if [ "$ARCHUP_ENCRYPTION" = "enabled" ]; then
-  gum style --foreground 3 --padding "0 0 1 $PADDING_LEFT" "Note: This password will also be used for disk encryption"
+# Ask for encryption preference
+echo
+gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Disk Encryption"
+gum style --padding "0 0 0 $PADDING_LEFT" "LUKS encryption protects your data with Argon2id (2000ms iteration)"
+echo
+
+if gum confirm "Enable full-disk encryption?" --padding "0 0 1 $PADDING_LEFT"; then
+  export ARCHUP_ENCRYPTION="enabled"
+  config_set "ARCHUP_ENCRYPTION" "enabled"
+  echo "Encryption: enabled" >> "$ARCHUP_INSTALL_LOG_FILE"
+  gum style --foreground 3 --padding "0 0 1 $PADDING_LEFT" "Note: Using account password for disk encryption"
+else
+  export ARCHUP_ENCRYPTION="disabled"
+  config_set "ARCHUP_ENCRYPTION" "disabled"
+  echo "Encryption: disabled" >> "$ARCHUP_INSTALL_LOG_FILE"
 fi
 
 gum style --foreground 2 --padding "1 0 1 $PADDING_LEFT" "[OK] Configuration saved"

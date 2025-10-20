@@ -14,22 +14,32 @@ echo "Formatted $ARCHUP_EFI_PART as FAT32" >> "$ARCHUP_INSTALL_LOG_FILE"
 if [ "$ARCHUP_ENCRYPTION" = "enabled" ]; then
   gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Setting up LUKS encryption..."
 
+  # Read password from config file (NOTE: Never log the actual password!)
+  ARCHUP_PASSWORD=$(config_get "ARCHUP_PASSWORD")
+
+  if [ -z "$ARCHUP_PASSWORD" ]; then
+    gum style --foreground 1 --padding "1 0 1 $PADDING_LEFT" "ERROR: Encryption password not set!"
+    echo "ERROR: Encryption password is empty during LUKS setup" >> "$ARCHUP_INSTALL_LOG_FILE"
+    exit 1
+  fi
+
   # Wipe any existing signatures on root partition to avoid conflicts
   wipefs -af "$ARCHUP_ROOT_PART" >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 
   # Setup LUKS with Argon2id and 2000ms iteration time (using user password)
-  echo "$ARCHUP_PASSWORD" | cryptsetup luksFormat \
+  cryptsetup luksFormat \
     --type luks2 \
     --batch-mode \
     --pbkdf argon2id \
     --iter-time 2000 \
     --label ARCHUP_LUKS \
-    "$ARCHUP_ROOT_PART" >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
+    --stdin \
+    "$ARCHUP_ROOT_PART" <<< "$ARCHUP_PASSWORD" >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 
   echo "LUKS container created" >> "$ARCHUP_INSTALL_LOG_FILE"
 
   # Open the encrypted container
-  echo "$ARCHUP_PASSWORD" | cryptsetup open "$ARCHUP_ROOT_PART" cryptroot >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
+  cryptsetup open --key-file=- "$ARCHUP_ROOT_PART" cryptroot <<< "$ARCHUP_PASSWORD" >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 
   echo "LUKS container opened" >> "$ARCHUP_INSTALL_LOG_FILE"
 
