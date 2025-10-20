@@ -95,13 +95,13 @@ if [ "$CPU_TYPE" = "AMD" ]; then
   for mode in "${AVAILABLE_MODES[@]}"; do
     case "$mode" in
       active)
-        MODE_CHOICES+=("active - CPPC (best performance, desktop/gaming)")
+        MODE_CHOICES+=("active - Best performance (recommended for desktop/gaming)")
         ;;
       guided)
-        MODE_CHOICES+=("guided - Balanced (laptop/hybrid use)")
+        MODE_CHOICES+=("guided - Balanced performance and efficiency (recommended for laptops)")
         ;;
       passive)
-        MODE_CHOICES+=("passive - Acpi-cpufreq replacement (compatibility)")
+        MODE_CHOICES+=("passive - Maximum compatibility (older CPUs)")
         ;;
     esac
   done
