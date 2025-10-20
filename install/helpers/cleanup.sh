@@ -152,7 +152,20 @@ cleanup_processes() {
 }
 
 # ============================================================
-# PHASE 5: FILESYSTEM SYNC - Always safe to do
+# PHASE 5: REMOVE CONFIG FILE - Always safe to do
+# ============================================================
+
+cleanup_config() {
+  log_cleanup "Removing installation config file..."
+
+  if [ -f "$ARCHUP_INSTALL_CONFIG" ]; then
+    rm -f "$ARCHUP_INSTALL_CONFIG"
+    log_success "Config file removed"
+  fi
+}
+
+# ============================================================
+# PHASE 6: FILESYSTEM SYNC - Always safe to do
 # ============================================================
 
 cleanup_sync() {
@@ -239,6 +252,7 @@ case "$CLEANUP_MODE" in
     cleanup_encryption
     cleanup_swap
     cleanup_processes
+    cleanup_config
     cleanup_sync
     log_success "=== Default cleanup complete ==="
     ;;
@@ -250,6 +264,7 @@ case "$CLEANUP_MODE" in
     cleanup_swap
     cleanup_processes
     cleanup_full
+    cleanup_config
     cleanup_sync
     log_success "=== Full cleanup complete ==="
     ;;
