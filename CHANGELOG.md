@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - **README**: Added ArchUp logo and refined project description for clarity
 - **Kernel selection**: Simplified AMD P-State mode descriptions for better user clarity
+- **User interrupts**: Ctrl+C now shows clean cancellation message instead of error screen
 
 ### Fixed
 - **Limine bootloader**: Fixed kernel panic with non-default kernels (cachyos, zen, lts)

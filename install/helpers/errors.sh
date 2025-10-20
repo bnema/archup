@@ -80,6 +80,13 @@ catch_errors() {
   local failed_command="${BASH_COMMAND}"
   local failed_script="${CURRENT_SCRIPT:-}"
 
+  # Exit code 130 means user pressed Ctrl+C - handle gracefully
+  if [[ $exit_code -eq 130 ]]; then
+    ERROR_HANDLING=false
+    interrupt_handler
+    return
+  fi
+
   # Log error to file IMMEDIATELY with direct file write
   # This must happen before any stdout/stderr restoration
   {
