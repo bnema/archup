@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- **Kernel selection**: Simplified AMD P-State mode descriptions for better user clarity
+
 ### Fixed
 - **Curl-pipe installation**: Fixed curl-based one-liner installation by auto-detecting piped input, re-executing with TTY for interactive prompts, and running bootstrap before downloads
 - **Cleanup flag**: Fixed --cleanup flag to run after helper files are downloaded
