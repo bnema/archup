@@ -33,7 +33,7 @@ if [ "$ARCHUP_ENCRYPTION" = "enabled" ]; then
     --pbkdf argon2id \
     --iter-time 2000 \
     --label ARCHUP_LUKS \
-    --stdin \
+    --key-file - \
     "$ARCHUP_ROOT_PART" <<< "$ARCHUP_PASSWORD" >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 
   echo "LUKS container created" >> "$ARCHUP_INSTALL_LOG_FILE"

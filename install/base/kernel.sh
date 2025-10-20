@@ -6,13 +6,14 @@ gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Kernel Selection"
 
 # Ask user to choose kernel
 echo
-gum style --padding "0 0 0 $PADDING_LEFT" "Choose your kernel:"
-gum style --padding "0 0 0 $PADDING_LEFT" "  • linux      - Stable mainline kernel (recommended)"
-gum style --padding "0 0 0 $PADDING_LEFT" "  • linux-lts  - Long-term support (maximum stability)"
-gum style --padding "0 0 0 $PADDING_LEFT" "  • linux-zen  - Performance-optimized (gaming/desktop)"
-echo
+KERNEL_CHOICE=$(gum choose --padding "0 0 1 $PADDING_LEFT" \
+  "linux - Stable mainline kernel (recommended)" \
+  "linux-lts - Long-term support (maximum stability)" \
+  "linux-zen - Performance-optimized for general use" \
+  "linux-cachyos - Gaming-optimized")
 
-KERNEL_CHOICE=$(gum choose --padding "0 0 1 $PADDING_LEFT" "linux" "linux-lts" "linux-zen")
+# Extract just the kernel name (before the dash)
+KERNEL_CHOICE=$(echo "$KERNEL_CHOICE" | awk '{print $1}')
 export ARCHUP_KERNEL="$KERNEL_CHOICE"
 
 gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "[OK] Selected: $ARCHUP_KERNEL"
@@ -89,27 +90,29 @@ if [ "$CPU_TYPE" = "AMD" ]; then
   fi
 
   echo
-  gum style --padding "0 0 0 $PADDING_LEFT" "AMD P-State modes:"
-  # Only show descriptions for available modes
+  # Build choice options with descriptions
+  declare -a MODE_CHOICES
   for mode in "${AVAILABLE_MODES[@]}"; do
     case "$mode" in
       active)
-        gum style --padding "0 0 0 $PADDING_LEFT" "  • active  - CPPC (best performance, desktop/gaming)"
+        MODE_CHOICES+=("active - CPPC (best performance, desktop/gaming)")
         ;;
       guided)
-        gum style --padding "0 0 0 $PADDING_LEFT" "  • guided  - Balanced (laptop/hybrid use)"
+        MODE_CHOICES+=("guided - Balanced (laptop/hybrid use)")
         ;;
       passive)
-        gum style --padding "0 0 0 $PADDING_LEFT" "  • passive - Acpi-cpufreq replacement (compatibility)"
+        MODE_CHOICES+=("passive - Acpi-cpufreq replacement (compatibility)")
         ;;
     esac
   done
   echo
-  gum style --foreground 3 --padding "0 0 0 $PADDING_LEFT" "Note: CPU governors will be available after reboot"
-  gum style --padding "0 0 1 $PADDING_LEFT" "      and depend on the P-State mode selected"
+  gum style --foreground 3 --padding "0 0 1 $PADDING_LEFT" "Note: CPU governors will be available after reboot and depend on the P-State mode selected"
   echo
 
-  AMD_PSTATE=$(gum choose --padding "0 0 1 $PADDING_LEFT" "${AVAILABLE_MODES[@]}")
+  AMD_PSTATE=$(gum choose --padding "0 0 1 $PADDING_LEFT" "${MODE_CHOICES[@]}")
+
+  # Extract just the mode name (before the dash)
+  AMD_PSTATE=$(echo "$AMD_PSTATE" | awk '{print $1}')
   export ARCHUP_AMD_PSTATE="$AMD_PSTATE"
   gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "[OK] P-State: $AMD_PSTATE"
   echo "AMD P-State: $AMD_PSTATE (kernel parameter)" >> "$ARCHUP_INSTALL_LOG_FILE"
