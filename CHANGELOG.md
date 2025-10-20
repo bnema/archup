@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - **Limine bootloader**: Fixed kernel panic with non-default kernels (cachyos, zen, lts)
 - **AMD P-State selection**: Auto-select when only one mode available
+- **Bootloader message**: Removed unnecessary Limine message since no choice exists
 - **Curl-pipe installation**: Fixed curl-based one-liner installation by auto-detecting piped input, re-executing with TTY for interactive prompts, and running bootstrap before downloads
 - **Cleanup flag**: Fixed --cleanup flag to run after helper files are downloaded
 - **Verification script**: Disabled ERR trap during verification to properly show all failures and prompt user, use dynamic kernel name instead of hardcoded linux, made fallback initramfs optional

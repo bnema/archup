@@ -78,8 +78,8 @@ if [ "$CPU_TYPE" = "AMD" ]; then
     fi
   fi
 
-  # Remove duplicates and sort
-  mapfile -t AVAILABLE_MODES < <(printf '%s\n' "${AVAILABLE_MODES[@]}" | sort -u)
+  # Remove duplicates and sort, filter out empty strings
+  mapfile -t AVAILABLE_MODES < <(printf '%s\n' "${AVAILABLE_MODES[@]}" | grep -v '^$' | sort -u)
 
   # Display detected modes
   if [ ${#AVAILABLE_MODES[@]} -gt 0 ]; then
@@ -90,7 +90,7 @@ if [ "$CPU_TYPE" = "AMD" ]; then
   fi
 
   # Auto-select if only one mode available, otherwise prompt user
-  if [ ${#AVAILABLE_MODES[@]} -eq 1 ]; then
+  if [[ ${#AVAILABLE_MODES[@]} -eq 1 ]]; then
     AMD_PSTATE="${AVAILABLE_MODES[0]}"
     gum style --foreground 2 --padding "1 0 0 $PADDING_LEFT" "[OK] Auto-selected: $AMD_PSTATE (only available mode)"
   else
