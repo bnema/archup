@@ -23,12 +23,7 @@ export ARCHUP_INSTALL_CONFIG="/var/log/archup-install.conf"
 export ARCHUP_REPO_URL="${ARCHUP_REPO_URL:-https://github.com/bnema/archup}"
 export ARCHUP_RAW_URL="${ARCHUP_RAW_URL:-https://raw.githubusercontent.com/bnema/archup/dev}"
 
-# Handle command-line flags
-if [ "$1" = "--cleanup" ]; then
-  echo "Running cleanup before installation..."
-  source "$ARCHUP_INSTALL/helpers/cleanup.sh" default
-fi
-
+# Handle help flag early (doesn't need any files)
 if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
   cat << 'HELP'
 Usage: install.sh [OPTIONS]
@@ -70,6 +65,12 @@ fi
 
 # Source all helper utilities (now safe to use gum)
 source "$ARCHUP_INSTALL/helpers/all.sh"
+
+# Handle cleanup flag (after helpers are available)
+if [ "$1" = "--cleanup" ]; then
+  echo "Running cleanup before installation..."
+  source "$ARCHUP_INSTALL/helpers/cleanup.sh" default
+fi
 
 # Display logo
 clear_logo
