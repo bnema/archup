@@ -4,9 +4,20 @@
 
 set -eo pipefail
 
-# Export global paths
+# Export global paths first (needed for re-exec)
 export ARCHUP_PATH="${ARCHUP_PATH:-$HOME/.local/share/archup}"
 export ARCHUP_INSTALL="$ARCHUP_PATH/install"
+
+# If stdin is not a TTY (piped from curl), save and re-exec with TTY
+if [ ! -t 0 ]; then
+  # Save script to proper location
+  mkdir -p "$ARCHUP_PATH"
+  INSTALL_SCRIPT="$ARCHUP_PATH/install.sh"
+  cat > "$INSTALL_SCRIPT"
+  chmod +x "$INSTALL_SCRIPT"
+  # Re-exec with TTY connected
+  exec < /dev/tty "$INSTALL_SCRIPT" "$@"
+fi
 export ARCHUP_INSTALL_LOG_FILE="/var/log/archup-install.log"
 export ARCHUP_INSTALL_CONFIG="/var/log/archup-install.conf"
 export ARCHUP_REPO_URL="${ARCHUP_REPO_URL:-https://github.com/bnema/archup}"
@@ -36,20 +47,26 @@ HELP
   exit 0
 fi
 
-# Download installer files if not present (for curl-based installation)
+# Bootstrap FIRST: Install gum and jq (required for download script)
 if [ ! -d "$ARCHUP_INSTALL" ]; then
-  # Download the download helper first
+  # First time running from curl, need to download bootstrap
+  mkdir -p "$ARCHUP_INSTALL"
+  curl -sL "$ARCHUP_RAW_URL/install/bootstrap.sh" -o "$ARCHUP_INSTALL/bootstrap.sh"
+  chmod +x "$ARCHUP_INSTALL/bootstrap.sh"
+fi
+source "$ARCHUP_INSTALL/bootstrap.sh"
+
+# Download installer files if not present (for curl-based installation)
+if [ ! -f "$ARCHUP_INSTALL/helpers/all.sh" ]; then
+  # Download the download helper
   mkdir -p "$ARCHUP_INSTALL/helpers"
   curl -sL "$ARCHUP_RAW_URL/install/helpers/download.sh" -o "$ARCHUP_INSTALL/helpers/download.sh"
   chmod +x "$ARCHUP_INSTALL/helpers/download.sh"
 
-  # Run the download script
+  # Run the download script (gum is now available)
   source "$ARCHUP_INSTALL/helpers/download.sh"
   download_archup_files
 fi
-
-# Bootstrap: Install gum and essential dependencies (plain text, no gum usage)
-source "$ARCHUP_INSTALL/bootstrap.sh"
 
 # Source all helper utilities (now safe to use gum)
 source "$ARCHUP_INSTALL/helpers/all.sh"
