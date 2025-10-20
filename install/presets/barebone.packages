@@ -16,6 +16,8 @@ snap-pac
 
 # Bootloader
 limine
+plymouth
+ttf-fira-sans
 efibootmgr
 
 # Networking
