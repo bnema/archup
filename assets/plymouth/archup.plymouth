@@ -1,0 +1,11 @@
+[Plymouth Theme]
+Name=ArchUp
+Description=ArchUp splash screen.
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/archup
+ScriptFile=/usr/share/plymouth/themes/archup/archup.script
+ConsoleLogBackgroundColor=0x1a1b26
+MonospaceFont=Fira Sans 11
+Font=Fira Sans 11
