@@ -1,0 +1,16 @@
+[Unit]
+Description=ArchUp First Boot Setup
+After=local-fs.target systemd-logind.service dbus.service
+ConditionPathExists=!/var/lib/archup-first-boot-complete
+
+[Service]
+Type=oneshot
+Environment="ARCHUP_EMAIL=__ARCHUP_EMAIL__"
+Environment="ARCHUP_USERNAME=__ARCHUP_USERNAME__"
+ExecStart=/usr/local/share/archup/post-boot/all.sh
+ExecStartPost=/usr/bin/touch /var/lib/archup-first-boot-complete
+StandardOutput=journal+console
+StandardError=journal+console
+
+[Install]
+WantedBy=multi-user.target
