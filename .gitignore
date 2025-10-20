@@ -13,3 +13,6 @@
 pkg/
 src/
 CLAUDE.md
+
+# Local VM testing script (developer-specific configuration)
+sync-vm.sh
