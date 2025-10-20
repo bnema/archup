@@ -105,9 +105,6 @@ if [ "$CPU_TYPE" = "AMD" ]; then
         ;;
     esac
   done
-  echo
-  gum style --foreground 3 --padding "0 0 1 $PADDING_LEFT" "Note: CPU governors will be available after reboot and depend on the P-State mode selected"
-  echo
 
   AMD_PSTATE=$(gum choose --padding "0 0 1 $PADDING_LEFT" "${MODE_CHOICES[@]}")
 
