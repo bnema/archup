@@ -27,19 +27,20 @@ if [ "$ARCHUP_ENCRYPTION" = "enabled" ]; then
   wipefs -af "$ARCHUP_ROOT_PART" >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 
   # Setup LUKS with Argon2id and 2000ms iteration time (using user password)
-  cryptsetup luksFormat \
+  # Use printf to avoid trailing newline that <<< adds
+  printf '%s' "$ARCHUP_PASSWORD" | cryptsetup luksFormat \
     --type luks2 \
     --batch-mode \
     --pbkdf argon2id \
     --iter-time 2000 \
     --label ARCHUP_LUKS \
     --key-file - \
-    "$ARCHUP_ROOT_PART" <<< "$ARCHUP_PASSWORD" >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
+    "$ARCHUP_ROOT_PART" >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 
   echo "LUKS container created" >> "$ARCHUP_INSTALL_LOG_FILE"
 
   # Open the encrypted container
-  cryptsetup open --key-file=- "$ARCHUP_ROOT_PART" cryptroot <<< "$ARCHUP_PASSWORD" >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
+  printf '%s' "$ARCHUP_PASSWORD" | cryptsetup open --key-file=- "$ARCHUP_ROOT_PART" cryptroot >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 
   echo "LUKS container opened" >> "$ARCHUP_INSTALL_LOG_FILE"
 
