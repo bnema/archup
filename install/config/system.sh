@@ -14,14 +14,14 @@ if [ -z "$ARCHUP_TIMEZONE" ]; then
 fi
 
 # Set timezone
-arch-chroot /mnt ln -sf "/usr/share/zoneinfo/$ARCHUP_TIMEZONE" /etc/localtime
-arch-chroot /mnt hwclock --systohc
+arch-chroot /mnt ln -sf "/usr/share/zoneinfo/$ARCHUP_TIMEZONE" /etc/localtime >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
+arch-chroot /mnt hwclock --systohc >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 
 gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "[OK] Timezone set to: $ARCHUP_TIMEZONE"
 
 # Set locale to en_US.UTF-8
 echo "en_US.UTF-8 UTF-8" > /mnt/etc/locale.gen
-arch-chroot /mnt locale-gen
+arch-chroot /mnt locale-gen >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 echo "LANG=en_US.UTF-8" > /mnt/etc/locale.conf
 
 gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "[OK] Locale set to: en_US.UTF-8"

@@ -11,21 +11,21 @@ else
 fi
 
 # Mount @ subvolume as root with optimal btrfs options
-mount -o noatime,compress=zstd,subvol=@ "$MOUNT_DEVICE" /mnt
+mount -o noatime,compress=zstd,subvol=@ "$MOUNT_DEVICE" /mnt >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 
 echo "Mounted @ subvolume to /mnt" >> "$ARCHUP_INSTALL_LOG_FILE"
 
 # Create home directory
-mkdir -p /mnt/home
+mkdir -p /mnt/home >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 
 # Mount @home subvolume
-mount -o noatime,compress=zstd,subvol=@home "$MOUNT_DEVICE" /mnt/home
+mount -o noatime,compress=zstd,subvol=@home "$MOUNT_DEVICE" /mnt/home >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 
 echo "Mounted @home subvolume to /mnt/home" >> "$ARCHUP_INSTALL_LOG_FILE"
 
 # Create and mount EFI directory
-mkdir -p /mnt/boot
-mount "$ARCHUP_EFI_PART" /mnt/boot
+mkdir -p /mnt/boot >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
+mount "$ARCHUP_EFI_PART" /mnt/boot >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 
 echo "Mounted $ARCHUP_EFI_PART to /mnt/boot" >> "$ARCHUP_INSTALL_LOG_FILE"
 

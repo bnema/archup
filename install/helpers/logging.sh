@@ -1,5 +1,5 @@
 #!/bin/bash
-# Logging system for archup installer - fixes variable export issues
+# Logging system for ArchUp installer - fixes variable export issues
 # Uses background process for log display instead of exec redirection
 
 # Global variable for monitor background process
@@ -57,6 +57,9 @@ stop_log_output() {
     kill $monitor_pid 2>/dev/null || true
     wait $monitor_pid 2>/dev/null || true
     unset monitor_pid
+
+    # Clean up terminal state
+    printf "\033[?25h"  # Show cursor
   fi
 }
 
@@ -65,10 +68,9 @@ start_install_log() {
   chmod 666 "$ARCHUP_INSTALL_LOG_FILE"
 
   export ARCHUP_START_TIME=$(date '+%Y-%m-%d %H:%M:%S')
-  echo "=== archup Installation Started: $ARCHUP_START_TIME ===" >> "$ARCHUP_INSTALL_LOG_FILE"
+  echo "=== ArchUp Installation Started: $ARCHUP_START_TIME ===" >> "$ARCHUP_INSTALL_LOG_FILE"
 
-  # Start background log display (NO exec redirection!)
-  start_log_output
+  # Don't start log monitor here - run_logged will handle it dynamically
 }
 
 stop_install_log() {
@@ -78,7 +80,7 @@ stop_install_log() {
   if [[ -n ${ARCHUP_INSTALL_LOG_FILE:-} ]]; then
     ARCHUP_END_TIME=$(date '+%Y-%m-%d %H:%M:%S')
     echo "" >> "$ARCHUP_INSTALL_LOG_FILE"
-    echo "=== archup Installation Completed: $ARCHUP_END_TIME ===" >> "$ARCHUP_INSTALL_LOG_FILE"
+    echo "=== ArchUp Installation Completed: $ARCHUP_END_TIME ===" >> "$ARCHUP_INSTALL_LOG_FILE"
 
     if [ -n "$ARCHUP_START_TIME" ]; then
       ARCHUP_START_EPOCH=$(date -d "$ARCHUP_START_TIME" +%s)
@@ -101,6 +103,7 @@ run_logged() {
 
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting: $script" >> "$ARCHUP_INSTALL_LOG_FILE"
 
+  # Don't start/stop log monitor here - it runs continuously once started
   # Use bash -c to create a clean subshell and redirect output to log
   bash -c "source '$script'" </dev/null >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 

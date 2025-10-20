@@ -1,5 +1,5 @@
 #!/bin/bash
-# Presentation utilities for archup installer
+# Presentation utilities for ArchUp installer
 # Adapted from Omarchy presentation.sh
 # NOTE: Requires gum to be installed via bootstrap.sh first!
 

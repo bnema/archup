@@ -1,11 +1,11 @@
 #!/bin/bash
-# Preflight guards for archup installer
+# Preflight guards for ArchUp installer
 # Validates system requirements before installation
 
 abort() {
-  gum style --foreground 1 --padding "1 0 0 $PADDING_LEFT" "archup install requires: $1"
+  gum style --foreground 1 --padding "1 0 0 $PADDING_LEFT" "ArchUp install requires: $1"
   echo
-  echo "Preflight check failed: $1"
+  echo "Preflight check failed: $1" >> "$ARCHUP_INSTALL_LOG_FILE"
   gum confirm "Proceed anyway on your own accord and without assistance?" --padding "0 0 0 $PADDING_LEFT" || exit 1
 }
 

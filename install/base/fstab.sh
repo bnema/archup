@@ -8,4 +8,4 @@ genfstab -U /mnt >> /mnt/etc/fstab
 
 gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "[OK] fstab generated"
 
-echo "Generated /etc/fstab"
+echo "Generated /etc/fstab" >> "$ARCHUP_INSTALL_LOG_FILE"

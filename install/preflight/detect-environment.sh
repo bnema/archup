@@ -16,14 +16,14 @@ if [ -z "$DETECTED_KEYMAP" ] && [ -f /etc/vconsole.conf ]; then
   DETECTED_KEYMAP=$(grep "^KEYMAP=" /etc/vconsole.conf | cut -d'=' -f2)
 fi
 
-# Default to us if nothing detected
-if [ -z "$DETECTED_KEYMAP" ]; then
+# Default to us if nothing detected or if set to "(unset)"
+if [ -z "$DETECTED_KEYMAP" ] || [ "$DETECTED_KEYMAP" = "(unset)" ]; then
   DETECTED_KEYMAP="us"
 fi
 
 export ARCHUP_KEYMAP="$DETECTED_KEYMAP"
 gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "[OK] Keyboard layout: $ARCHUP_KEYMAP"
-echo "Keyboard layout detected: $ARCHUP_KEYMAP"
+echo "Keyboard layout detected: $ARCHUP_KEYMAP" >> "$ARCHUP_INSTALL_LOG_FILE"
 
 # Check for network connectivity
 # First check if we have an active ethernet connection
@@ -31,7 +31,7 @@ HAS_ETHERNET=false
 if ip link show | grep -E "^[0-9]+: (eth|enp|eno)" | grep -q "state UP"; then
   HAS_ETHERNET=true
   gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "[OK] Ethernet connection detected"
-  echo "Network: Ethernet connected"
+  echo "Network: Ethernet connected" >> "$ARCHUP_INSTALL_LOG_FILE"
 fi
 
 # Only check for WiFi if no ethernet connection is available
@@ -53,7 +53,7 @@ if [ "$HAS_ETHERNET" = false ] && command -v iwctl >/dev/null 2>&1; then
 
       if [ -f "$IWD_CONFIG" ]; then
         # Extract passphrase from iwd config (stored in [Security] section as PreSharedKey)
-        WIFI_PASSPHRASE=$(grep "^PreSharedKey=" "$IWD_CONFIG" | cut -d'=' -f2)
+        WIFI_PASSPHRASE=$(grep "^PreSharedKey=" "$IWD_CONFIG" | cut -d'=' -f2 || true)
       fi
 
       export ARCHUP_WIFI_SSID="$WIFI_SSID"
@@ -61,18 +61,18 @@ if [ "$HAS_ETHERNET" = false ] && command -v iwctl >/dev/null 2>&1; then
       export ARCHUP_WIFI_PASSPHRASE="$WIFI_PASSPHRASE"
 
       gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "[OK] WiFi network: $WIFI_SSID (device: $WIFI_DEVICE)"
-      echo "WiFi detected: SSID=$WIFI_SSID, device=$WIFI_DEVICE"
+      echo "WiFi detected: SSID=$WIFI_SSID, device=$WIFI_DEVICE" >> "$ARCHUP_INSTALL_LOG_FILE"
     else
       gum style --foreground 3 --padding "0 0 0 $PADDING_LEFT" "[SKIP] No active WiFi connection detected"
-      echo "WiFi: not connected"
+      echo "WiFi: not connected" >> "$ARCHUP_INSTALL_LOG_FILE"
     fi
   else
     gum style --foreground 3 --padding "0 0 0 $PADDING_LEFT" "[SKIP] No WiFi device found"
-    echo "WiFi: no device"
+    echo "WiFi: no device" >> "$ARCHUP_INSTALL_LOG_FILE"
   fi
 elif [ "$HAS_ETHERNET" = false ]; then
   gum style --foreground 3 --padding "0 0 0 $PADDING_LEFT" "[SKIP] iwd not available"
-  echo "WiFi: iwd not available"
+  echo "WiFi: iwd not available" >> "$ARCHUP_INSTALL_LOG_FILE"
 fi
 
 echo

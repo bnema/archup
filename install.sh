@@ -1,5 +1,5 @@
 #!/bin/bash
-# archup - Fast, minimal Arch Linux auto-installer
+# ArchUp - Fast, minimal Arch Linux auto-installer
 # Main installation orchestrator
 
 set -eo pipefail
@@ -13,7 +13,7 @@ export ARCHUP_RAW_URL="${ARCHUP_RAW_URL:-https://raw.githubusercontent.com/bnema
 
 # Download installer files if not present (for curl-based installation)
 if [ ! -d "$ARCHUP_INSTALL" ]; then
-  echo "=== Downloading archup installer files ==="
+  echo "=== Downloading ArchUp installer files ==="
   mkdir -p "$ARCHUP_INSTALL"
 
   # Download all required files using curl
@@ -81,13 +81,16 @@ clear_logo
 # PHASE 1: BAREBONE INSTALLER - BASIC
 # ============================================================
 
-# Preflight validation (interactive prompts BEFORE logging starts)
+# Initialize log file
+start_install_log
+
+# Preflight validation (interactive prompts, no log monitor running)
 source "$ARCHUP_INSTALL/preflight/all.sh"
 
-# Start log monitor AFTER all interactive prompts
+# Start log monitor ONCE - it will run continuously during all work phases
 gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Installing..."
 echo
-start_install_log
+start_log_output
 
 # Partitioning (auto GPT, ext4, no encryption)
 source "$ARCHUP_INSTALL/partitioning/all.sh"

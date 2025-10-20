@@ -1,9 +1,9 @@
 #!/bin/bash
-# Begin archup installation
+# Begin ArchUp installation
 # Display welcome message and gather initial configuration choices
 
 # Display welcome message
-gum style --foreground 4 --padding "1 0 1 $PADDING_LEFT" "Welcome to archup!"
+gum style --foreground 4 --padding "1 0 1 $PADDING_LEFT" "Welcome to ArchUp!"
 gum style --padding "0 0 0 $PADDING_LEFT" "A fast, minimal Arch Linux auto-installer"
 echo
 
@@ -14,9 +14,9 @@ if ! gum confirm "Ready to begin installation?" --padding "0 0 1 $PADDING_LEFT";
   exit 0
 fi
 
-# archup uses Limine bootloader exclusively
+# ArchUp uses Limine bootloader exclusively
 gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Bootloader: Limine"
-gum style --padding "0 0 1 $PADDING_LEFT" "archup uses Limine for superior btrfs and snapshot support"
+gum style --padding "0 0 1 $PADDING_LEFT" "ArchUp uses Limine for superior btrfs and snapshot support"
 
 export ARCHUP_BOOTLOADER="limine"
 echo "Bootloader: limine" >> "$ARCHUP_INSTALL_LOG_FILE"
@@ -33,6 +33,48 @@ if gum confirm "Enable full-disk encryption?" --padding "0 0 1 $PADDING_LEFT"; t
 else
   export ARCHUP_ENCRYPTION="disabled"
   echo "Encryption: disabled" >> "$ARCHUP_INSTALL_LOG_FILE"
+fi
+
+# Ask for user credentials (will be used for user account, root, and encryption)
+echo
+gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "User Account"
+echo
+
+# Ask for username
+ARCHUP_USERNAME=$(gum input --placeholder "Enter username" \
+  --prompt "Username: " \
+  --padding "0 0 0 $PADDING_LEFT")
+
+if [ -z "$ARCHUP_USERNAME" ]; then
+  gum style --foreground 1 --padding "0 0 0 $PADDING_LEFT" "Username cannot be empty!"
+  exit 1
+fi
+
+# Ask for password (will be used for user, root, and LUKS encryption)
+while true; do
+  ARCHUP_PASSWORD=$(gum input --password --placeholder "Enter password" \
+    --prompt "Password: " \
+    --padding "0 0 0 $PADDING_LEFT")
+
+  ARCHUP_PASSWORD_CONFIRM=$(gum input --password --placeholder "Confirm password" \
+    --prompt "Confirm: " \
+    --padding "0 0 0 $PADDING_LEFT")
+
+  if [ "$ARCHUP_PASSWORD" = "$ARCHUP_PASSWORD_CONFIRM" ]; then
+    break
+  else
+    gum style --foreground 1 --padding "1 0 1 $PADDING_LEFT" "Passwords do not match. Try again."
+  fi
+done
+
+export ARCHUP_USERNAME
+export ARCHUP_PASSWORD
+
+gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "[OK] User: $ARCHUP_USERNAME"
+echo "User: $ARCHUP_USERNAME" >> "$ARCHUP_INSTALL_LOG_FILE"
+
+if [ "$ARCHUP_ENCRYPTION" = "enabled" ]; then
+  gum style --foreground 3 --padding "0 0 1 $PADDING_LEFT" "Note: This password will also be used for disk encryption"
 fi
 
 gum style --foreground 2 --padding "1 0 1 $PADDING_LEFT" "[OK] Configuration saved"

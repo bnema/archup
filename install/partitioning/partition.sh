@@ -4,8 +4,8 @@
 gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Creating partitions..."
 
 # Wipe disk and create GPT partition table
-wipefs -af "$ARCHUP_DISK"
-sgdisk --zap-all "$ARCHUP_DISK"
+wipefs -af "$ARCHUP_DISK" >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
+sgdisk --zap-all "$ARCHUP_DISK" >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 
 # Create partitions
 # 1. EFI partition (512MB)
@@ -13,10 +13,10 @@ sgdisk --zap-all "$ARCHUP_DISK"
 sgdisk --clear \
   --new=1:0:+512M --typecode=1:ef00 --change-name=1:"EFI" \
   --new=2:0:0 --typecode=2:8300 --change-name=2:"ROOT" \
-  "$ARCHUP_DISK"
+  "$ARCHUP_DISK" >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 
 # Inform kernel of partition changes
-partprobe "$ARCHUP_DISK"
+partprobe "$ARCHUP_DISK" >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 sleep 1
 
 # Set partition variables

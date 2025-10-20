@@ -5,6 +5,27 @@
 
 set -e
 
+# Clean up from previous installation attempts
+echo "Cleaning up previous installation attempts..."
+
+# Unmount all /mnt mountpoints (recursive)
+if mountpoint -q /mnt 2>/dev/null; then
+  echo "Unmounting /mnt..."
+  umount -R /mnt 2>/dev/null || true
+fi
+
+# Close any open LUKS containers
+if [ -e /dev/mapper/cryptroot ]; then
+  echo "Closing LUKS container..."
+  cryptsetup close cryptroot 2>/dev/null || true
+fi
+
+# Deactivate swap
+swapoff -a 2>/dev/null || true
+
+echo "[OK] Cleanup complete"
+echo
+
 # Clean up old log file to ensure fresh logs for this attempt
 if [ -f "$ARCHUP_INSTALL_LOG_FILE" ]; then
   rm -f "$ARCHUP_INSTALL_LOG_FILE"

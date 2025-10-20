@@ -23,11 +23,11 @@ DHCP=yes
 EOF
 
 # Enable services
-arch-chroot /mnt systemctl enable systemd-networkd
-arch-chroot /mnt systemctl enable systemd-resolved
+arch-chroot /mnt systemctl enable systemd-networkd >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
+arch-chroot /mnt systemctl enable systemd-resolved >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 
 # Enable iwd for WiFi
-arch-chroot /mnt systemctl enable iwd
+arch-chroot /mnt systemctl enable iwd >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 
 # Migrate WiFi credentials from ISO if detected
 if [ -n "$ARCHUP_WIFI_SSID" ] && [ -n "$ARCHUP_WIFI_PASSPHRASE" ]; then

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Error handling for archup installer - improved with logging and interactivity
+# Error handling for ArchUp installer - improved with logging and interactivity
 
 # QR code for GitHub issues
 QR_CODE='
@@ -117,7 +117,7 @@ catch_errors() {
   clear_logo
   show_cursor
 
-  gum style --foreground 1 --padding "1 0 1 $PADDING_LEFT" "archup installation stopped!"
+  gum style --foreground 1 --padding "1 0 1 $PADDING_LEFT" "ArchUp installation stopped!"
   show_log_tail
 
   echo
@@ -128,7 +128,7 @@ catch_errors() {
   gum style "$QR_CODE"
   echo
   gum style "Check logs: $ARCHUP_INSTALL_LOG_FILE"
-  gum style "Report issues: ${ARCHUP_REPO_URL:-https://github.com/bnema/archup}/issues"
+  gum style "Report issues: ${ARCHUP_REPO_URL:-https://github.com/bnema/ArchUp}/issues"
   echo
 
   # Interactive menu
@@ -153,6 +153,26 @@ catch_errors() {
   done
 }
 
+# Interrupt handler (Ctrl+C)
+interrupt_handler() {
+  if [[ $ERROR_HANDLING == true ]]; then
+    return
+  fi
+
+  ERROR_HANDLING=true
+
+  stop_log_output
+  restore_outputs
+  show_cursor
+
+  echo
+  gum style --foreground 3 --padding "1 0 1 $PADDING_LEFT" "Installation interrupted by user"
+  echo "Installation cancelled at: $(date '+%Y-%m-%d %H:%M:%S')" >> "$ARCHUP_INSTALL_LOG_FILE"
+  echo
+
+  exit 130
+}
+
 # Exit handler
 exit_handler() {
   local exit_code=$?
@@ -167,7 +187,8 @@ exit_handler() {
 }
 
 # Set up traps
-trap catch_errors ERR INT TERM
+trap catch_errors ERR TERM
+trap interrupt_handler INT
 trap exit_handler EXIT
 
 # Save original outputs for restoration

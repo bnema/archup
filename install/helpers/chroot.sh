@@ -1,5 +1,5 @@
 #!/bin/bash
-# Chroot utilities for archup installer
+# Chroot utilities for ArchUp installer
 # Adapted from Omarchy chroot.sh
 
 # Starting the installer with ARCHUP_CHROOT_INSTALL=1 will put it into chroot mode

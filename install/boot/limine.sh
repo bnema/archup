@@ -15,9 +15,9 @@ if [ "$ARCHUP_ENCRYPTION" = "enabled" ]; then
   sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block encrypt filesystems fsck)/' /mnt/etc/mkinitcpio.conf
 
   # Regenerate initramfs
-  arch-chroot /mnt mkinitcpio -P
+  arch-chroot /mnt mkinitcpio -P >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 
-  echo "Updated mkinitcpio.conf with encrypt hook"
+  echo "Updated mkinitcpio.conf with encrypt hook" >> "$ARCHUP_INSTALL_LOG_FILE"
 
   # Kernel parameters for encrypted boot
   KERNEL_PARAMS="cryptdevice=UUID=$ROOT_UUID:cryptroot root=/dev/mapper/cryptroot rootflags=subvol=@ rw"
@@ -30,23 +30,23 @@ fi
 # Add AMD-specific kernel parameters if configured
 if [ -n "$ARCHUP_AMD_KERNEL_PARAMS" ]; then
   KERNEL_PARAMS="$KERNEL_PARAMS $ARCHUP_AMD_KERNEL_PARAMS"
-  echo "Added AMD kernel params: $ARCHUP_AMD_KERNEL_PARAMS"
+  echo "Added AMD kernel params: $ARCHUP_AMD_KERNEL_PARAMS" >> "$ARCHUP_INSTALL_LOG_FILE"
 fi
 
-# Install Limine to the disk (UEFI)
-arch-chroot /mnt limine bios-install "$ARCHUP_DISK"
+# Install Limine to the disk (BIOS - optional, will fail on UEFI-only systems)
+arch-chroot /mnt limine bios-install "$ARCHUP_DISK" >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1 || true
 
 # Create Limine configuration directory
 mkdir -p /mnt/boot/EFI/BOOT
 
 # Create Limine configuration with proper syntax
 cat > /mnt/boot/EFI/BOOT/limine.conf <<EOF
-# archup - Limine bootloader configuration
+# ArchUp - Limine bootloader configuration
 # Docs: https://github.com/limine-bootloader/limine/blob/trunk/CONFIG.md
 
 timeout: 5
 default_entry: 0
-interface_branding: archup
+interface_branding: ArchUp
 interface_branding_colour: 6
 graphics: yes
 quiet: yes
@@ -79,13 +79,13 @@ EFI_PART_NUM=$(echo "$ARCHUP_EFI_PART" | grep -o '[0-9]*$' | sed 's/^p//')
 arch-chroot /mnt efibootmgr --create \
   --disk "$ARCHUP_DISK" \
   --part "$EFI_PART_NUM" \
-  --label "archup" \
-  --loader "\\EFI\\BOOT\\BOOTX64.EFI"
+  --label "ArchUp" \
+  --loader "\\EFI\\BOOT\\BOOTX64.EFI" >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 
 gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "[OK] Limine installed and configured"
 
 if [ "$ARCHUP_ENCRYPTION" = "enabled" ]; then
-  echo "Installed Limine with encrypted root (UUID: $ROOT_UUID)"
+  echo "Installed Limine with encrypted root (UUID: $ROOT_UUID)" >> "$ARCHUP_INSTALL_LOG_FILE"
 else
-  echo "Installed Limine with root UUID: $ROOT_UUID"
+  echo "Installed Limine with root UUID: $ROOT_UUID" >> "$ARCHUP_INSTALL_LOG_FILE"
 fi
