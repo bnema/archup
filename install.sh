@@ -11,6 +11,30 @@ export ARCHUP_INSTALL_LOG_FILE="/var/log/archup-install.log"
 export ARCHUP_REPO_URL="${ARCHUP_REPO_URL:-https://github.com/bnema/archup}"
 export ARCHUP_RAW_URL="${ARCHUP_RAW_URL:-https://raw.githubusercontent.com/bnema/archup/dev}"
 
+# Handle command-line flags
+if [ "$1" = "--cleanup" ]; then
+  echo "Running cleanup before installation..."
+  source "$ARCHUP_INSTALL/helpers/cleanup.sh" default
+fi
+
+if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+  cat << 'HELP'
+Usage: install.sh [OPTIONS]
+
+OPTIONS:
+  --cleanup     Cleanup before running installation
+  -h, --help    Show this help message
+
+EXAMPLES:
+  install.sh                 # Run normal installation
+  install.sh --cleanup       # Cleanup then run installation
+  ./cleanup.sh default       # Manual cleanup only
+  ./cleanup.sh full          # Full cleanup including /mnt wipe
+  ./cleanup.sh diagnostic    # Show current system state
+HELP
+  exit 0
+fi
+
 # Download installer files if not present (for curl-based installation)
 if [ ! -d "$ARCHUP_INSTALL" ]; then
   echo "=== Downloading ArchUp installer files ==="
@@ -27,7 +51,7 @@ if [ ! -d "$ARCHUP_INSTALL" ]; then
   curl -sL "$GITHUB_RAW/logo.txt" -o "$ARCHUP_PATH/logo.txt"
 
   echo "Downloading helpers..."
-  for file in all.sh logging.sh errors.sh presentation.sh chroot.sh; do
+  for file in all.sh logging.sh errors.sh presentation.sh chroot.sh cleanup.sh; do
     curl -sL "$GITHUB_RAW/install/helpers/$file" -o "$ARCHUP_INSTALL/helpers/$file"
   done
 

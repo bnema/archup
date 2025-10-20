@@ -3,10 +3,6 @@
 
 gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Formatting partitions..."
 
-# Ensure nothing is mounted (cleanup from previous installation attempts)
-umount -R /mnt >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1 || true
-swapoff -a >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1 || true
-
 # Wipe any existing signatures on EFI partition
 wipefs -af "$ARCHUP_EFI_PART" >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 
