@@ -89,29 +89,36 @@ if [ "$CPU_TYPE" = "AMD" ]; then
     AVAILABLE_MODES=("passive")
   fi
 
-  echo
-  # Build choice options with descriptions
-  declare -a MODE_CHOICES
-  for mode in "${AVAILABLE_MODES[@]}"; do
-    case "$mode" in
-      active)
-        MODE_CHOICES+=("active - Best performance (recommended for desktop/gaming)")
-        ;;
-      guided)
-        MODE_CHOICES+=("guided - Balanced performance and efficiency (recommended for laptops)")
-        ;;
-      passive)
-        MODE_CHOICES+=("passive - Maximum compatibility (older CPUs)")
-        ;;
-    esac
-  done
+  # Auto-select if only one mode available, otherwise prompt user
+  if [ ${#AVAILABLE_MODES[@]} -eq 1 ]; then
+    AMD_PSTATE="${AVAILABLE_MODES[0]}"
+    gum style --foreground 2 --padding "1 0 0 $PADDING_LEFT" "[OK] Auto-selected: $AMD_PSTATE (only available mode)"
+  else
+    echo
+    # Build choice options with descriptions
+    declare -a MODE_CHOICES
+    for mode in "${AVAILABLE_MODES[@]}"; do
+      case "$mode" in
+        active)
+          MODE_CHOICES+=("active - Best performance (recommended for desktop/gaming)")
+          ;;
+        guided)
+          MODE_CHOICES+=("guided - Balanced performance and efficiency (recommended for laptops)")
+          ;;
+        passive)
+          MODE_CHOICES+=("passive - Maximum compatibility (older CPUs)")
+          ;;
+      esac
+    done
 
-  AMD_PSTATE=$(gum choose --padding "0 0 1 $PADDING_LEFT" "${MODE_CHOICES[@]}")
+    AMD_PSTATE=$(gum choose --padding "0 0 1 $PADDING_LEFT" "${MODE_CHOICES[@]}")
 
-  # Extract just the mode name (before the dash)
-  AMD_PSTATE=$(echo "$AMD_PSTATE" | awk '{print $1}')
+    # Extract just the mode name (before the dash)
+    AMD_PSTATE=$(echo "$AMD_PSTATE" | awk '{print $1}')
+    gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "[OK] P-State: $AMD_PSTATE"
+  fi
+
   export ARCHUP_AMD_PSTATE="$AMD_PSTATE"
-  gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "[OK] P-State: $AMD_PSTATE"
   echo "AMD P-State: $AMD_PSTATE (kernel parameter)" >> "$ARCHUP_INSTALL_LOG_FILE"
 
   # Prepare kernel parameters for AMD P-State

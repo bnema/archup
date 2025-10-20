@@ -55,15 +55,15 @@ quiet: yes
 
 /Arch Linux
     protocol: linux
-    path: boot():/vmlinuz-linux
+    path: boot():/vmlinuz-$ARCHUP_KERNEL
     cmdline: $KERNEL_PARAMS
-    module_path: boot():/initramfs-linux.img
+    module_path: boot():/initramfs-$ARCHUP_KERNEL.img
 
 /Arch Linux (fallback)
     protocol: linux
-    path: boot():/vmlinuz-linux
+    path: boot():/vmlinuz-$ARCHUP_KERNEL
     cmdline: $KERNEL_PARAMS
-    module_path: boot():/initramfs-linux-fallback.img
+    module_path: boot():/initramfs-$ARCHUP_KERNEL-fallback.img
 EOF
 
 gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Creating UEFI boot entry..."
