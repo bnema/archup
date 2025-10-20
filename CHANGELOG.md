@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Changed
+- **README**: Added ArchUp logo and refined project description for clarity
 - **Kernel selection**: Simplified AMD P-State mode descriptions for better user clarity
 
 ### Fixed
