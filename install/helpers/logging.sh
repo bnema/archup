@@ -9,43 +9,37 @@ monitor_pid=""
 start_log_output() {
   local ANSI_SAVE_CURSOR="\033[s"
   local ANSI_RESTORE_CURSOR="\033[u"
-  local ANSI_CLEAR_LINE="\033[2K"
+  local ANSI_CLEAR_BELOW="\033[0J"
   local ANSI_HIDE_CURSOR="\033[?25l"
   local ANSI_RESET="\033[0m"
   local ANSI_GRAY="\033[90m"
 
-  # Save cursor position and hide cursor
   printf $ANSI_SAVE_CURSOR
   printf $ANSI_HIDE_CURSOR
 
-  # Start background monitor process
   (
     local log_lines=20
     local max_line_width=$((LOGO_WIDTH - 4))
 
     while true; do
-      # Read the last N lines into an array
       mapfile -t current_lines < <(tail -n $log_lines "$ARCHUP_INSTALL_LOG_FILE" 2>/dev/null)
 
-      # Build complete output buffer with escape sequences
-      output=""
+      printf "${ANSI_RESTORE_CURSOR}${ANSI_CLEAR_BELOW}"
+
       for ((i = 0; i < log_lines; i++)); do
         line="${current_lines[i]:-}"
 
-        # Truncate if needed
         if [ ${#line} -gt $max_line_width ]; then
           line="${line:0:$max_line_width}..."
         fi
 
-        # Add formatted output for each line
         if [ -n "$line" ]; then
-          output+="${ANSI_CLEAR_LINE}${ANSI_GRAY}${PADDING_LEFT_SPACES}  → ${line}${ANSI_RESET}\n"
+          printf "${ANSI_GRAY}${PADDING_LEFT_SPACES}  → ${line}${ANSI_RESET}\n"
         else
-          output+="${ANSI_CLEAR_LINE}${PADDING_LEFT_SPACES}\n"
+          printf "${PADDING_LEFT_SPACES}\n"
         fi
       done
 
-      printf "${ANSI_RESTORE_CURSOR}%b" "$output"
       sleep 0.1
     done
   ) &
