@@ -26,10 +26,26 @@ iwd
 
 # Essential Tools
 sudo
-vim
+neovim
 man-db
 git
 go
+bash-completion
+
+# Modern CLI Tools
+eza
+zoxide
+fzf
+ripgrep
+bat
+fd
+btop
+delta
+dust
+duf
+tealdeer
+yazi
+starship
 
 # Encryption (added if LUKS enabled)
 # cryptsetup
