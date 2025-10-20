@@ -4,10 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **Modern CLI tools**: Added modern alternatives (eza, zoxide, fzf, ripgrep, bat, fd, btop, delta, dust, duf, tealdeer, yazi, starship)
+- **Shell configuration**: Auto-configure bash with starship prompt, zoxide, fzf, and modern tool aliases
+
 ### Changed
 - **README**: Added ArchUp logo and refined project description for clarity
 - **Kernel selection**: Simplified AMD P-State mode descriptions for better user clarity
 - **User interrupts**: Ctrl+C now shows clean cancellation message instead of error screen
+- **Default editor**: Changed from vim to neovim
 
 ### Fixed
 - **Limine bootloader**: Fixed kernel panic with non-default kernels (cachyos, zen, lts)
