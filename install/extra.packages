@@ -15,6 +15,9 @@ wget
 unzip
 p7zip
 
+# Security
+ufw
+
 # Bluetooth
 bluez
 bluez-utils

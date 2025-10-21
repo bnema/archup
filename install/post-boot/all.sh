@@ -3,7 +3,14 @@
 
 LOG_FILE="/var/log/archup-first-boot.log"
 
-echo "=== ArchUp First Boot Setup - $(date) ===" > "$LOG_FILE"
+# Display ArchUp logo
+if [ -f /usr/local/share/archup/logo.txt ]; then
+  cat /usr/local/share/archup/logo.txt
+  echo ""
+fi
+
+echo "=== ArchUp First Boot Setup - $(date) ===" | tee "$LOG_FILE"
+echo ""
 
 # Run snapper configuration
 if [ -f /usr/local/share/archup/post-boot/snapper.sh ]; then
@@ -40,4 +47,10 @@ echo "=== First Boot Setup Complete ===" >> "$LOG_FILE"
 # Disable this service after first run
 systemctl disable archup-first-boot.service
 
-echo "First boot setup completed successfully"
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  ✓ ArchUp is ready!"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "  Next: Run 'archup wizard' to configure your system"
+echo ""

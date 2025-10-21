@@ -6,6 +6,9 @@ gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Setting up first-boot 
 # Create post-boot directory
 mkdir -p /mnt/usr/local/share/archup/post-boot
 
+# Copy logo
+cp "$ARCHUP_PATH/logo.txt" /mnt/usr/local/share/archup/
+
 # Copy all post-boot scripts
 cp "$ARCHUP_INSTALL/post-boot/all.sh" /mnt/usr/local/share/archup/post-boot/
 cp "$ARCHUP_INSTALL/post-boot/snapper.sh" /mnt/usr/local/share/archup/post-boot/
