@@ -7,7 +7,7 @@ gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Enabling multilib repo
 enable_multilib "/etc/pacman.conf"
 
 # Update package database
-if ! run_with_spinner "Updating package database..." "pacman -Sy"; then
+if ! run_with_spinner "Updating package database..." "pacman -Sy --noconfirm"; then
   gum style --foreground 1 --padding "1 0 1 $PADDING_LEFT" "[ERROR] Failed to update package database"
   exit 1
 fi

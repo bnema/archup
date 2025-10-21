@@ -2,7 +2,7 @@
 # ArchUp - Fast, minimal Arch Linux auto-installer
 # Main installation orchestrator
 
-set -eo pipefail
+set -Eeo pipefail
 
 # Handle help flag FIRST - before any side effects
 if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
@@ -70,7 +70,8 @@ source "$ARCHUP_INSTALL/helpers/all.sh"
 # Handle cleanup flag (after helpers are available)
 if [ "$1" = "--cleanup" ]; then
   echo "Running cleanup before installation..."
-  source "$ARCHUP_INSTALL/helpers/cleanup.sh" default
+  # Run cleanup in subshell to avoid inheriting set -Eeo pipefail
+  bash "$ARCHUP_INSTALL/helpers/cleanup.sh" default
 fi
 
 # Display logo

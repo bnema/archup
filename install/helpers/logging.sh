@@ -52,9 +52,8 @@ run_logged() {
 
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting: $script" >> "$ARCHUP_INSTALL_LOG_FILE"
 
-  # Don't start/stop log monitor here - it runs continuously once started
   # Source helpers in subshell before running the script so functions are available
-  # Redirect output to log but allow gum to access terminal for display
+  # Redirect output to log file only
   bash -c "source '$ARCHUP_INSTALL/helpers/all.sh' && source '$script'" >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 
   local exit_code=$?

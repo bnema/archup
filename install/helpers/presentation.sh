@@ -81,9 +81,10 @@ run_with_spinner() {
   local title="$1"
   local command="$2"
 
-  # Redirect only stderr to terminal for gum display
-  # Command output goes to log file, spinner animation displays on terminal
-  if gum spin --spinner dot --title "$title" -- bash -c "$command >> \"$ARCHUP_INSTALL_LOG_FILE\" 2>&1" 2>/dev/tty; then
+  # Run command with spinner, output goes only to log file
+  # If command fails, error will be caught by ERR trap and shown in error handler
+  if gum spin --spinner dot --title "$title" -- \
+    bash -c "$command >> \"$ARCHUP_INSTALL_LOG_FILE\" 2>&1"; then
     return 0
   else
     return 1

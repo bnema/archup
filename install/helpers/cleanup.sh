@@ -140,7 +140,8 @@ cleanup_processes() {
   log_cleanup "Checking for stuck pacstrap/chroot processes..."
 
   # Kill any stuck pacstrap or arch-chroot processes
-  local stuck_pids=$(pgrep -f "pacstrap|arch-chroot" 2>/dev/null)
+  # Note: pgrep returns 1 if no processes found, which is expected/normal
+  local stuck_pids=$(pgrep -f "pacstrap|arch-chroot" 2>/dev/null || true)
   if [ -n "$stuck_pids" ]; then
     log_cleanup "Killing stuck processes: $stuck_pids"
     kill $stuck_pids 2>/dev/null || true

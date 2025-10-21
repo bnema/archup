@@ -27,7 +27,7 @@ EOF
 fi
 
 # Update package databases
-arch-chroot /mnt pacman -Sy >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
+arch-chroot /mnt pacman -Sy --noconfirm >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 
 # Verify Chaotic-AUR is working
 if arch-chroot /mnt pacman -Sl chaotic-aur >/dev/null 2>&1; then

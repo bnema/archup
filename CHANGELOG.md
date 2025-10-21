@@ -18,6 +18,9 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - **Help flag**: Moved --help check before any side effects for proper argument parsing
+- **Error handling**: Fixed ERR trap propagation with set -E and proper cleanup execution
+- **Spinner output**: Fixed package installation output leaking through spinner display
+- **Cleanup flag**: Fixed --cleanup flag triggering false errors from pgrep exit codes
 
 ## [0.2.0] - 2025-10-21
 

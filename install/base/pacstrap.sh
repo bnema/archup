@@ -23,6 +23,7 @@ if [ "$ARCHUP_ENCRYPTION" = "enabled" ]; then
 fi
 
 # Install base system with spinner
+# Note: pacstrap automatically runs with --noconfirm unless -i flag is used
 echo "Installing ${#packages[@]} packages: ${packages[*]}" >> "$ARCHUP_INSTALL_LOG_FILE"
 if ! run_with_spinner "Installing base system (${#packages[@]} packages)..." "pacstrap /mnt ${packages[*]}"; then
   gum style --foreground 1 --padding "1 0 1 $PADDING_LEFT" "[ERROR] Base system installation failed"
