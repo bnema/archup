@@ -1,11 +1,8 @@
 #!/bin/bash
 # Install base system with pacstrap
 
-gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Installing base system..."
-gum style --padding "0 0 1 $PADDING_LEFT" "This may take a few minutes..."
-
-# Read barebone package list
-mapfile -t packages < <(grep -v '^#' "$ARCHUP_INSTALL/presets/barebone.packages" | grep -v '^$')
+# Read base package list
+mapfile -t packages < <(grep -v '^#' "$ARCHUP_INSTALL/base.packages" | grep -v '^$')
 
 # Add kernel (selected in kernel.sh)
 if [ -n "$ARCHUP_KERNEL" ]; then
@@ -25,8 +22,12 @@ if [ "$ARCHUP_ENCRYPTION" = "enabled" ]; then
   echo "Adding cryptsetup for LUKS encryption" >> "$ARCHUP_INSTALL_LOG_FILE"
 fi
 
-# Install base system
-pacstrap /mnt "${packages[@]}"
+# Install base system with spinner
+echo "Installing ${#packages[@]} packages: ${packages[*]}" >> "$ARCHUP_INSTALL_LOG_FILE"
+if ! run_with_spinner "Installing base system (${#packages[@]} packages)..." "pacstrap /mnt ${packages[*]}"; then
+  gum style --foreground 1 --padding "1 0 1 $PADDING_LEFT" "[ERROR] Base system installation failed"
+  exit 1
+fi
 
 gum style --foreground 2 --padding "1 0 1 $PADDING_LEFT" "[OK] Base system installed"
 
