@@ -31,6 +31,8 @@ We learned from Omarchy's excellent modular approach but rejected the bloat. Arc
 
 ## Quick Start
 
+**Requirements**: AMD/Intel 64-bit system
+
 ```bash
 # 1. Boot Arch ISO, install barebone system
 curl -fsSL https://archup.bnema.dev/install | bash
@@ -49,8 +51,15 @@ archup wizard
 - [x] Auto-builds `archup` CLI on first boot
 - [ ] Tier 2+3: Desktop wizard (in `archup-cli` repo)
 
+**⚠️ Alpha/Testing Phase**: ArchUp is in active development. All contributions, bug reports, and error logs are welcome! Please open an issue if you encounter any problems.
+
 ## Links
 
 - **Install**: `https://archup.bnema.dev/install`
 - **Dev branch**: `https://archup.bnema.dev/install/dev`
 - **CLI repo**: `github.com/bnema/archup-cli`
+
+## Thanks
+
+- **[Omarchy](https://github.com/omakub/omakub)** - For the excellent modular architecture inspiration (MIT License)
+- **[Charmbracelet Gum](https://github.com/charmbracelet/gum)** - For the awesome interactive shell toolkit
