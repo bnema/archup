@@ -101,6 +101,31 @@ if arch-chroot /mnt ls /home 2>/dev/null | grep -q .; then
   USERNAME=$(arch-chroot /mnt ls /home 2>/dev/null | head -1)
   echo "[OK] User created: $USERNAME" >> "$ARCHUP_INSTALL_LOG_FILE"
   verify_dir "/home/$USERNAME" "User home directory"
+
+  # Verify shell configuration
+  verify_dir "/home/$USERNAME/.local/share/archup/default/bash" "Shell config directory"
+  verify_file "/home/$USERNAME/.local/share/archup/default/bash/rc" "Shell rc file"
+  verify_file "/home/$USERNAME/.local/share/archup/default/bash/shell" "Shell config"
+  verify_file "/home/$USERNAME/.local/share/archup/default/bash/init" "Shell init"
+  verify_file "/home/$USERNAME/.local/share/archup/default/bash/aliases" "Shell aliases"
+  verify_file "/home/$USERNAME/.local/share/archup/default/bash/envs" "Shell envs"
+  verify_file "/home/$USERNAME/.local/share/archup/default/bash/functions" "Shell functions"
+  verify_file "/home/$USERNAME/.bashrc" "User bashrc"
+
+  # Verify .bashrc sources archup defaults
+  if grep -q "source ~/.local/share/archup/default/bash/rc" "/mnt/home/$USERNAME/.bashrc" 2>/dev/null; then
+    echo "[OK] Bashrc sources archup defaults" >> "$ARCHUP_INSTALL_LOG_FILE"
+  else
+    echo "[ERROR] Bashrc does not source archup defaults" >> "$ARCHUP_INSTALL_LOG_FILE"
+    VERIFICATION_FAILED=1
+  fi
+
+  # Verify git delta configuration
+  if arch-chroot /mnt su - "$USERNAME" -c "git config --global core.pager" 2>/dev/null | grep -q "delta"; then
+    echo "[OK] Git delta configured" >> "$ARCHUP_INSTALL_LOG_FILE"
+  else
+    echo "[WARN] Git delta not configured (optional)" >> "$ARCHUP_INSTALL_LOG_FILE"
+  fi
 else
   echo "[ERROR] No user account found" >> "$ARCHUP_INSTALL_LOG_FILE"
   VERIFICATION_FAILED=1
