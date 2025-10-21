@@ -33,6 +33,15 @@ else
     echo "[OK] gum already available"
 fi
 
+# Install jq for JSON parsing (presets)
+if ! command -v jq &>/dev/null; then
+    echo "Installing jq for preset JSON parsing..."
+    pacman -S --needed --noconfirm jq
+    echo "[OK] jq installed"
+else
+    echo "[OK] jq already available"
+fi
+
 # Any other critical dependencies that preflight needs can go here
 # Example: pacman -S --needed --noconfirm other-tool
 
