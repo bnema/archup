@@ -43,23 +43,26 @@ export GUM_TABLE_PADDING="$PADDING"
 export GUM_CONFIRM_PADDING="$PADDING"
 
 clear_logo() {
-  printf "\033[H\033[2J" # Clear screen and move cursor to top-left
+  # Redirect all output to stderr to prevent capture by command substitution
+  {
+    printf "\033[H\033[2J" # Clear screen and move cursor to top-left
 
-  # ANSI color codes: cyan=36, white=37
-  local CYAN="\033[36m"
-  local WHITE="\033[37m"
-  local RESET="\033[0m"
-  local split_pos=34
+    # ANSI color codes: cyan=36, white=37
+    local CYAN="\033[36m"
+    local WHITE="\033[37m"
+    local RESET="\033[0m"
+    local split_pos=34
 
-  # Print with padding and color split
-  printf "\n" # Top padding
-  while IFS= read -r line; do
-    if [ -n "$line" ]; then
-      printf "%s${CYAN}%s${WHITE}%s${RESET}\n" "$PADDING_LEFT_SPACES" "${line:0:$split_pos}" "${line:$split_pos}"
-    else
-      printf "\n"
-    fi
-  done < "$LOGO_PATH"
+    # Print with padding and color split
+    printf "\n" # Top padding
+    while IFS= read -r line; do
+      if [ -n "$line" ]; then
+        printf "%s${CYAN}%s${WHITE}%s${RESET}\n" "$PADDING_LEFT_SPACES" "${line:0:$split_pos}" "${line:$split_pos}"
+      else
+        printf "\n"
+      fi
+    done < "$LOGO_PATH"
+  } >&2
 }
 
 # Show cursor (used in cleanup)
@@ -70,4 +73,19 @@ show_cursor() {
 # Hide cursor (used during installation)
 hide_cursor() {
   printf "\033[?25l"
+}
+
+# Run a command with a gum spinner, logging output to file
+# Usage: run_with_spinner "Title text" "command to run"
+run_with_spinner() {
+  local title="$1"
+  local command="$2"
+
+  # Redirect only stderr to terminal for gum display
+  # Command output goes to log file, spinner animation displays on terminal
+  if gum spin --spinner dot --title "$title" -- bash -c "$command >> \"$ARCHUP_INSTALL_LOG_FILE\" 2>&1" 2>/dev/tty; then
+    return 0
+  else
+    return 1
+  fi
 }

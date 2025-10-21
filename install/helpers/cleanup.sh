@@ -15,7 +15,6 @@ CLEANUP_MODE="${1:-default}"
 # Color codes for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
 NC='\033[0m' # No Color
 
 log_cleanup() {
@@ -187,13 +186,16 @@ cleanup_full() {
 
   if [ -d /mnt ]; then
     log_cleanup "Removing all files and directories in /mnt..."
-    if rm -rf /mnt/* 2>/dev/null; then
-      log_success "Removed /mnt content"
-    else
-      # Try alternate approach
-      log_cleanup "Retry: Using find to remove /mnt content..."
-      find /mnt -mindepth 1 -delete 2>/dev/null || true
-      log_success "Removed /mnt content (with find)"
+    # Safety check: only remove if /mnt exists and is not empty
+    if [ -d "/mnt" ] && [ "$(ls -A /mnt 2>/dev/null)" ]; then
+      if rm -rf /mnt/./* /mnt/..?* /mnt/.[!.]* 2>/dev/null; then
+        log_success "Removed /mnt content"
+      else
+        # Try alternate approach
+        log_cleanup "Retry: Using find to remove /mnt content..."
+        find /mnt -mindepth 1 -delete 2>/dev/null || true
+        log_success "Removed /mnt content (with find)"
+      fi
     fi
   fi
 

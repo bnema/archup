@@ -1,60 +1,15 @@
 #!/bin/bash
-# Logging system for ArchUp installer - fixes variable export issues
-# Uses background process for log display instead of exec redirection
+# Logging system for ArchUp installer
+# All output logged to $ARCHUP_INSTALL_LOG_FILE
+# Spinners handle display, errors shown automatically via --show-error
 
-# Global variable for monitor background process
-monitor_pid=""
-
-# Background process to monitor and display log in real-time
+# No-op stubs for compatibility (log monitor removed)
 start_log_output() {
-  local ANSI_SAVE_CURSOR="\033[s"
-  local ANSI_RESTORE_CURSOR="\033[u"
-  local ANSI_CLEAR_BELOW="\033[0J"
-  local ANSI_HIDE_CURSOR="\033[?25l"
-  local ANSI_RESET="\033[0m"
-  local ANSI_GRAY="\033[90m"
-
-  printf $ANSI_SAVE_CURSOR
-  printf $ANSI_HIDE_CURSOR
-
-  (
-    local log_lines=20
-    local max_line_width=$((LOGO_WIDTH - 4))
-
-    while true; do
-      mapfile -t current_lines < <(tail -n $log_lines "$ARCHUP_INSTALL_LOG_FILE" 2>/dev/null)
-
-      printf "${ANSI_RESTORE_CURSOR}${ANSI_CLEAR_BELOW}"
-
-      for ((i = 0; i < log_lines; i++)); do
-        line="${current_lines[i]:-}"
-
-        if [ ${#line} -gt $max_line_width ]; then
-          line="${line:0:$max_line_width}..."
-        fi
-
-        if [ -n "$line" ]; then
-          printf "${ANSI_GRAY}${PADDING_LEFT_SPACES}  → ${line}${ANSI_RESET}\n"
-        else
-          printf "${PADDING_LEFT_SPACES}\n"
-        fi
-      done
-
-      sleep 0.1
-    done
-  ) &
-  monitor_pid=$!
+  true
 }
 
 stop_log_output() {
-  if [ -n "${monitor_pid:-}" ]; then
-    kill $monitor_pid 2>/dev/null || true
-    wait $monitor_pid 2>/dev/null || true
-    unset monitor_pid
-
-    # Clean up terminal state
-    printf "\033[?25h"  # Show cursor
-  fi
+  true
 }
 
 start_install_log() {
@@ -98,8 +53,8 @@ run_logged() {
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting: $script" >> "$ARCHUP_INSTALL_LOG_FILE"
 
   # Don't start/stop log monitor here - it runs continuously once started
-  # Use bash -c to create a clean subshell and redirect output to log
-  bash -c "source '$script'" </dev/null >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
+  # Source helpers in subshell before running the script so functions are available
+  bash -c "source '$ARCHUP_INSTALL/helpers/all.sh' && source '$script'" </dev/null >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 
   local exit_code=$?
 
