@@ -1,12 +1,10 @@
-# ArchUp Base System (Tier 1 - Barebone CLI)
-# ~20 packages - minimal foundation for CLI-only or desktop installation
+# ArchUp Base System - Essential packages only
+# Minimal foundation installed with pacstrap
 
 # Core System
 base
 linux-firmware
 btrfs-progs
-snapper
-snap-pac
 
 # Kernel (selected dynamically by kernel.sh)
 # linux / linux-lts / linux-zen
@@ -16,36 +14,21 @@ snap-pac
 
 # Bootloader
 limine
+efibootmgr
 plymouth
 ttf-fira-sans
 ttf-jetbrains-mono-nerd
-efibootmgr
 
 # Networking
 iwd
+openssh
 
 # Essential Tools
 sudo
 neovim
 man-db
 git
-go
 bash-completion
-
-# Modern CLI Tools
-eza
-zoxide
-fzf
-ripgrep
-bat
-fd
-btop
-delta
-dust
-duf
-tealdeer
-yazi
-starship
 
 # Encryption (added if LUKS enabled)
 # cryptsetup
