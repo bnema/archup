@@ -19,6 +19,9 @@ p7zip
 bluez
 bluez-utils
 
+# Alternative WiFi
+iwd
+
 # Modern CLI Tools (from Chaotic-AUR)
 eza
 zoxide

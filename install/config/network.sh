@@ -1,54 +1,48 @@
 #!/bin/bash
-# Configure network (systemd-networkd + systemd-resolved)
+# Configure network (NetworkManager)
 
 gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Configuring network..."
 
-# Enable systemd-networkd for DHCP
-mkdir -p /mnt/etc/systemd/network
-
-cat > /mnt/etc/systemd/network/20-wired.network <<EOF
-[Match]
-Name=en*
-
-[Network]
-DHCP=yes
-EOF
-
-cat > /mnt/etc/systemd/network/25-wireless.network <<EOF
-[Match]
-Name=wl*
-
-[Network]
-DHCP=yes
-EOF
-
-# Enable services
-arch-chroot /mnt systemctl enable systemd-networkd >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
-arch-chroot /mnt systemctl enable systemd-resolved >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
-
-# Enable iwd for WiFi
-arch-chroot /mnt systemctl enable iwd >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
+# Enable NetworkManager service
+arch-chroot /mnt systemctl enable NetworkManager >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 
 # Migrate WiFi credentials from ISO if detected
 if [ -n "$ARCHUP_WIFI_SSID" ] && [ -n "$ARCHUP_WIFI_PASSPHRASE" ]; then
   gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Migrating WiFi credentials..."
 
-  # Create iwd config directory in target system
-  mkdir -p /mnt/var/lib/iwd
+  # Create NetworkManager connection file
+  cat > "/mnt/etc/NetworkManager/system-connections/${ARCHUP_WIFI_SSID}.nmconnection" <<EOF
+[connection]
+id=${ARCHUP_WIFI_SSID}
+uuid=$(uuidgen)
+type=wifi
+autoconnect=true
 
-  # Create PSK file for the WiFi network
-  cat > "/mnt/var/lib/iwd/${ARCHUP_WIFI_SSID}.psk" <<EOF
-[Security]
-PreSharedKey=$ARCHUP_WIFI_PASSPHRASE
+[wifi]
+mode=infrastructure
+ssid=${ARCHUP_WIFI_SSID}
 
-[Settings]
-AutoConnect=true
+[wifi-security]
+key-mgmt=wpa-psk
+psk=${ARCHUP_WIFI_PASSPHRASE}
+
+[ipv4]
+method=auto
+
+[ipv6]
+addr-gen-mode=default
+method=auto
+
+[proxy]
 EOF
+
+  # Set correct permissions (NetworkManager requires 600)
+  chmod 600 "/mnt/etc/NetworkManager/system-connections/${ARCHUP_WIFI_SSID}.nmconnection"
 
   gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "[OK] WiFi credentials migrated: $ARCHUP_WIFI_SSID"
   echo "WiFi credentials migrated: $ARCHUP_WIFI_SSID (auto-connect enabled)" >> "$ARCHUP_INSTALL_LOG_FILE"
 fi
 
-gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "[OK] Network configured (DHCP)"
+gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "[OK] Network configured"
 
-echo "Enabled systemd-networkd and iwd" >> "$ARCHUP_INSTALL_LOG_FILE"
+echo "Enabled NetworkManager" >> "$ARCHUP_INSTALL_LOG_FILE"
