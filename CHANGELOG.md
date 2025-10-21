@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - **zram swap**: Configured zram-generator for compressed in-memory swap with optimized sysctl parameters
 - **Broadcom WiFi**: Added broadcom-wl driver to base packages for Broadcom wireless support
+- **Multilib support**: Enabled multilib repository on ISO and installed system with reusable helper
 
 ### Changed
 - **Disk selection**: Enhanced disk listing with model, serial, and vendor information using JSON output

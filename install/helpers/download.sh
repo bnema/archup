@@ -30,7 +30,7 @@ download_archup_files() {
 
   # Helpers
   download_section "Downloading helpers..." "helpers" \
-    all.sh config.sh logging.sh errors.sh presentation.sh chroot.sh cleanup.sh
+    all.sh config.sh logging.sh errors.sh presentation.sh chroot.sh cleanup.sh multilib.sh
 
   # Preflight
   download_section "Downloading preflight checks..." "preflight" \
@@ -42,7 +42,7 @@ download_archup_files() {
 
   # Base system
   download_section "Downloading base system scripts..." "base" \
-    all.sh kernel.sh pacstrap.sh fstab.sh
+    all.sh kernel.sh enable-multilib.sh cachyos-repo.sh pacstrap.sh fstab.sh
 
   # Configuration
   download_section "Downloading config scripts..." "config" \
@@ -54,7 +54,7 @@ download_archup_files() {
 
   # Repositories
   download_section "Downloading repository setup..." "repos" \
-    all.sh aur.sh chaotic.sh
+    all.sh multilib.sh aur.sh chaotic.sh
 
   # Post-install
   download_section "Downloading post-install scripts..." "post-install" \
