@@ -106,6 +106,11 @@ if command -v bat &> /dev/null; then
   alias less='bat'
 fi
 
+# Fd alias (modern find replacement)
+if command -v fd &> /dev/null; then
+  alias find='fd'
+fi
+
 # Directories
 alias ..='cd ..'
 alias ...='cd ../..'
