@@ -21,7 +21,7 @@ fi
 export ARCHUP_INSTALL_LOG_FILE="/var/log/archup-install.log"
 export ARCHUP_INSTALL_CONFIG="/var/log/archup-install.conf"
 export ARCHUP_REPO_URL="${ARCHUP_REPO_URL:-https://github.com/bnema/archup}"
-export ARCHUP_RAW_URL="${ARCHUP_RAW_URL:-https://raw.githubusercontent.com/bnema/archup/dev}"
+export ARCHUP_RAW_URL="${ARCHUP_RAW_URL:-https://raw.githubusercontent.com/bnema/archup/main}"
 
 # Handle help flag early (doesn't need any files)
 if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then

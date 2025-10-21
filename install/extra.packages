@@ -1,0 +1,35 @@
+# ArchUp Extra Packages - Installed after Chaotic-AUR is configured
+# Modern CLI tools and enhancements from Chaotic-AUR
+
+# Snapper integration
+snapper
+snap-pac
+
+# Go toolchain (for AUR helper)
+go
+
+# System utilities
+dosfstools
+which
+wget
+unzip
+p7zip
+
+# Bluetooth
+bluez
+bluez-utils
+
+# Modern CLI Tools (from Chaotic-AUR)
+eza
+zoxide
+fzf
+ripgrep
+bat
+fd
+btop
+git-delta
+dust
+duf
+tealdeer
+yazi
+starship
