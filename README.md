@@ -2,7 +2,7 @@
 
 ## What Is ArchUp?
 
-ArchUp is a **minimal, staged Arch Linux installer** that respects user choice:
+ArchUp is a minimal, slightly opinionated Arch Linux installer focused on Wayland window managers. It provides a barebone base system with smart defaults and optional layers to build your ideal desktop environment.
 
 - **Barebone first** - Install just the essentials
 - **User choice** - Every layer is optional; you decide what to install when
@@ -22,6 +22,7 @@ ArchUp is a **minimal, staged Arch Linux installer** that respects user choice:
 ## Philosophy
 
 ArchUp put the user in control. Every layer is optional:
+
 - Want barebone CLI but with a cool bootloader? Stop at Tier 1
 - Need a lightweight GUI? Add Tier 2+3
 - Want to customize? Manual changes are easy; we don't lock you in
@@ -43,6 +44,7 @@ archup wizard
 ## Status
 
 **v0.1.0** - Barebone installer complete
+
 - [x] Tier 1: Barebone CLI with LUKS, btrfs, Limine
 - [x] Auto-builds `archup` CLI on first boot
 - [ ] Tier 2+3: Desktop wizard (in `archup-cli` repo)
