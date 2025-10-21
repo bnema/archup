@@ -7,9 +7,13 @@ All notable changes to this project will be documented in this file.
 ### Added
 - **UFW firewall**: Added ufw with default deny incoming policy for basic network protection
 - **First-boot branding**: Display ArchUp logo and completion message during first-boot setup
+- **Pacman configuration**: Enable color output, parallel downloads, and ILoveCandy progress bar
 - **zram swap**: Configured zram-generator for compressed in-memory swap with optimized sysctl parameters
 - **Broadcom WiFi**: Added broadcom-wl driver to base packages for Broadcom wireless support
 - **Multilib support**: Enabled multilib repository on ISO and installed system with reusable helper
+
+### Fixed
+- **Download script**: Added missing extra.packages to download list
 
 ### Changed
 - **Disk selection**: Enhanced disk listing with model, serial, and vendor information using JSON output
