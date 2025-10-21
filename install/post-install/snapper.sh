@@ -1,21 +1,11 @@
 #!/bin/bash
 # Configure Snapper and Limine integration for btrfs snapshots
 
-gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Configuring btrfs snapshots..."
-
-arch-chroot /mnt pacman -S --noconfirm --needed limine-snapper-sync >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
-
-mkdir -p /mnt/usr/local/share/archup/post-boot
-
-cp "$ARCHUP_INSTALL/post-boot/all.sh" /mnt/usr/local/share/archup/post-boot/
-cp "$ARCHUP_INSTALL/post-boot/snapper.sh" /mnt/usr/local/share/archup/post-boot/
-cp "$ARCHUP_INSTALL/post-boot/ssh-keygen.sh" /mnt/usr/local/share/archup/post-boot/
-chmod +x /mnt/usr/local/share/archup/post-boot/*.sh
-
-sed "s|__ARCHUP_EMAIL__|$(config_get "ARCHUP_EMAIL")|g; s|__ARCHUP_USERNAME__|$(config_get "ARCHUP_USERNAME")|g" \
-  "$ARCHUP_INSTALL/post-boot/archup-first-boot.service" > /mnt/etc/systemd/system/archup-first-boot.service
-
-arch-chroot /mnt systemctl enable archup-first-boot.service >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
+# Install limine-snapper-sync package
+if ! run_with_spinner "Installing limine-snapper-sync..." "arch-chroot /mnt pacman -S --noconfirm --needed limine-snapper-sync"; then
+  gum style --foreground 1 --padding "1 0 1 $PADDING_LEFT" "[ERROR] Failed to install limine-snapper-sync"
+  return 1
+fi
 
 LIMINE_CONFIG="/mnt/boot/EFI/limine/limine.conf"
 CMDLINE=$(grep "^[[:space:]]*cmdline:" "$LIMINE_CONFIG" | head -1 | sed 's/^[[:space:]]*cmdline:[[:space:]]*//')
