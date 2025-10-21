@@ -54,7 +54,8 @@ run_logged() {
 
   # Don't start/stop log monitor here - it runs continuously once started
   # Source helpers in subshell before running the script so functions are available
-  bash -c "source '$ARCHUP_INSTALL/helpers/all.sh' && source '$script'" </dev/null >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
+  # Redirect output to log but allow gum to access terminal for display
+  bash -c "source '$ARCHUP_INSTALL/helpers/all.sh' && source '$script'" >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 
   local exit_code=$?
 
