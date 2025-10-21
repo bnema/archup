@@ -37,7 +37,8 @@ We learned from Omarchy's excellent modular approach but rejected the bloat. Arc
 
 ```bash
 # 1. Boot Arch ISO, install barebone system
-curl -fsSL https://archup.bnema.dev/install | bash
+curl -fsSL https://archup.run/install | sh
+# or shorter: curl -fsSL https://archup.run/i | sh
 
 # 2. Reboot into new system
 
@@ -47,9 +48,9 @@ archup wizard
 
 ## Status
 
-**v0.1.0** - Barebone installer complete
+The barebone installer is ready for testing, I am currently actively working on the CLI wizard for desktop setup.
 
-- [x] Tier 1: Barebone CLI with LUKS, btrfs, Limine
+- [x] Tier 1: Barebone CLI installer
 - [x] Auto-builds `archup` CLI on first boot
 - [ ] Tier 2+3: Desktop wizard (in `archup-cli` repo)
 
@@ -57,9 +58,7 @@ archup wizard
 
 ## Links
 
-- **Install**: `https://archup.bnema.dev/install`
-- **Dev branch**: `https://archup.bnema.dev/install/dev`
-- **CLI repo**: `github.com/bnema/archup-cli`
+- **CLI repo**: [github.com/bnema/archup-cli](https://github.com/bnema/archup-cli)
 
 ## Thanks
 

@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **zram swap**: Configured zram-generator for compressed in-memory swap with optimized sysctl parameters
+- **Broadcom WiFi**: Added broadcom-wl driver to base packages for Broadcom wireless support
+
+### Changed
+- **Disk selection**: Enhanced disk listing with model, serial, and vendor information using JSON output
+- **Install URL**: Updated to archup.run domain with /install and /i shortcuts
+- **archup-cli installation**: Switched to go install for user-owned binary and easier self-updates
+- **Network manager**: Replaced systemd-networkd + iwd with NetworkManager for easier WiFi management via nmcli/nmtui
+- **Shell aliases**: Added fd as find replacement alias
+
+### Fixed
+- **Help flag**: Moved --help check before any side effects for proper argument parsing
+
 ## [0.2.0] - 2025-10-21
 
 ### Added
