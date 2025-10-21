@@ -19,6 +19,12 @@ if [ -f /usr/local/share/archup/post-boot/ssh-keygen.sh ]; then
   bash /usr/local/share/archup/post-boot/ssh-keygen.sh >> "$LOG_FILE" 2>&1
 fi
 
+# Install archup-cli from GitHub
+if [ -f /usr/local/share/archup/post-boot/archup-cli.sh ]; then
+  echo "Installing archup-cli from GitHub..." | tee -a "$LOG_FILE"
+  bash /usr/local/share/archup/post-boot/archup-cli.sh >> "$LOG_FILE" 2>&1
+fi
+
 echo "=== First Boot Setup Complete ===" >> "$LOG_FILE"
 
 # Disable this service after first run
