@@ -4,8 +4,17 @@
 gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Disk Selection"
 echo
 
-# List available disks
-mapfile -t disks < <(lsblk -dno NAME,SIZE,TYPE | grep disk | awk '{print "/dev/" $1 " (" $2 ")"}')
+# List available disks with detailed information using JSON output
+mapfile -t disks < <(lsblk -J -d -o NAME,SIZE,TYPE,MODEL,SERIAL,VENDOR | jq -r '
+  .blockdevices[] |
+  select(.type == "disk") |
+  (
+    "/dev/\(.name) (\(.size))" +
+    (if .model then " \(.model)" else "" end) +
+    (if .serial then " [\(.serial)]" else "" end) +
+    (if .vendor then " \(.vendor)" else "" end)
+  )
+')
 
 if [ ${#disks[@]} -eq 0 ]; then
   gum style --foreground 1 --padding "0 0 0 $PADDING_LEFT" "No disks found!"
