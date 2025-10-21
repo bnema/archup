@@ -38,70 +38,14 @@ fi
 
 # Download installer files if not present (for curl-based installation)
 if [ ! -d "$ARCHUP_INSTALL" ]; then
-  echo "=== Downloading ArchUp installer files ==="
-  mkdir -p "$ARCHUP_INSTALL"
+  # Download the download helper first
+  mkdir -p "$ARCHUP_INSTALL/helpers"
+  curl -sL "$ARCHUP_RAW_URL/install/helpers/download.sh" -o "$ARCHUP_INSTALL/helpers/download.sh"
+  chmod +x "$ARCHUP_INSTALL/helpers/download.sh"
 
-  # Download all required files using curl
-  GITHUB_RAW="$ARCHUP_RAW_URL"
-
-  # Create directory structure
-  mkdir -p "$ARCHUP_INSTALL"/{helpers,preflight,partitioning,base,config,boot,repos,post-install,presets}
-
-  echo "Downloading core files..."
-  curl -sL "$GITHUB_RAW/install/bootstrap.sh" -o "$ARCHUP_INSTALL/bootstrap.sh"
-  curl -sL "$GITHUB_RAW/logo.txt" -o "$ARCHUP_PATH/logo.txt"
-
-  echo "Downloading helpers..."
-  for file in all.sh config.sh logging.sh errors.sh presentation.sh chroot.sh cleanup.sh; do
-    curl -sL "$GITHUB_RAW/install/helpers/$file" -o "$ARCHUP_INSTALL/helpers/$file"
-  done
-
-  echo "Downloading preflight..."
-  for file in all.sh guards.sh begin.sh identify.sh detect-environment.sh; do
-    curl -sL "$GITHUB_RAW/install/preflight/$file" -o "$ARCHUP_INSTALL/preflight/$file"
-  done
-
-  echo "Downloading partitioning..."
-  for file in all.sh detect-disk.sh partition.sh format.sh mount.sh; do
-    curl -sL "$GITHUB_RAW/install/partitioning/$file" -o "$ARCHUP_INSTALL/partitioning/$file"
-  done
-
-  echo "Downloading base..."
-  for file in all.sh kernel.sh pacstrap.sh fstab.sh; do
-    curl -sL "$GITHUB_RAW/install/base/$file" -o "$ARCHUP_INSTALL/base/$file"
-  done
-
-  echo "Downloading config..."
-  for file in all.sh system.sh user.sh network.sh; do
-    curl -sL "$GITHUB_RAW/install/config/$file" -o "$ARCHUP_INSTALL/config/$file"
-  done
-
-  echo "Downloading boot..."
-  for file in all.sh limine.sh; do
-    curl -sL "$GITHUB_RAW/install/boot/$file" -o "$ARCHUP_INSTALL/boot/$file"
-  done
-
-  echo "Downloading repos..."
-  for file in all.sh yay.sh chaotic.sh; do
-    curl -sL "$GITHUB_RAW/install/repos/$file" -o "$ARCHUP_INSTALL/repos/$file"
-  done
-
-  echo "Downloading post-install..."
-  for file in all.sh boot-logo.sh snapper.sh verify.sh unmount.sh; do
-    curl -sL "$GITHUB_RAW/install/post-install/$file" -o "$ARCHUP_INSTALL/post-install/$file"
-  done
-
-  echo "Downloading post-boot..."
-  mkdir -p "$ARCHUP_INSTALL/post-boot"
-  for file in all.sh snapper.sh ssh-keygen.sh archup-first-boot.service; do
-    curl -sL "$GITHUB_RAW/install/post-boot/$file" -o "$ARCHUP_INSTALL/post-boot/$file"
-  done
-
-  echo "Downloading presets..."
-  curl -sL "$GITHUB_RAW/install/presets/barebone.packages" -o "$ARCHUP_INSTALL/presets/barebone.packages"
-
-  echo "[OK] All files downloaded successfully"
-  echo ""
+  # Run the download script
+  source "$ARCHUP_INSTALL/helpers/download.sh"
+  download_archup_files
 fi
 
 # Bootstrap: Install gum and essential dependencies (plain text, no gum usage)
@@ -143,19 +87,19 @@ source "$ARCHUP_INSTALL/boot/all.sh"
 # Repository setup (AUR + Chaotic)
 source "$ARCHUP_INSTALL/repos/all.sh"
 
-# Post-install (boot logo, unmount drives)
+# Post-install (boot logo, snapper, unmount drives)
 source "$ARCHUP_INSTALL/post-install/all.sh"
-
-# ============================================================
-# FUTURE PHASES (TO BE IMPLEMENTED)
-# ============================================================
-# Phase 6: Barebone preset testing
-# Phase 7: Default preset (GUI)
 
 # Stop logging and cleanup
 stop_install_log
 
-gum style --foreground 2 --padding "1 0 1 $PADDING_LEFT" "ArchUp installation complete!"
+gum style --foreground 2 --padding "1 0 1 $PADDING_LEFT" "ArchUp barebone installation complete!"
+echo
+
+gum style --foreground 6 --padding "0 0 0 $PADDING_LEFT" "Next steps:"
+gum style --padding "0 0 0 $PADDING_LEFT" "  1. Reboot the system"
+gum style --padding "0 0 0 $PADDING_LEFT" "  2. After login, run: archup wizard"
+gum style --padding "0 0 1 $PADDING_LEFT" "  3. Select your compositor and packages"
 echo
 
 CHOICE=$(gum choose --header "What would you like to do?" --header.padding "0 0 0 $PADDING_LEFT" "Reboot" "Close")
