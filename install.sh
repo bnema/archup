@@ -4,26 +4,7 @@
 
 set -eo pipefail
 
-# Export global paths first (needed for re-exec)
-export ARCHUP_PATH="${ARCHUP_PATH:-$HOME/.local/share/archup}"
-export ARCHUP_INSTALL="$ARCHUP_PATH/install"
-
-# If stdin is not a TTY (piped from curl), save and re-exec with TTY
-if [ ! -t 0 ]; then
-  # Save script to proper location
-  mkdir -p "$ARCHUP_PATH"
-  INSTALL_SCRIPT="$ARCHUP_PATH/install.sh"
-  cat > "$INSTALL_SCRIPT"
-  chmod +x "$INSTALL_SCRIPT"
-  # Re-exec with TTY connected
-  exec < /dev/tty "$INSTALL_SCRIPT" "$@"
-fi
-export ARCHUP_INSTALL_LOG_FILE="/var/log/archup-install.log"
-export ARCHUP_INSTALL_CONFIG="/var/log/archup-install.conf"
-export ARCHUP_REPO_URL="${ARCHUP_REPO_URL:-https://github.com/bnema/archup}"
-export ARCHUP_RAW_URL="${ARCHUP_RAW_URL:-https://raw.githubusercontent.com/bnema/archup/main}"
-
-# Handle help flag early (doesn't need any files)
+# Handle help flag FIRST - before any side effects
 if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
   cat << 'HELP'
 Usage: install.sh [OPTIONS]
@@ -41,6 +22,26 @@ EXAMPLES:
 HELP
   exit 0
 fi
+
+# Export global paths (needed for re-exec)
+export ARCHUP_PATH="${ARCHUP_PATH:-$HOME/.local/share/archup}"
+export ARCHUP_INSTALL="$ARCHUP_PATH/install"
+
+# If stdin is not a TTY (piped from curl), save and re-exec with TTY
+if [ ! -t 0 ]; then
+  # Save script to proper location
+  mkdir -p "$ARCHUP_PATH"
+  INSTALL_SCRIPT="$ARCHUP_PATH/install.sh"
+  cat > "$INSTALL_SCRIPT"
+  chmod +x "$INSTALL_SCRIPT"
+  # Re-exec with TTY connected
+  exec < /dev/tty "$INSTALL_SCRIPT" "$@"
+fi
+
+export ARCHUP_INSTALL_LOG_FILE="/var/log/archup-install.log"
+export ARCHUP_INSTALL_CONFIG="/var/log/archup-install.conf"
+export ARCHUP_REPO_URL="${ARCHUP_REPO_URL:-https://github.com/bnema/archup}"
+export ARCHUP_RAW_URL="${ARCHUP_RAW_URL:-https://raw.githubusercontent.com/bnema/archup/main}"
 
 # Bootstrap FIRST: Install gum and jq (required for download script)
 if [ ! -d "$ARCHUP_INSTALL" ]; then
