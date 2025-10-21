@@ -42,7 +42,7 @@ download_archup_files() {
 
   # Base system
   download_section "Downloading base system scripts..." "base" \
-    all.sh kernel.sh enable-multilib.sh cachyos-repo.sh pacstrap.sh fstab.sh
+    all.sh kernel.sh enable-multilib.sh cachyos-repo.sh pacman.sh pacstrap.sh fstab.sh
 
   # Configuration
   download_section "Downloading config scripts..." "config" \
@@ -58,11 +58,11 @@ download_archup_files() {
 
   # Post-install
   download_section "Downloading post-install scripts..." "post-install" \
-    all.sh boot-logo.sh plymouth.sh snapper.sh ufw.sh pacman.sh post-boot-setup.sh hooks.sh shell-config.sh verify.sh unmount.sh
+    all.sh boot-logo.sh plymouth.sh snapper.sh pacman.sh post-boot-setup.sh hooks.sh shell-config.sh verify.sh unmount.sh
 
   # Post-boot
   download_section "Downloading post-boot scripts..." "post-boot" \
-    all.sh snapper.sh ssh-keygen.sh archup-cli.sh archup-first-boot.service
+    all.sh snapper.sh ufw.sh ssh-keygen.sh archup-cli.sh archup-first-boot.service
 
   # Package lists
   curl -sL "$GITHUB_RAW/install/base.packages" -o "$ARCHUP_INSTALL/base.packages" 2>/dev/null

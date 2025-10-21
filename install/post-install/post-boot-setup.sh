@@ -12,6 +12,7 @@ cp "$ARCHUP_PATH/logo.txt" /mnt/usr/local/share/archup/
 # Copy all post-boot scripts
 cp "$ARCHUP_INSTALL/post-boot/all.sh" /mnt/usr/local/share/archup/post-boot/
 cp "$ARCHUP_INSTALL/post-boot/snapper.sh" /mnt/usr/local/share/archup/post-boot/
+cp "$ARCHUP_INSTALL/post-boot/ufw.sh" /mnt/usr/local/share/archup/post-boot/
 cp "$ARCHUP_INSTALL/post-boot/ssh-keygen.sh" /mnt/usr/local/share/archup/post-boot/
 cp "$ARCHUP_INSTALL/post-boot/archup-cli.sh" /mnt/usr/local/share/archup/post-boot/
 

@@ -16,9 +16,19 @@ echo ""
 if [ -f /usr/local/share/archup/post-boot/snapper.sh ]; then
   echo "Configuring snapper..." | tee -a "$LOG_FILE"
   if bash /usr/local/share/archup/post-boot/snapper.sh >> "$LOG_FILE" 2>&1; then
-    echo "✓ Snapper configured successfully" | tee -a "$LOG_FILE"
+    echo "Snapper configured successfully" | tee -a "$LOG_FILE"
   else
-    echo "✗ Snapper configuration failed (non-critical)" | tee -a "$LOG_FILE"
+    echo "Snapper configuration failed (non-critical)" | tee -a "$LOG_FILE"
+  fi
+fi
+
+# Configure UFW firewall
+if [ -f /usr/local/share/archup/post-boot/ufw.sh ]; then
+  echo "Configuring firewall..." | tee -a "$LOG_FILE"
+  if bash /usr/local/share/archup/post-boot/ufw.sh >> "$LOG_FILE" 2>&1; then
+    echo "Firewall configured successfully" | tee -a "$LOG_FILE"
+  else
+    echo "Firewall configuration failed (non-critical)" | tee -a "$LOG_FILE"
   fi
 fi
 
