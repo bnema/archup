@@ -26,10 +26,10 @@ ArchUp is a **minimal, staged Arch Linux installer** that respects user choice:
 
 ## What ArchUp Is NOT
 
-❌ **Not a desktop environment** - We don't package KDE, GNOME, or other bloated DEs
-❌ **Not a distro** - It's an installer, not a custom Arch spin
-❌ **Not bloated** - We provide the minimum to get you started
-❌ **Not an Omarchy copy** - We respect Omarchy's architecture but keep it minimal
+- **Not a desktop environment** - We don't package KDE, GNOME, or other bloated DEs
+- **Not a distro** - It's an installer, not a custom Arch spin
+- **Not bloated** - We provide the minimum to get you started
+- **Not an Omarchy copy** - We respect Omarchy's architecture but keep it minimal
 
 ## Philosophy
 
