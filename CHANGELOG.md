@@ -4,18 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-10-21
+
 ### Added
 - **Extra packages**: Separated optional packages into extra.packages installed after Chaotic-AUR
 - **Shell verification**: Added shell config verification to post-install verify script
 - **Starship config**: Added custom Arch-inspired blue color scheme for starship prompt
+- **System utilities**: Added essential tools (dosfstools, which, wget, unzip, p7zip) to extra packages
+- **Bluetooth support**: Added bluez and bluez-utils for Bluetooth management
+- **OpenSSH**: Added openssh to base packages for ssh-keygen and SSH client tools
 
 ### Changed
 - **Package organization**: Split packages into base (essential) and extra (optional from Chaotic-AUR)
 - **Base system**: Reduced base system to essential packages only, moved modern CLI tools to extra
 - **Post-boot error handling**: Improved error handling with non-critical failure messages
 - **Shell config structure**: Organized shell files in proper directory structure
-- **Plymouth theme**: Changed background color to darker blue (#05142E)
+- **Plymouth theme**: Changed background color to darker blue (#050a14)
 - **Logging**: Removed stdin redirect to fix gum terminal display
+- **Asset URLs**: Changed ARCHUP_RAW_URL from dev to main branch to prevent breakage after merge
 
 ### Fixed
 - **Shell config ownership**: Fixed chown paths to use chroot-relative paths
@@ -26,6 +32,8 @@ All notable changes to this project will be documented in this file.
 - **Curl-pipe installation**: Fixed curl-based one-liner installation by auto-detecting piped input, re-executing with TTY for interactive prompts, and running bootstrap before downloads
 - **Cleanup flag**: Fixed --cleanup flag to run after helper files are downloaded
 - **Verification script**: Disabled ERR trap during verification to properly show all failures and prompt user, use dynamic kernel name instead of hardcoded linux, made fallback initramfs optional
+- **Package name**: Fixed git-delta package name (was incorrectly named 'delta')
+- **SSH key generation**: Fixed post-boot SSH key generation by including openssh in base packages
 
 ## [0.1.0] - 2025-10-21
 
