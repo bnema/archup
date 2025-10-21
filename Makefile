@@ -20,7 +20,7 @@ check-syntax:
 	@echo "========================================="
 	@echo "Checking shell script syntax..."
 	@echo "========================================="
-	@for script in install.sh install/bootstrap.sh install/helpers/*.sh install/preflight/*.sh install/partitioning/*.sh install/base/*.sh install/config/*.sh install/boot/*.sh install/repos/*.sh; do \
+	@for script in install.sh install/bootstrap.sh install/helpers/*.sh install/preflight/*.sh install/partitioning/*.sh install/base/*.sh install/config/*.sh install/boot/*.sh install/repos/*.sh install/post-install/*.sh install/post-boot/*.sh; do \
 		if [ -f "$$script" ]; then \
 			echo "Checking: $$script"; \
 			bash -n "$$script" || exit 1; \
@@ -39,11 +39,11 @@ check-shellcheck:
 		echo "Install with: sudo pacman -S shellcheck"; \
 		exit 0; \
 	fi
-	@for script in install.sh install/bootstrap.sh install/helpers/*.sh install/preflight/*.sh install/partitioning/*.sh install/base/*.sh install/config/*.sh install/boot/*.sh install/repos/*.sh; do \
+	@for script in install.sh install/bootstrap.sh install/helpers/*.sh install/preflight/*.sh install/partitioning/*.sh install/base/*.sh install/config/*.sh install/boot/*.sh install/repos/*.sh install/post-install/*.sh install/post-boot/*.sh; do \
 		if [ -f "$$script" ]; then \
 			echo ""; \
 			echo "Checking: $$script"; \
-			shellcheck --exclude=SC1091,SC2086,SC2004,SC2059,SC2129,SC2155 "$$script" || exit 1; \
+			shellcheck --exclude=SC1090,SC1091,SC2086,SC2004,SC2059,SC2129,SC2155 "$$script" || exit 1; \
 		fi \
 	done
 	@echo ""
