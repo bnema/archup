@@ -1,17 +1,5 @@
 # ArchUp
 
-**Minimal Arch Linux installer with staged desktop setup**
-
-```
-Barebone CLI → Reboot → archup wizard → Choose desktop
-```
-
-## Install
-
-```bash
-curl -fsSL https://archup.bnema.dev/install | bash
-```
-
 ## What Is ArchUp?
 
 ArchUp is a **minimal, staged Arch Linux installer** that respects user choice:
