@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - **Download script**: Added missing extra.packages to download list
 - **UFW setup**: Moved firewall configuration to post-boot to avoid kernel module errors in chroot
+- **Spinner visibility**: Fixed gum spinner not showing during logged phase by redirecting stderr to /dev/tty
 
 ### Changed
 - **Disk selection**: Enhanced disk listing with model, serial, and vendor information using JSON output
