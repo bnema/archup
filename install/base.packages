@@ -1,0 +1,35 @@
+# ArchUp Base System (Tier 1 - Barebone CLI)
+# ~20 packages - minimal foundation for CLI-only or desktop installation
+
+# Core System
+base
+linux-firmware
+btrfs-progs
+snapper
+snap-pac
+
+# Kernel (selected dynamically by kernel.sh)
+# linux / linux-lts / linux-zen
+
+# Microcode (selected dynamically based on CPU detection)
+# intel-ucode / amd-ucode
+
+# Bootloader
+limine
+plymouth
+ttf-fira-sans
+ttf-jetbrains-mono-nerd
+efibootmgr
+
+# Networking
+iwd
+
+# Essential Tools
+sudo
+vim
+man-db
+git
+go
+
+# Encryption (added if LUKS enabled)
+# cryptsetup
