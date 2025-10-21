@@ -10,15 +10,16 @@ if [[ -z "${USERNAME}" ]]; then
 fi
 
 USER_HOME="/mnt/home/$USERNAME"
-ARCHUP_DEFAULT="$USER_HOME/.local/share/archup/default/bash"
+ARCHUP_DEFAULT="$USER_HOME/.local/share/archup/default"
+ARCHUP_DEFAULT_BASH="$ARCHUP_DEFAULT/bash"
 
 echo "Configuring bash shell for $USERNAME..." >> "$ARCHUP_INSTALL_LOG_FILE"
 
 # Create archup default directory structure
-mkdir -p "$ARCHUP_DEFAULT"
+mkdir -p "$ARCHUP_DEFAULT_BASH"
 
 # Create shell configuration (history, bash-completion, PATH)
-cat > "$ARCHUP_DEFAULT/shell" << 'SHELL_END'
+cat > "$ARCHUP_DEFAULT_BASH/shell" << 'SHELL_END'
 # History control
 shopt -s histappend
 HISTCONTROL=ignoreboth
@@ -35,10 +36,39 @@ export PATH="$HOME/.local/bin:$PATH"
 set +h
 SHELL_END
 
+# Create starship configuration with Arch blue colors
+cat > "$ARCHUP_DEFAULT/starship.toml" << 'STARSHIP_END'
+# Arch-inspired blue color scheme
+add_newline = true
+
+[username]
+show_always = true
+style_user = "fg:#87ceeb"
+style_root = "fg:#ff6b8a"
+format = "[$user]($style) "
+
+[hostname]
+disabled = true
+
+[directory]
+style = "fg:#e8f4f8"
+format = "in [$path]($style) "
+
+[git_branch]
+symbol = " "
+style = "fg:#6bb6d6"
+format = "on [$symbol$branch]($style) "
+
+[character]
+success_symbol = '[❯](fg:#6bb6d6)'
+error_symbol = '[✗](fg:#ff6b8a)'
+STARSHIP_END
+
 # Create init configuration (starship, zoxide, fzf)
-cat > "$ARCHUP_DEFAULT/init" << 'INIT_END'
+cat > "$ARCHUP_DEFAULT_BASH/init" << 'INIT_END'
 # Starship prompt
 if command -v starship &> /dev/null; then
+  export STARSHIP_CONFIG="$HOME/.local/share/archup/default/starship.toml"
   eval "$(starship init bash)"
 fi
 
@@ -54,7 +84,7 @@ fi
 INIT_END
 
 # Create aliases configuration
-cat > "$ARCHUP_DEFAULT/aliases" << 'ALIASES_END'
+cat > "$ARCHUP_DEFAULT_BASH/aliases" << 'ALIASES_END'
 # Eza aliases (modern ls replacement)
 if command -v eza &> /dev/null; then
   alias ls='eza -lh --group-directories-first --icons=auto'
@@ -91,7 +121,7 @@ alias gl='git log --oneline --graph --decorate'
 ALIASES_END
 
 # Create envs configuration (environment variables)
-cat > "$ARCHUP_DEFAULT/envs" << 'ENVS_END'
+cat > "$ARCHUP_DEFAULT_BASH/envs" << 'ENVS_END'
 # Bat configuration
 if command -v bat &> /dev/null; then
   export BAT_THEME="TwoDark"
@@ -104,7 +134,7 @@ fi
 ENVS_END
 
 # Create functions configuration
-cat > "$ARCHUP_DEFAULT/functions" << 'FUNCTIONS_END'
+cat > "$ARCHUP_DEFAULT_BASH/functions" << 'FUNCTIONS_END'
 # Zoxide cd wrapper
 if command -v zoxide &> /dev/null; then
   zd() {
@@ -121,7 +151,7 @@ fi
 FUNCTIONS_END
 
 # Create rc file that sources everything
-cat > "$ARCHUP_DEFAULT/rc" << 'RC_END'
+cat > "$ARCHUP_DEFAULT_BASH/rc" << 'RC_END'
 source ~/.local/share/archup/default/bash/shell
 source ~/.local/share/archup/default/bash/init
 source ~/.local/share/archup/default/bash/aliases
@@ -150,9 +180,9 @@ arch-chroot /mnt su - "$USERNAME" -c "git config --global delta.side-by-side tru
 arch-chroot /mnt su - "$USERNAME" -c "git config --global merge.conflictstyle diff3" >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 arch-chroot /mnt su - "$USERNAME" -c "git config --global diff.colorMoved default" >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 
-# Set ownership
-arch-chroot /mnt chown -R "$USERNAME:$USERNAME" "$USER_HOME/.local" >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
-arch-chroot /mnt chown "$USERNAME:$USERNAME" "$USER_HOME/.bashrc" >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
+# Set ownership (paths relative to chroot, not host)
+arch-chroot /mnt chown -R "$USERNAME:$USERNAME" "/home/$USERNAME/.local" >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
+arch-chroot /mnt chown "$USERNAME:$USERNAME" "/home/$USERNAME/.bashrc" >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 
 gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "[OK] Shell configured"
 echo "Configured shell for user: $USERNAME" >> "$ARCHUP_INSTALL_LOG_FILE"
