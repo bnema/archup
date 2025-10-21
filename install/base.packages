@@ -20,7 +20,8 @@ ttf-fira-sans
 ttf-jetbrains-mono-nerd
 
 # Networking
-iwd
+networkmanager
+broadcom-wl
 openssh
 
 # Essential Tools
@@ -29,6 +30,9 @@ neovim
 man-db
 git
 bash-completion
+
+# Memory Management
+zram-generator
 
 # Encryption (added if LUKS enabled)
 # cryptsetup

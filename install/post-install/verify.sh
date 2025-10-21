@@ -89,11 +89,13 @@ verify_file "/etc/fstab" "Filesystem table"
 verify_file "/etc/hostname" "Hostname"
 verify_file "/etc/locale.conf" "Locale configuration"
 verify_file "/etc/locale.gen" "Locale generation file"
+verify_file "/etc/systemd/zram-generator.conf" "zram configuration"
+verify_file "/etc/sysctl.d/99-vm-zram-parameters.conf" "zram sysctl parameters"
 
-if [ -f "/mnt/etc/systemd/network/20-wired.network" ] || [ -f "/mnt/etc/NetworkManager/NetworkManager.conf" ]; then
-  echo "[OK] Network configuration present" >> "$ARCHUP_INSTALL_LOG_FILE"
+if arch-chroot /mnt systemctl is-enabled NetworkManager &>/dev/null; then
+  echo "[OK] NetworkManager enabled" >> "$ARCHUP_INSTALL_LOG_FILE"
 else
-  echo "[ERROR] Network configuration missing" >> "$ARCHUP_INSTALL_LOG_FILE"
+  echo "[ERROR] NetworkManager not enabled" >> "$ARCHUP_INSTALL_LOG_FILE"
   VERIFICATION_FAILED=1
 fi
 

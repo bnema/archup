@@ -46,7 +46,7 @@ download_archup_files() {
 
   # Configuration
   download_section "Downloading config scripts..." "config" \
-    all.sh system.sh user.sh network.sh
+    all.sh system.sh user.sh network.sh zram.sh
 
   # Bootloader
   download_section "Downloading bootloader setup..." "boot" \
