@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-10-22
+
 ### Added
 - **UFW firewall**: Added ufw with default deny incoming policy (configured on first boot)
 - **First-boot branding**: Display ArchUp logo and completion message during first-boot setup
