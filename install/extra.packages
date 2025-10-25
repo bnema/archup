@@ -15,6 +15,9 @@ wget
 unzip
 p7zip
 
+# Power management
+tlp
+
 # Security
 ufw
 
