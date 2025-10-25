@@ -32,6 +32,16 @@ while true; do
   fi
 done
 
+# Encryption Password Choice
+echo
+gum style --foreground 6 --padding "0 0 0 $PADDING_LEFT" "Disk Encryption"
+gum style --padding "0 0 0 $PADDING_LEFT" "Choose whether to use the same password for disk encryption"
+if gum confirm "Use same password for disk encryption?" --padding "0 0 1 $PADDING_LEFT"; then
+  ARCHUP_ENCRYPTION_USE_SAME_PASSWORD="true"
+else
+  ARCHUP_ENCRYPTION_USE_SAME_PASSWORD="false"
+fi
+
 # Email (optional)
 echo
 gum style --padding "0 0 0 $PADDING_LEFT" "Email is used for SSH key generation and git configuration"
@@ -81,12 +91,14 @@ export ARCHUP_PASSWORD
 export ARCHUP_EMAIL
 export ARCHUP_HOSTNAME
 export ARCHUP_TIMEZONE
+export ARCHUP_ENCRYPTION_USE_SAME_PASSWORD
 
 config_set "ARCHUP_USERNAME" "$ARCHUP_USERNAME"
 config_set "ARCHUP_PASSWORD" "$ARCHUP_PASSWORD"
 config_set "ARCHUP_EMAIL" "$ARCHUP_EMAIL"
 config_set "ARCHUP_HOSTNAME" "$ARCHUP_HOSTNAME"
 config_set "ARCHUP_TIMEZONE" "$ARCHUP_TIMEZONE"
+config_set "ARCHUP_ENCRYPTION_USE_SAME_PASSWORD" "$ARCHUP_ENCRYPTION_USE_SAME_PASSWORD"
 
 # Display summary
 echo
@@ -97,9 +109,15 @@ else
   gum style --foreground 3 --padding "0 0 0 $PADDING_LEFT" "[SKIP] Email: not provided"
 fi
 gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "[OK] Hostname: $ARCHUP_HOSTNAME"
-gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "[OK] Timezone: $ARCHUP_TIMEZONE"
+gum style --foreground 2 --padding "0 0 0 $PADDING_LEFT" "[OK] Timezone: $ARCHUP_TIMEZONE"
+if [ "$ARCHUP_ENCRYPTION_USE_SAME_PASSWORD" = "true" ]; then
+  gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "[OK] Disk Encryption: using account password"
+else
+  gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "[OK] Disk Encryption: separate password (will be prompted during setup)"
+fi
 
 echo "User: $ARCHUP_USERNAME" >> "$ARCHUP_INSTALL_LOG_FILE"
 echo "Email: ${ARCHUP_EMAIL:-<not provided>}" >> "$ARCHUP_INSTALL_LOG_FILE"
 echo "Hostname: $ARCHUP_HOSTNAME" >> "$ARCHUP_INSTALL_LOG_FILE"
 echo "Timezone: $ARCHUP_TIMEZONE" >> "$ARCHUP_INSTALL_LOG_FILE"
+echo "Encryption Password: $ARCHUP_ENCRYPTION_USE_SAME_PASSWORD" >> "$ARCHUP_INSTALL_LOG_FILE"

@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **Separate encryption password**: Allow users to choose between using their account password or a separate password for disk encryption during setup
+
 ## [0.3.0] - 2025-10-22
 
 ### Added
