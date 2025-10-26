@@ -31,15 +31,35 @@ if [ "$ARCHUP_ENCRYPTION" = "enabled" ]; then
     echo
     gum style --foreground 6 --padding "0 0 0 $PADDING_LEFT" "Disk Encryption Password"
     gum style --padding "0 0 0 $PADDING_LEFT" "Enter a password to encrypt your disk (different from your account password)"
+    gum style --foreground 8 --padding "0 0 0 $PADDING_LEFT" "Press Ctrl+C to cancel or leave empty to abort"
 
     while true; do
       LUKS_PASSWORD=$(gum input --password --placeholder "Enter encryption password" \
         --prompt "Password: " \
         --padding "0 0 0 $PADDING_LEFT")
 
+      # Check if gum was cancelled (Ctrl+C returns exit code 130)
+      if [ $? -ne 0 ]; then
+        echo "Installation cancelled by user" >> "$ARCHUP_INSTALL_LOG_FILE"
+        exit 130
+      fi
+
+      # Allow empty password to abort
+      if [ -z "$LUKS_PASSWORD" ]; then
+        gum style --foreground 3 --padding "1 0 1 $PADDING_LEFT" "Installation aborted by user"
+        echo "Installation aborted: empty encryption password" >> "$ARCHUP_INSTALL_LOG_FILE"
+        exit 1
+      fi
+
       LUKS_PASSWORD_CONFIRM=$(gum input --password --placeholder "Confirm encryption password" \
         --prompt "Confirm: " \
         --padding "0 0 0 $PADDING_LEFT")
+
+      # Check if confirmation was cancelled
+      if [ $? -ne 0 ]; then
+        echo "Installation cancelled by user" >> "$ARCHUP_INSTALL_LOG_FILE"
+        exit 130
+      fi
 
       if [ "$LUKS_PASSWORD" = "$LUKS_PASSWORD_CONFIRM" ]; then
         break
@@ -47,12 +67,6 @@ if [ "$ARCHUP_ENCRYPTION" = "enabled" ]; then
         gum style --foreground 1 --padding "1 0 1 $PADDING_LEFT" "Passwords do not match. Try again."
       fi
     done
-
-    if [ -z "$LUKS_PASSWORD" ]; then
-      gum style --foreground 1 --padding "1 0 1 $PADDING_LEFT" "ERROR: Encryption password not set!"
-      echo "ERROR: Encryption password is empty during LUKS setup" >> "$ARCHUP_INSTALL_LOG_FILE"
-      exit 1
-    fi
   fi
 
   # Wipe any existing signatures on root partition to avoid conflicts
