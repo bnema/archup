@@ -73,60 +73,16 @@ func (p *PreflightPhase) PreCheck() error {
 func (p *PreflightPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResult {
 	p.SendProgress(progressChan, "Running preflight checks...", 1, 2)
 
-	// Detect environment
-	p.detectEnvironment(progressChan)
-
 	// Set defaults
 	p.SetDefaults()
 
-	p.SendProgress(progressChan, "Environment detected", 2, 2)
+	p.SendProgress(progressChan, "Preflight checks complete", 2, 2)
 	p.SendComplete(progressChan, "Preflight complete")
 
 	return PhaseResult{
 		Success: true,
 		Message: "Preflight checks passed",
 	}
-}
-
-// detectEnvironment auto-detects keyboard layout and network
-func (p *PreflightPhase) detectEnvironment(progressChan chan<- ProgressUpdate) {
-	p.SendOutput(progressChan, "Detecting keyboard layout...")
-
-	keymap := p.detectKeymap()
-	p.config.Keymap = keymap
-	p.SendOutput(progressChan, fmt.Sprintf("[OK] Keyboard layout: %s", keymap))
-}
-
-// detectKeymap detects current keyboard layout
-func (p *PreflightPhase) detectKeymap() string {
-	out, err := exec.Command("localectl", "status").Output()
-
-	switch {
-	case err != nil:
-		return "us" // Default fallback
-	}
-
-	lines := strings.Split(string(out), "\n")
-	for _, line := range lines {
-		if !strings.Contains(line, "VC Keymap") {
-			continue
-		}
-
-		parts := strings.Fields(line)
-		if len(parts) < 3 {
-			continue
-		}
-
-		keymap := parts[2]
-		switch keymap {
-		case "(unset)", "":
-			return "us"
-		default:
-			return keymap
-		}
-	}
-
-	return "us"
 }
 
 // SetDefaults sets default configuration values
