@@ -123,12 +123,15 @@ release:
 
     ### Install Pre-release/Dev Version
     ```bash
-    curl -fsSL https://archup.run/install/bin | bash -s -- --dev
+    curl -fsSL https://archup.run/install/bin/dev | bash
     ```
 
     ### Install Specific Version
     ```bash
-    curl -fsSL https://archup.run/install/bin | bash -s -- --version {{.Tag}}
+    # Download and run specific version
+    curl -fsSL https://github.com/bnema/archup/releases/download/{{.Tag}}/archup-installer -o /tmp/archup-installer
+    chmod +x /tmp/archup-installer
+    /tmp/archup-installer
     ```
 
     ### Manual Install
