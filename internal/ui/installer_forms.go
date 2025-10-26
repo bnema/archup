@@ -28,19 +28,25 @@ func CreatePreflightForm(cfg *config.Config) *huh.Form {
 		huh.NewGroup(
 			fb.TextInput("Hostname", "> ", &cfg.Hostname, validation.ValidateHostname),
 			fb.TextInput("Username", "> ", &cfg.Username, validation.ValidateUsername),
+			fb.TextInput("Email (optional)", "> ", &cfg.Email, nil).
+				Description(DescEmail),
 		).Title(SectionUserIdentity),
 
 		// Passwords
 		huh.NewGroup(
 			fb.PasswordInput("User Password", "> ", &cfg.UserPassword, validation.ValidatePassword),
-			fb.PasswordInput("Root Password", "> ", &cfg.RootPassword, validation.ValidatePassword),
+			fb.PasswordInput("Confirm Password", "> ", &cfg.ConfirmPassword, validation.ValidatePasswordConfirmation(&cfg.UserPassword)),
+
+			fb.Confirm("Use same password for disk encryption?", "Yes", "No", &cfg.UseSamePasswordForEncryption),
 		),
 
-		// Email (optional)
+		// Disk Encryption Password (only shown when NOT using same password)
 		huh.NewGroup(
-			fb.TextInput("Email (optional)", "> ", &cfg.Email, nil).
-				Description(DescEmail),
-		),
+			fb.PasswordInput("Disk Encryption Password", "> ", &cfg.EncryptPassword, validation.ValidatePassword).
+				Description("Enter a separate password to unlock your encrypted disk at boot"),
+		).WithHideFunc(func() bool {
+			return cfg.UseSamePasswordForEncryption // Hide when using same password
+		}),
 
 		// Localization
 		huh.NewGroup(
@@ -113,47 +119,38 @@ func CreateOptionsForm(cfg *config.Config) *huh.Form {
 		cfg.Microcode = cpuInfo.Microcode
 	}
 
-	// Kernel selection (always shown)
-	kernelGroup := huh.NewGroup(
-		fb.SelectWithOptions("Kernel", components.CreateKernelOptions(), &cfg.KernelChoice),
-	).Title(SectionKernel)
-
-	// Encryption options
+	// Page 1: Kernel and Encryption (system base configuration)
 	encryptionOptions := []huh.Option[string]{
 		huh.NewOption("No encryption", config.EncryptionNone),
 		huh.NewOption("LUKS encryption", config.EncryptionLUKS),
 	}
 
-	encryptionGroup := huh.NewGroup(
-		fb.SelectWithOptions("Encryption", encryptionOptions, &cfg.EncryptionType),
-	).Title(SectionDiskEncryption).Description(DescEncryption)
+	systemBaseGroup := huh.NewGroup(
+		fb.SelectWithOptions("Kernel", components.CreateKernelOptions(), &cfg.KernelChoice),
+		fb.SelectWithOptions("Encryption", encryptionOptions, &cfg.EncryptionType).
+			Description(DescEncryption),
+	).Title(SectionKernel)
 
-	// Repository options
-	repoGroup := huh.NewGroup(
-		fb.Confirm("Enable multilib repository?", "Yes", "No", &cfg.EnableMultilib).
-			Description(DescMultilib),
-		fb.Confirm("Enable Chaotic-AUR?", "Yes", "No", &cfg.EnableChaotic).
-			Description(DescChaoticAUR),
-	)
-
-	// AUR helper options
+	// Page 2: Repository and package management options
 	aurOptions := []huh.Option[string]{
 		huh.NewOption("None", ""),
 		components.CreateOption("Paru", DescAURHelperParu, config.AURHelperParu),
 		components.CreateOption("Yay", DescAURHelperYay, config.AURHelperYay),
 	}
 
-	aurGroup := huh.NewGroup(
+	packageManagementGroup := huh.NewGroup(
+		fb.Confirm("Enable multilib repository?", "Yes", "No", &cfg.EnableMultilib).
+			Description(DescMultilib),
+		fb.Confirm("Enable Chaotic-AUR?", "Yes", "No", &cfg.EnableChaotic).
+			Description(DescChaoticAUR),
 		fb.SelectWithOptions("AUR Helper", aurOptions, &cfg.AURHelper).
 			Description(DescAURHelper),
 	)
 
 	// Build form groups list
 	groups := []*huh.Group{
-		kernelGroup,
-		encryptionGroup,
-		repoGroup,
-		aurGroup,
+		systemBaseGroup,
+		packageManagementGroup,
 	}
 
 	// Add AMD P-State tuning group (conditional - only for AMD CPUs)
@@ -176,25 +173,12 @@ func CreateOptionsForm(cfg *config.Config) *huh.Form {
 					&cfg.AMDPState),
 			).Title(SectionAMDTuning).Description(DescAMDPState)
 
-			// Insert AMD group after kernel group
+			// Insert AMD group after system base group (between kernel/encryption and package management)
 			groups = append(groups[:1], append([]*huh.Group{amdGroup}, groups[1:]...)...)
 		}
 	}
 
 	return fb.CreateForm(groups...)
-}
-
-// CreateEncryptionPasswordForm creates encryption password form
-// User can leave empty to use same password as user account
-func CreateEncryptionPasswordForm(cfg *config.Config) *huh.Form {
-	fb := components.NewFormBuilder(false)
-
-	return fb.CreateForm(
-		huh.NewGroup(
-			fb.PasswordInput("Encryption Password", "> ", &cfg.EncryptPassword, nil).
-				Description(DescEncryptionPassword),
-		).Title(SectionDiskEncryption).Description(DescEncryption),
-	)
 }
 
 // FormatDiskOption formats a disk into a user-friendly option string (DRY helper)

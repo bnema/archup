@@ -200,6 +200,10 @@ type Config struct {
 	EncryptionType string // "none", "luks", or "luks-lvm"
 	EncryptPassword string // Separate encryption password if different from user password
 
+	// Form-only fields (not persisted)
+	ConfirmPassword              string // Temporary field for password confirmation
+	UseSamePasswordForEncryption bool   // Checkbox state for using same password for encryption
+
 	// Partitioning
 	TargetDisk     string
 	BootPartition  string
@@ -233,20 +237,21 @@ type Config struct {
 // NewConfig creates a new Config with sensible defaults
 func NewConfig() *Config {
 	return &Config{
-		Locale:         "en_US.UTF-8",
-		Timezone:       "UTC",
-		Keymap:         "us",
-		Bootloader:     "limine",
-		EncryptionType: "none",
-		KernelChoice:   "linux",
-		NetworkManager: "NetworkManager",
-		AURHelper:      "paru",
-		EnableMultilib: true,
-		EnableChaotic:  true,
-		ConfigPath:     DefaultConfigPath,
-		LogPath:        DefaultLogPath,
-		RepoURL:        "https://github.com/bnema/archup",
-		RawURL:         "https://raw.githubusercontent.com/bnema/archup/main",
+		Locale:                       "en_US.UTF-8",
+		Timezone:                     "UTC",
+		Keymap:                       "us",
+		Bootloader:                   "limine",
+		EncryptionType:               "none",
+		KernelChoice:                 "linux",
+		NetworkManager:               "NetworkManager",
+		AURHelper:                    "paru",
+		EnableMultilib:               true,
+		EnableChaotic:                true,
+		UseSamePasswordForEncryption: true, // Default to using same password for encryption
+		ConfigPath:                   DefaultConfigPath,
+		LogPath:                      DefaultLogPath,
+		RepoURL:                      "https://github.com/bnema/archup",
+		RawURL:                       "https://raw.githubusercontent.com/bnema/archup/main",
 	}
 }
 
