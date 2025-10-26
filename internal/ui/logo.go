@@ -72,28 +72,19 @@ func (l *Logo) Render() string {
 	return rendered.String()
 }
 
-// RenderCentered renders the logo centered horizontally within the terminal
+// RenderCentered renders the logo centered horizontally within the terminal using lipgloss
 func (l *Logo) RenderCentered(termWidth int) string {
 	logo := l.Render()
 	lines := strings.Split(logo, "\n")
 
+	centerStyle := lipgloss.NewStyle().
+		Width(termWidth).
+		AlignHorizontal(lipgloss.Center)
+
 	var centered strings.Builder
-	paddingLeft := (termWidth - l.width) / 2
-
-	if paddingLeft < 0 {
-		paddingLeft = 0
-	}
-
-	padding := strings.Repeat(" ", paddingLeft)
-
 	for _, line := range lines {
-		if strings.TrimSpace(line) != "" {
-			centered.WriteString(padding)
-		}
-		centered.WriteString(line)
-		if !strings.HasSuffix(line, "\n") {
-			centered.WriteString("\n")
-		}
+		centered.WriteString(centerStyle.Render(line))
+		centered.WriteString("\n")
 	}
 
 	return centered.String()

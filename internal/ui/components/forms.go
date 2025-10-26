@@ -63,19 +63,23 @@ func (fb *FormBuilder) MultiSelect(title string, options []string, value *[]stri
 	return ms
 }
 
-// Confirm creates a yes/no confirmation
+// Confirm creates a yes/no confirmation with inline button alignment
 func (fb *FormBuilder) Confirm(title, affirmative, negative string, value *bool) *huh.Confirm {
 	return huh.NewConfirm().
 		Title(title).
 		Affirmative(affirmative).
 		Negative(negative).
-		Value(value)
+		Value(value).
+		Inline(true)
 }
 
 // CreateForm creates a form with accessibility settings and custom theme
 func (fb *FormBuilder) CreateForm(groups ...*huh.Group) *huh.Form {
+	const maxFormWidth = 80 // Maximum width for better readability
+
 	form := huh.NewForm(groups...).
-		WithTheme(styles.HuhTheme())
+		WithTheme(styles.HuhTheme()).
+		WithWidth(maxFormWidth)
 
 	if fb.accessible {
 		form.WithAccessible(true)

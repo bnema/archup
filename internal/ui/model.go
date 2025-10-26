@@ -2,15 +2,14 @@ package ui
 
 import (
 	"fmt"
-	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/bnema/archup/internal/config"
 	"github.com/bnema/archup/internal/phases"
 	"github.com/bnema/archup/internal/ui/components"
 	"github.com/bnema/archup/internal/ui/styles"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/lipgloss"
 )
 
 // ModelState represents the current UI state
@@ -119,6 +118,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case StatePreflightForm, StateDiskForm, StateOptionsForm:
 		switch {
 		case m.currentForm != nil:
+			// Don't pass WindowSizeMsg to form to preserve our max width
+			if _, isWindowSize := msg.(tea.WindowSizeMsg); isWindowSize {
+				return m, nil
+			}
+
 			form, cmd := m.currentForm.Update(msg)
 			if f, ok := form.(*huh.Form); ok {
 				m.currentForm = f
@@ -144,14 +148,15 @@ func (m *Model) View() string {
 	switch m.state {
 	case StateShowLogo:
 		logo := NewLogo(m.version)
-		return logo.RenderCentered(m.width) + "\n\n" +
+		return logo.RenderCentered(m.width) + "\n\n\n" +
 			centerText(WelcomeTagline, m.width) + "\n\n" +
 			centerText(styles.HelpStyle.Render("Press ENTER to start installation"), m.width)
 
 	case StatePreflightForm, StateDiskForm, StateOptionsForm:
 		switch {
 		case m.currentForm != nil:
-			return m.currentForm.View()
+			header := centerText(m.renderPhaseHeader(), m.width)
+			return header + "\n\n" + m.currentForm.View()
 		}
 		return "Loading form..."
 
@@ -176,6 +181,12 @@ func (m *Model) View() string {
 func (m *Model) handleFormComplete() tea.Cmd {
 	switch m.state {
 	case StatePreflightForm:
+		// Handle encryption password setting based on checkbox
+		switch {
+		case m.config.UseSamePasswordForEncryption:
+			m.config.EncryptPassword = m.config.UserPassword
+		}
+
 		m.state = StateDiskForm
 		m.currentForm = CreateDiskSelectionForm(m.config)
 		return m.currentForm.Init()
@@ -186,25 +197,12 @@ func (m *Model) handleFormComplete() tea.Cmd {
 		return m.currentForm.Init()
 
 	case StateOptionsForm:
-		// Check if encryption password needed
-		switch m.config.EncryptionType {
-		case config.EncryptionLUKS, config.EncryptionLUKSLVM:
-			m.currentForm = CreateEncryptionPasswordForm(m.config)
-			return m.currentForm.Init()
-		}
-
-		// Move to confirmation
+		// Move directly to confirmation
+		// Encryption password is already handled in preflight form
 		m.state = StateConfirmation
 		return nil
 
 	default:
-		// Encryption password form completed
-		// If password is empty, use user password
-		switch {
-		case m.config.EncryptPassword == "":
-			m.config.EncryptPassword = m.config.UserPassword
-		}
-
 		// Move to confirmation
 		m.state = StateConfirmation
 		return nil
@@ -245,13 +243,33 @@ type phaseCompleteMsg struct {
 	err error
 }
 
-// centerText centers text within a given width
+// centerText centers text within a given width using lipgloss
 func centerText(text string, width int) string {
-	textLen := lipgloss.Width(text)
-	switch {
-	case textLen >= width:
-		return text
+	return lipgloss.NewStyle().
+		Width(width).
+		AlignHorizontal(lipgloss.Center).
+		Render(text)
+}
+
+
+// renderPhaseHeader renders phase progress header
+func (m *Model) renderPhaseHeader() string {
+	var stepNum, stepName string
+
+	switch m.state {
+	case StatePreflightForm:
+		stepNum = "1"
+		stepName = "System Configuration"
+	case StateDiskForm:
+		stepNum = "2"
+		stepName = "Disk Selection"
+	case StateOptionsForm:
+		stepNum = "3"
+		stepName = "Installation Options"
+	default:
+		return ""
 	}
-	padding := (width - textLen) / 2
-	return strings.Repeat(" ", padding) + text
+
+	header := fmt.Sprintf("ArchUp Install - Step %s/3: %s", stepNum, stepName)
+	return styles.TitleStyle.Render(header)
 }

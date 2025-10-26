@@ -182,13 +182,6 @@ func (p *ConfigPhase) configureNetwork(progressChan chan<- ProgressUpdate) error
 func (p *ConfigPhase) createUser(progressChan chan<- ProgressUpdate) error {
 	p.SendOutput(progressChan, "Creating user account...")
 
-	// Set root password using stdin (secure - not visible in process list)
-	rootPassInput := fmt.Sprintf("root:%s", p.config.UserPassword)
-	switch err := system.ChrootExecWithStdin(p.logger.LogPath(), config.PathMnt, "chpasswd", rootPassInput); {
-	case err != nil:
-		return fmt.Errorf("failed to set root password: %w", err)
-	}
-
 	// Create user with home directory
 	userAddCmd := fmt.Sprintf("useradd -m -G %s -s %s %s", config.GroupWheel, config.ShellBash, p.config.Username)
 	switch err := system.ChrootExec(p.logger.LogPath(),config.PathMnt, userAddCmd); {
@@ -203,7 +196,7 @@ func (p *ConfigPhase) createUser(progressChan chan<- ProgressUpdate) error {
 		return fmt.Errorf("failed to set user password: %w", err)
 	}
 
-	// Enable sudo for wheel group
+	// Enable sudo for wheel group (passwordless for convenience)
 	switch err := os.WriteFile(config.PathMntEtcSudoersD, []byte(config.SudoersWheelContent), config.SudoersWheelPerms); {
 	case err != nil:
 		return fmt.Errorf("failed to write sudoers config: %w", err)

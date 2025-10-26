@@ -79,3 +79,13 @@ func ValidateLocale(s string) error {
 	// Basic validation - should match pattern like en_US.UTF-8
 	return nil
 }
+
+// ValidatePasswordConfirmation validates that password and confirmation match
+func ValidatePasswordConfirmation(password *string) func(string) error {
+	return func(confirm string) error {
+		if confirm != *password {
+			return errors.New("passwords do not match")
+		}
+		return nil
+	}
+}
