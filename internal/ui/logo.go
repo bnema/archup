@@ -10,15 +10,12 @@ import (
 
 const (
 	// Logo ASCII art (from logo.txt)
-	// Split at column 34 for two-tone color scheme (cyan/white)
 	logoASCII = `  ░█████╗░██████╗░░█████╗░██╗░░██╗██╗░░░██╗██████╗░
   ██╔══██╗██╔══██╗██╔══██╗██║░░██║██║░░░██║██╔══██╗
   ███████║██████╔╝██║░░╚═╝███████║██║░░░██║██████╔╝
   ██╔══██║██╔══██╗██║░░██╗██╔══██║██║░░░██║██╔═══╝░
   ██║░░██║██║░░██║╚█████╔╝██║░░██║╚██████╔╝██║░░░░░
   ╚═╝░░╚═╝╚═╝░░╚═╝░╚════╝░╚═╝░░╚═╝░╚═════╝░╚═╝░░░░░`
-
-	splitPos = 34 // Column where color split occurs
 )
 
 // Logo represents the ArchUp logo display
@@ -50,7 +47,7 @@ func NewLogo(version string) *Logo {
 	}
 }
 
-// Render renders the logo with two-tone coloring (cyan/white split)
+// Render renders the logo in full blue
 func (l *Logo) Render() string {
 	lines := strings.Split(logoASCII, "\n")
 	var rendered strings.Builder
@@ -61,21 +58,8 @@ func (l *Logo) Render() string {
 			continue
 		}
 
-		// Split line at splitPos for two-tone effect
-		var left, right string
-		if len(line) > splitPos {
-			left = line[:splitPos]
-			right = line[splitPos:]
-		} else {
-			left = line
-			right = ""
-		}
-
-		// Render with colors
-		rendered.WriteString(styles.LogoCyanStyle.Render(left))
-		if right != "" {
-			rendered.WriteString(styles.LogoWhiteStyle.Render(right))
-		}
+		// Render entire logo in blue
+		rendered.WriteString(styles.LogoCyanStyle.Render(line))
 		rendered.WriteString("\n")
 	}
 
