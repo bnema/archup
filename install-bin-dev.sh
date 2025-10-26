@@ -1,36 +1,29 @@
 #!/bin/bash
-# ArchUp Installer Bootstrap Script
-# Downloads and runs the ArchUp Go installer
+# ArchUp Installer Bootstrap Script - Dev/Pre-release Version
+# Downloads and runs the latest ArchUp Go installer pre-release
 #
 # Usage:
-#   curl -fsSL https://archup.run/install/bin | bash
-#   curl -fsSL https://archup.run/install/bin | bash -s -- --dev
-#   curl -fsSL https://archup.run/install/bin | bash -s -- --version v0.15.3-dev
+#   curl -fsSL https://archup.run/install/bin/dev | bash
 #
 # Or locally:
-#   ./install-bin.sh           # Install latest stable release
-#   ./install-bin.sh --dev     # Install latest pre-release (dev/rc builds)
-#   ./install-bin.sh --version v0.15.3-dev  # Install specific version
+#   ./install-bin-dev.sh           # Install latest pre-release
+#   ./install-bin-dev.sh --version v0.4.0-dev  # Install specific version
 
 set -e
 
-# Parse arguments
-DEV_MODE=false
+# Default to dev mode
+DEV_MODE=true
 SPECIFIC_VERSION=""
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --dev)
-            DEV_MODE=true
-            shift
-            ;;
         --version)
             SPECIFIC_VERSION="$2"
             shift 2
             ;;
         *)
             echo "Unknown option: $1"
-            echo "Usage: $0 [--dev] [--version VERSION]"
+            echo "Usage: $0 [--version VERSION]"
             exit 1
             ;;
     esac
@@ -90,7 +83,7 @@ if [ -n "$SPECIFIC_VERSION" ]; then
     # User specified a version
     LATEST_TAG="$SPECIFIC_VERSION"
     info "Using specific version: $LATEST_TAG"
-elif [ "$DEV_MODE" = true ]; then
+else
     # Get latest pre-release (including dev/rc builds)
     warning "Dev mode: fetching latest pre-release..."
     RELEASES_URL="https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases"
@@ -101,16 +94,6 @@ elif [ "$DEV_MODE" = true ]; then
         error "Failed to fetch latest pre-release"
     fi
     warning "Latest pre-release: $LATEST_TAG"
-else
-    # Get latest stable release
-    info "Fetching latest stable release..."
-    LATEST_RELEASE_URL="https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases/latest"
-    LATEST_TAG=$(curl -s "$LATEST_RELEASE_URL" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-
-    if [ -z "$LATEST_TAG" ]; then
-        error "Failed to fetch latest release tag"
-    fi
-    success "Latest version: $LATEST_TAG"
 fi
 
 # Download binary
