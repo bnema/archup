@@ -13,7 +13,11 @@
 pkg/
 src/
 build/
-CLAUDE.md
+
+# Markdown files at root (except README and CHANGELOG)
+/*.md
+!README.md
+!CHANGELOG.md
 
 
 *.qcow2
