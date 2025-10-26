@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/bnema/archup/internal/system"
 )
@@ -39,8 +40,44 @@ func (sw *syncWriter) Write(p []byte) (n int, err error) {
 	return n, err
 }
 
+// archiveOldLog archives the existing log file if it exists and is not empty
+// Creates a timestamped backup like: /var/log/archup-install.log.2025-10-26_203045
+func archiveOldLog(logPath string) error {
+	// Check if log file exists
+	info, err := os.Stat(logPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// No log file to archive
+			return nil
+		}
+		return fmt.Errorf("failed to stat log file: %w", err)
+	}
+
+	// If log file is empty, just truncate it
+	if info.Size() == 0 {
+		return nil
+	}
+
+	// Create archive filename with timestamp
+	timestamp := time.Now().Format("2006-01-02_150405")
+	archivePath := fmt.Sprintf("%s.%s", logPath, timestamp)
+
+	// Rename old log to archive
+	if err := os.Rename(logPath, archivePath); err != nil {
+		return fmt.Errorf("failed to rename log to archive: %w", err)
+	}
+
+	return nil
+}
+
 // New creates a new Logger with optional file logging and dry-run mode
 func New(logPath string, dryRun bool) (*Logger, error) {
+	// Archive old log if it exists and is not empty
+	if err := archiveOldLog(logPath); err != nil {
+		// Non-fatal error - just warn and continue
+		fmt.Fprintf(os.Stderr, "Warning: failed to archive old log: %v\n", err)
+	}
+
 	// Open log file for writing with sync flag for immediate writes
 	logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_SYNC, 0644)
 	if err != nil {
