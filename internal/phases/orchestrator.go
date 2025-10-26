@@ -27,8 +27,20 @@ func NewOrchestrator(cfg *config.Config, logPath string) *Orchestrator {
 }
 
 // RegisterPhase adds a phase to the execution sequence
-func (o *Orchestrator) RegisterPhase(phase Phase) {
+func (o *Orchestrator) RegisterPhase(phase Phase) error {
+	if phase == nil {
+		return fmt.Errorf("cannot register nil phase")
+	}
+
+	// Check for duplicate phase names
+	for _, p := range o.phases {
+		if p.Name() == phase.Name() {
+			return fmt.Errorf("phase %s already registered", phase.Name())
+		}
+	}
+
 	o.phases = append(o.phases, phase)
+	return nil
 }
 
 // Phases returns all registered phases
