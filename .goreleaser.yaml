@@ -53,6 +53,9 @@ archives:
 checksum:
   name_template: 'checksums.txt'
   algorithm: sha256
+  extra_files:
+    - glob: ./dist/archup-installer_linux_amd64_v1/archup-installer
+      name_template: archup-installer
 
 snapshot:
   version_template: "{{ incpatch .Version }}-next"
@@ -157,4 +160,5 @@ release:
 
   # Also upload standalone binary
   extra_files:
-    - glob: build/archup-installer
+    - glob: ./dist/archup-installer_linux_amd64_v1/archup-installer
+      name_template: archup-installer
