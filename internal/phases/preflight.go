@@ -1,0 +1,170 @@
+package phases
+
+import (
+	"fmt"
+	"os"
+	"os/exec"
+	"strings"
+
+	"github.com/bnema/archup/internal/config"
+	"github.com/bnema/archup/internal/logger"
+)
+
+// PreflightPhase handles system validation and initial configuration
+type PreflightPhase struct {
+	*BasePhase
+}
+
+// NewPreflightPhase creates a new preflight phase
+func NewPreflightPhase(cfg *config.Config, log *logger.Logger) *PreflightPhase {
+	return &PreflightPhase{
+		BasePhase: NewBasePhase("preflight", "Preflight Checks", cfg, log),
+	}
+}
+
+// PreCheck validates system requirements
+func (p *PreflightPhase) PreCheck() error {
+	// Check for Arch Linux
+	if _, err := os.Stat("/etc/arch-release"); os.IsNotExist(err) {
+		return fmt.Errorf("must be running on Arch Linux or Arch ISO")
+	}
+
+	// Check for derivatives
+	derivatives := map[string]string{
+		"/etc/cachyos-release": "CachyOS",
+		"/etc/eos-release":     "EndeavourOS",
+		"/etc/garuda-release":  "Garuda",
+		"/etc/manjaro-release": "Manjaro",
+	}
+
+	for marker, name := range derivatives {
+		if _, err := os.Stat(marker); err == nil {
+			return fmt.Errorf("must be vanilla Arch (detected %s)", name)
+		}
+	}
+
+	// Check architecture
+	out, err := exec.Command("uname", "-m").Output()
+	arch := strings.TrimSpace(string(out))
+
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to detect architecture: %w", err)
+	case arch != "x86_64":
+		return fmt.Errorf("must be x86_64 architecture (detected: %s)", arch)
+	}
+
+	// Check UEFI
+	if _, err := os.Stat("/sys/firmware/efi/efivars"); os.IsNotExist(err) {
+		return fmt.Errorf("must be UEFI boot mode (legacy BIOS not supported)")
+	}
+
+	// Check Secure Boot
+	out, err = exec.Command("bootctl", "status").Output()
+	switch {
+	case err == nil && strings.Contains(string(out), "Secure Boot: enabled"):
+		return fmt.Errorf("Secure Boot must be disabled")
+	}
+
+	return nil
+}
+
+// Execute runs the preflight phase
+func (p *PreflightPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResult {
+	p.SendProgress(progressChan, "Running preflight checks...", 1, 2)
+
+	// Detect environment
+	p.detectEnvironment(progressChan)
+
+	// Set defaults
+	p.SetDefaults()
+
+	p.SendProgress(progressChan, "Environment detected", 2, 2)
+	p.SendComplete(progressChan, "Preflight complete")
+
+	return PhaseResult{
+		Success: true,
+		Message: "Preflight checks passed",
+	}
+}
+
+// detectEnvironment auto-detects keyboard layout and network
+func (p *PreflightPhase) detectEnvironment(progressChan chan<- ProgressUpdate) {
+	p.SendOutput(progressChan, "Detecting keyboard layout...")
+
+	keymap := p.detectKeymap()
+	p.config.Keymap = keymap
+	p.SendOutput(progressChan, fmt.Sprintf("[OK] Keyboard layout: %s", keymap))
+}
+
+// detectKeymap detects current keyboard layout
+func (p *PreflightPhase) detectKeymap() string {
+	out, err := exec.Command("localectl", "status").Output()
+
+	switch {
+	case err != nil:
+		return "us" // Default fallback
+	}
+
+	lines := strings.Split(string(out), "\n")
+	for _, line := range lines {
+		if !strings.Contains(line, "VC Keymap") {
+			continue
+		}
+
+		parts := strings.Fields(line)
+		if len(parts) < 3 {
+			continue
+		}
+
+		keymap := parts[2]
+		switch keymap {
+		case "(unset)", "":
+			return "us"
+		default:
+			return keymap
+		}
+	}
+
+	return "us"
+}
+
+// SetDefaults sets default configuration values
+func (p *PreflightPhase) SetDefaults() {
+	switch {
+	case p.config.Hostname == "":
+		p.config.Hostname = "archup"
+	}
+
+	switch {
+	case p.config.Timezone == "":
+		p.config.Timezone = "UTC"
+	}
+
+	// Hardcoded bootloader
+	p.config.Bootloader = config.BootloaderLimine
+}
+
+// PostCheck validates configuration after form submission
+func (p *PreflightPhase) PostCheck() error {
+	switch {
+	case p.config.Username == "":
+		return fmt.Errorf("username is required")
+	case p.config.Hostname == "":
+		return fmt.Errorf("hostname is required")
+	case p.config.Timezone == "":
+		return fmt.Errorf("timezone is required")
+	}
+
+	return p.config.Save()
+}
+
+// Rollback for preflight (no-op as no system changes made)
+func (p *PreflightPhase) Rollback() error {
+	return nil
+}
+
+// CanSkip returns false - preflight cannot be skipped
+func (p *PreflightPhase) CanSkip() bool {
+	return false
+}
