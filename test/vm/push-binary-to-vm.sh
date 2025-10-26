@@ -23,7 +23,7 @@ VM_HOST="localhost"
 VM_PORT="2222"
 VM_USER="root"
 VM_PASS="test"
-REMOTE_PATH="/root/.local/share/archup"
+REMOTE_PATH="/tmp"
 
 echo "Pushing $BINARY_NAME to VM..."
 
