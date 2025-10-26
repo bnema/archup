@@ -33,12 +33,32 @@ We learned from Omarchy's excellent modular approach but rejected the bloat. Arc
 
 ## Quick Start
 
-**Requirements**: AMD/Intel 64-bit system
+**Requirements**: AMD/Intel 64-bit system, UEFI mode
+
+### Go-based Installer (Recommended)
+
+Interactive TUI with configuration preview and better error handling:
+
+```bash
+# 1. Boot Arch ISO, run installer
+curl -fsSL https://archup.run/install/bin | bash
+
+# Install dev/pre-release version
+curl -fsSL https://archup.run/install/bin | bash -s -- --dev
+
+# 2. Reboot into new system
+
+# 3. Run wizard to add desktop (optional)
+archup wizard
+```
+
+### Legacy Bash Installer
+
+Simple script-based installer:
 
 ```bash
 # 1. Boot Arch ISO, install barebone system
 curl -fsSL https://archup.run/install | sh
-# or shorter: curl -fsSL https://archup.run/i | sh
 
 # 2. Reboot into new system
 

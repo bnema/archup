@@ -1,13 +1,46 @@
 #!/bin/bash
 # ArchUp Installer Bootstrap Script
 # Downloads and runs the ArchUp Go installer
+#
+# Usage:
+#   curl -fsSL https://archup.run/install/bin | bash
+#   curl -fsSL https://archup.run/install/bin | bash -s -- --dev
+#   curl -fsSL https://archup.run/install/bin | bash -s -- --version v0.15.3-dev
+#
+# Or locally:
+#   ./install-bin.sh           # Install latest stable release
+#   ./install-bin.sh --dev     # Install latest pre-release (dev/rc builds)
+#   ./install-bin.sh --version v0.15.3-dev  # Install specific version
 
 set -e
+
+# Parse arguments
+DEV_MODE=false
+SPECIFIC_VERSION=""
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --dev)
+            DEV_MODE=true
+            shift
+            ;;
+        --version)
+            SPECIFIC_VERSION="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Usage: $0 [--dev] [--version VERSION]"
+            exit 1
+            ;;
+    esac
+done
 
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
+YELLOW='\033[0;33m'
 NC='\033[0m' # No Color
 
 info() {
@@ -16,6 +49,10 @@ info() {
 
 success() {
     echo -e "${GREEN}[OK]${NC} $1"
+}
+
+warning() {
+    echo -e "${YELLOW}[WARN]${NC} $1"
 }
 
 error() {
@@ -48,25 +85,58 @@ REPO_OWNER="bnema"
 REPO_NAME="archup"
 BINARY_NAME="archup-installer"
 
-# Download latest release
-info "Fetching latest release information..."
-LATEST_RELEASE_URL="https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases/latest"
-LATEST_TAG=$(curl -s "$LATEST_RELEASE_URL" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+# Determine which version to download
+if [ -n "$SPECIFIC_VERSION" ]; then
+    # User specified a version
+    LATEST_TAG="$SPECIFIC_VERSION"
+    info "Using specific version: $LATEST_TAG"
+elif [ "$DEV_MODE" = true ]; then
+    # Get latest pre-release (including dev/rc builds)
+    warning "Dev mode: fetching latest pre-release..."
+    RELEASES_URL="https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases"
+    LATEST_TAG=$(curl -s "$RELEASES_URL" | grep -m 1 '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 
-if [ -z "$LATEST_TAG" ]; then
-    error "Failed to fetch latest release tag"
+    if [ -z "$LATEST_TAG" ]; then
+        error "Failed to fetch latest pre-release"
+    fi
+    warning "Latest pre-release: $LATEST_TAG"
+else
+    # Get latest stable release
+    info "Fetching latest stable release..."
+    LATEST_RELEASE_URL="https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases/latest"
+    LATEST_TAG=$(curl -s "$LATEST_RELEASE_URL" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+
+    if [ -z "$LATEST_TAG" ]; then
+        error "Failed to fetch latest release tag"
+    fi
+    success "Latest version: $LATEST_TAG"
 fi
-success "Latest version: $LATEST_TAG"
 
 # Download binary
 BINARY_URL="https://github.com/$REPO_OWNER/$REPO_NAME/releases/download/$LATEST_TAG/$BINARY_NAME"
 BINARY_PATH="/tmp/$BINARY_NAME"
+CHECKSUM_URL="https://github.com/$REPO_OWNER/$REPO_NAME/releases/download/$LATEST_TAG/checksums.txt"
+CHECKSUM_PATH="/tmp/checksums.txt"
 
 info "Downloading installer binary..."
 if ! curl -fsSL "$BINARY_URL" -o "$BINARY_PATH"; then
     error "Failed to download installer binary from $BINARY_URL"
 fi
 success "Binary downloaded"
+
+# Download and verify checksum
+info "Downloading checksums..."
+if ! curl -fsSL "$CHECKSUM_URL" -o "$CHECKSUM_PATH"; then
+    error "Failed to download checksums from $CHECKSUM_URL"
+fi
+success "Checksums downloaded"
+
+info "Verifying checksum..."
+cd /tmp
+if ! sha256sum -c "$CHECKSUM_PATH" --ignore-missing 2>/dev/null; then
+    error "Checksum verification failed! Binary may be corrupted or tampered with."
+fi
+success "Checksum verified"
 
 # Make executable
 chmod +x "$BINARY_PATH"
