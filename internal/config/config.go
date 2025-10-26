@@ -300,6 +300,11 @@ func (c *Config) Save() error {
 	}
 	defer file.Close()
 
+	// Set restrictive permissions (600) since config contains passwords
+	if err := os.Chmod(c.ConfigPath, 0600); err != nil {
+		return fmt.Errorf("failed to set config permissions: %w", err)
+	}
+
 	writer := bufio.NewWriter(file)
 	defer writer.Flush()
 

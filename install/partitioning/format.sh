@@ -76,6 +76,10 @@ if [ "$ARCHUP_ENCRYPTION" = "enabled" ]; then
 
   echo "LUKS container opened" >> "$ARCHUP_INSTALL_LOG_FILE"
 
+  # Clear password variables from memory
+  unset LUKS_PASSWORD
+  unset LUKS_PASSWORD_CONFIRM
+
   # Export the mapped device path
   export ARCHUP_CRYPT_ROOT="/dev/mapper/cryptroot"
 

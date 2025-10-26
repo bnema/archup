@@ -182,9 +182,9 @@ func (p *ConfigPhase) configureNetwork(progressChan chan<- ProgressUpdate) error
 func (p *ConfigPhase) createUser(progressChan chan<- ProgressUpdate) error {
 	p.SendOutput(progressChan, "Creating user account...")
 
-	// Set root password
-	rootPassCmd := fmt.Sprintf("echo 'root:%s' | chpasswd", p.config.UserPassword)
-	switch err := system.ChrootExec(p.logger.LogPath(),config.PathMnt, rootPassCmd); {
+	// Set root password using stdin (secure - not visible in process list)
+	rootPassInput := fmt.Sprintf("root:%s", p.config.UserPassword)
+	switch err := system.ChrootExecWithStdin(p.logger.LogPath(), config.PathMnt, "chpasswd", rootPassInput); {
 	case err != nil:
 		return fmt.Errorf("failed to set root password: %w", err)
 	}
@@ -196,9 +196,9 @@ func (p *ConfigPhase) createUser(progressChan chan<- ProgressUpdate) error {
 		return fmt.Errorf("failed to create user: %w", err)
 	}
 
-	// Set user password
-	userPassCmd := fmt.Sprintf("echo '%s:%s' | chpasswd", p.config.Username, p.config.UserPassword)
-	switch err := system.ChrootExec(p.logger.LogPath(),config.PathMnt, userPassCmd); {
+	// Set user password using stdin (secure - not visible in process list)
+	userPassInput := fmt.Sprintf("%s:%s", p.config.Username, p.config.UserPassword)
+	switch err := system.ChrootExecWithStdin(p.logger.LogPath(), config.PathMnt, "chpasswd", userPassInput); {
 	case err != nil:
 		return fmt.Errorf("failed to set user password: %w", err)
 	}
