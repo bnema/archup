@@ -1,6 +1,7 @@
 package styles
 
 import (
+	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -256,4 +257,47 @@ func RenderHelp(bindings map[string]string) string {
 		help += KeyStyle.Render(key) + " " + DescStyle.Render(desc) + "  "
 	}
 	return HelpStyle.Render(help)
+}
+
+// HuhTheme returns a custom huh.Theme matching the bleu color scheme
+func HuhTheme() *huh.Theme {
+	theme := huh.ThemeBase()
+
+	// Form and Group styles
+	theme.Form.Base = lipgloss.NewStyle()
+	theme.Group.Base = lipgloss.NewStyle()
+	theme.Group.Title = TitleStyle
+	theme.Group.Description = SubtitleStyle
+
+	// Focused field styles
+	theme.Focused.Base = lipgloss.NewStyle()
+	theme.Focused.Title = lipgloss.NewStyle().Foreground(ColorBrightCyan).Bold(true)
+	theme.Focused.Description = lipgloss.NewStyle().Foreground(ColorPureBlue)
+	theme.Focused.SelectSelector = lipgloss.NewStyle().Foreground(ColorBrightCyan).SetString("> ")
+	theme.Focused.Option = lipgloss.NewStyle().Foreground(ColorPrimaryText)
+	theme.Focused.MultiSelectSelector = lipgloss.NewStyle().Foreground(ColorBrightCyan).SetString("> ")
+	theme.Focused.SelectedOption = lipgloss.NewStyle().Foreground(ColorBrightCyan)
+	theme.Focused.SelectedPrefix = lipgloss.NewStyle().Foreground(ColorSuccessGreen).SetString("✓ ")
+	theme.Focused.UnselectedOption = lipgloss.NewStyle().Foreground(ColorPrimaryText)
+	theme.Focused.UnselectedPrefix = lipgloss.NewStyle().Foreground(ColorDimmedText).SetString("○ ")
+	theme.Focused.FocusedButton = lipgloss.NewStyle().Foreground(ColorPureWhite).Background(ColorOceanBlue).Padding(0, 2).Bold(true)
+	theme.Focused.BlurredButton = lipgloss.NewStyle().Foreground(ColorDimmedText).Padding(0, 2)
+
+	// Blurred field styles
+	theme.Blurred.Base = lipgloss.NewStyle()
+	theme.Blurred.Title = lipgloss.NewStyle().Foreground(ColorDimmedText)
+	theme.Blurred.Description = lipgloss.NewStyle().Foreground(ColorDimmedText)
+	theme.Blurred.SelectSelector = lipgloss.NewStyle().Foreground(ColorDimmedText).SetString("> ")
+	theme.Blurred.Option = lipgloss.NewStyle().Foreground(ColorDimmedText)
+
+	// Text input styles
+	theme.Focused.TextInput.Cursor = lipgloss.NewStyle().Foreground(ColorBrightCyan)
+	theme.Focused.TextInput.Placeholder = PlaceholderStyle
+	theme.Focused.TextInput.Prompt = PromptStyle
+
+	// Error styles
+	theme.Focused.ErrorIndicator = lipgloss.NewStyle().Foreground(ColorSoftRed).SetString("✗ ")
+	theme.Focused.ErrorMessage = ErrorStyle
+
+	return theme
 }
