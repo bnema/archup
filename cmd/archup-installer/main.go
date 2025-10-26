@@ -60,14 +60,23 @@ func main() {
 	orchestrator := phases.NewOrchestrator(cfg, config.DefaultLogPath)
 
 	// Register all phases with logger
-	orchestrator.RegisterPhase(phases.NewBootstrapPhase(cfg, log))
-	orchestrator.RegisterPhase(phases.NewPreflightPhase(cfg, log))
-	orchestrator.RegisterPhase(phases.NewPartitioningPhase(cfg, log))
-	orchestrator.RegisterPhase(phases.NewBaseInstallPhase(cfg, log))
-	orchestrator.RegisterPhase(phases.NewConfigPhase(cfg, log))
-	orchestrator.RegisterPhase(phases.NewBootPhase(cfg, log))
-	orchestrator.RegisterPhase(phases.NewReposPhase(cfg, log))
-	orchestrator.RegisterPhase(phases.NewPostInstallPhase(cfg, log))
+	phasesToRegister := []phases.Phase{
+		phases.NewBootstrapPhase(cfg, log),
+		phases.NewPreflightPhase(cfg, log),
+		phases.NewPartitioningPhase(cfg, log),
+		phases.NewBaseInstallPhase(cfg, log),
+		phases.NewConfigPhase(cfg, log),
+		phases.NewBootPhase(cfg, log),
+		phases.NewReposPhase(cfg, log),
+		phases.NewPostInstallPhase(cfg, log),
+	}
+
+	for _, phase := range phasesToRegister {
+		if err := orchestrator.RegisterPhase(phase); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to register phase: %v\n", err)
+			os.Exit(1)
+		}
+	}
 
 	// Create UI model
 	model := ui.NewModel(orchestrator, cfg, version)
