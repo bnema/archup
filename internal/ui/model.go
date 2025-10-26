@@ -2,9 +2,11 @@ package ui
 
 import (
 	"fmt"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/bnema/archup/internal/config"
 	"github.com/bnema/archup/internal/phases"
 	"github.com/bnema/archup/internal/ui/components"
@@ -245,11 +247,11 @@ type phaseCompleteMsg struct {
 
 // centerText centers text within a given width
 func centerText(text string, width int) string {
-	textLen := len(text)
+	textLen := lipgloss.Width(text)
 	switch {
 	case textLen >= width:
 		return text
 	}
 	padding := (width - textLen) / 2
-	return fmt.Sprintf("%*s", padding+textLen, text)
+	return strings.Repeat(" ", padding) + text
 }
