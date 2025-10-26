@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/bnema/archup/internal/config"
+	"github.com/bnema/archup/internal/logger"
 	"github.com/bnema/archup/internal/phases"
 	"github.com/bnema/archup/internal/ui/components"
 	"github.com/bnema/archup/internal/ui/styles"
@@ -33,6 +34,7 @@ type Model struct {
 	config       *config.Config
 	currentForm  *huh.Form
 	output       *components.OutputViewer
+	logger       *logger.Logger
 	version      string
 	width        int
 	height       int
@@ -40,11 +42,13 @@ type Model struct {
 }
 
 // NewModel creates a new installer model
-func NewModel(orchestrator *phases.Orchestrator, cfg *config.Config, version string) *Model {
+func NewModel(orchestrator *phases.Orchestrator, cfg *config.Config, log *logger.Logger, version string) *Model {
+	log.Info("UI Model created", "version", version)
 	return &Model{
 		state:        StateShowLogo,
 		orchestrator: orchestrator,
 		config:       cfg,
+		logger:       log,
 		version:      version,
 		width:        80,
 		height:       24,
@@ -66,16 +70,43 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.output.SetSize(msg.Width, msg.Height-10)
 
 	case tea.KeyMsg:
+		m.logger.Info("Key pressed", "key", msg.String(), "state", m.state)
+
 		switch msg.String() {
 		case "ctrl+c":
+			m.logger.Info("User cancelled installation")
 			return m, tea.Quit
 
 		case "enter":
 			switch m.state {
 			case StateShowLogo:
-				// Move to preflight form
+				m.logger.Info("Moving to preflight form")
 				m.state = StatePreflightForm
 				m.currentForm = CreatePreflightForm(m.config)
+				return m, m.currentForm.Init()
+
+			case StateConfirmation:
+				m.logger.Info("User confirmed installation - starting execution")
+				m.state = StateExecuting
+				return m, m.executeNextPhase()
+			}
+
+		case "backspace", "esc":
+			m.logger.Info("User navigating back", "from_state", m.state)
+			switch m.state {
+			case StateDiskForm:
+				m.state = StatePreflightForm
+				m.currentForm = CreatePreflightForm(m.config)
+				return m, m.currentForm.Init()
+
+			case StateOptionsForm:
+				m.state = StateDiskForm
+				m.currentForm = CreateDiskSelectionForm(m.config)
+				return m, m.currentForm.Init()
+
+			case StateConfirmation:
+				m.state = StateOptionsForm
+				m.currentForm = CreateOptionsForm(m.config)
 				return m, m.currentForm.Init()
 			}
 		}
@@ -83,6 +114,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case phaseCompleteMsg:
 		switch {
 		case msg.err != nil:
+			m.logger.Error("Phase execution failed", "error", msg.err)
 			m.err = msg.err
 			m.state = StateError
 			return m, tea.Quit
@@ -91,9 +123,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Check if all phases complete
 		switch {
 		case m.orchestrator.IsComplete():
+			m.logger.Info("All phases completed successfully")
 			m.state = StateComplete
 			return m, tea.Quit
 		default:
+			m.logger.Info("Continuing to next phase")
 			// Continue with next phase
 			return m, m.executeNextPhase()
 		}
@@ -179,8 +213,15 @@ func (m *Model) View() string {
 
 // handleFormComplete handles form completion and moves to next state
 func (m *Model) handleFormComplete() tea.Cmd {
+	m.logger.Info("Form completed", "state", m.state)
+
 	switch m.state {
 	case StatePreflightForm:
+		m.logger.Info("Preflight form completed",
+			"hostname", m.config.Hostname,
+			"username", m.config.Username,
+			"use_same_password_for_encryption", m.config.UseSamePasswordForEncryption)
+
 		// Handle encryption password setting based on checkbox
 		switch {
 		case m.config.UseSamePasswordForEncryption:
@@ -192,11 +233,15 @@ func (m *Model) handleFormComplete() tea.Cmd {
 		return m.currentForm.Init()
 
 	case StateDiskForm:
+		m.logger.Info("Disk selection completed", "disk", m.config.TargetDisk)
 		m.state = StateOptionsForm
 		m.currentForm = CreateOptionsForm(m.config)
 		return m.currentForm.Init()
 
 	case StateOptionsForm:
+		m.logger.Info("Options form completed",
+			"kernel", m.config.KernelChoice,
+			"encryption", m.config.EncryptionType)
 		// Move directly to confirmation
 		// Encryption password is already handled in preflight form
 		m.state = StateConfirmation

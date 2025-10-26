@@ -38,6 +38,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Failed to create logger: %v\n", err)
 		os.Exit(1)
 	}
+	defer log.Close()
 
 	// Handle --cleanup flag
 	if *doCleanup {
@@ -79,7 +80,7 @@ func main() {
 	}
 
 	// Create UI model
-	model := ui.NewModel(orchestrator, cfg, version)
+	model := ui.NewModel(orchestrator, cfg, log, version)
 
 	// Run Bubbletea app
 	p := tea.NewProgram(model, tea.WithAltScreen())

@@ -2,6 +2,7 @@ package logger
 
 import (
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"strings"
@@ -11,30 +12,70 @@ import (
 
 // Logger wraps slog.Logger and adds dry-run mode support
 type Logger struct {
-	slog    *slog.Logger
-	logPath string
-	dryRun  bool
+	slog     *slog.Logger
+	logPath  string
+	dryRun   bool
+	logFile  *os.File
+}
+
+// syncWriter wraps an io.Writer to sync after every write
+type syncWriter struct {
+	w interface {
+		io.Writer
+		Sync() error
+	}
+}
+
+func (sw *syncWriter) Write(p []byte) (n int, err error) {
+	n, err = sw.w.Write(p)
+	if err != nil {
+		return n, err
+	}
+	// Sync to disk immediately to ensure logs are written even on crash
+	if syncErr := sw.w.Sync(); syncErr != nil {
+		// Log sync error but don't fail the write
+		fmt.Fprintf(os.Stderr, "Warning: failed to sync log file: %v\n", syncErr)
+	}
+	return n, err
 }
 
 // New creates a new Logger with optional file logging and dry-run mode
 func New(logPath string, dryRun bool) (*Logger, error) {
-	// Create slog handler
-	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+	// Open log file for writing with sync flag for immediate writes
+	logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND|os.O_SYNC, 0644)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open log file: %w", err)
+	}
+
+	// Wrap log file with sync writer to ensure immediate disk writes
+	syncLogFile := &syncWriter{w: logFile}
+
+	// Only write to log file (not stdout) to avoid interfering with TUI
+	// If you need stdout logging for debugging, add it back temporarily
+	handler := slog.NewTextHandler(syncLogFile, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
 	})
 
-	return &Logger{
+	logger := &Logger{
 		slog:    slog.New(handler),
 		logPath: logPath,
+		logFile: logFile,
 		dryRun:  dryRun,
-	}, nil
+	}
+
+	// Write initial log entry to verify logging works
+	logger.Info("Logger initialized", "log_path", logPath, "dry_run", dryRun)
+
+	return logger, nil
 }
 
 // NewFromSlog creates a Logger from an existing slog.Logger
+// Note: This does not create a log file - the provided slog.Logger should handle output
 func NewFromSlog(slogLogger *slog.Logger, logPath string, dryRun bool) *Logger {
 	return &Logger{
 		slog:    slogLogger,
 		logPath: logPath,
+		logFile: nil, // No log file for this constructor
 		dryRun:  dryRun,
 	}
 }
@@ -125,4 +166,12 @@ func (l *Logger) ExecWithConfig(cfg system.RunConfig) system.CommandResult {
 // Slog returns the underlying slog.Logger for advanced usage
 func (l *Logger) Slog() *slog.Logger {
 	return l.slog
+}
+
+// Close closes the log file (call this when done)
+func (l *Logger) Close() error {
+	if l.logFile != nil {
+		return l.logFile.Close()
+	}
+	return nil
 }
