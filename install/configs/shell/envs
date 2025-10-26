@@ -1,0 +1,9 @@
+# Bat configuration
+if command -v bat &> /dev/null; then
+  export BAT_THEME="TwoDark"
+fi
+
+# FZF default options
+if command -v fzf &> /dev/null && command -v bat &> /dev/null; then
+  export FZF_DEFAULT_OPTS="--preview 'bat --color=always --style=numbers --line-range=:500 {}' --preview-window right:60%:wrap"
+fi
