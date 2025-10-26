@@ -19,13 +19,12 @@ const (
 	LimineConfigTemplate   = "configs/limine.conf.template"
 	ChaoticConfigFile      = "configs/chaotic-aur.conf"
 	StarshipConfigTemplate = "configs/shell/starship.toml"
-	ShellConfigTemplate    = "configs/shell/shell"
-	ShellInitTemplate      = "configs/shell/init"
-	ShellAliasesTemplate   = "configs/shell/aliases"
-	ShellEnvsTemplate      = "configs/shell/envs"
-	ShellFunctionsTemplate = "configs/shell/functions"
-	ShellRcTemplate        = "configs/shell/rc"
-	BashrcTemplate         = "configs/shell/bashrc"
+	ShellConfigTemplate  = "configs/shell/shell"
+	ShellInitTemplate    = "configs/shell/init"
+	ShellAliasesTemplate = "configs/shell/aliases"
+	ShellEnvsTemplate    = "configs/shell/envs"
+	ShellRcTemplate      = "configs/shell/rc"
+	BashrcTemplate       = "configs/shell/bashrc"
 )
 
 // Encryption types
@@ -239,8 +238,15 @@ type Config struct {
 func NewConfig(version string) *Config {
 	// Determine which branch to use based on version
 	branch := "main"
-	if version == "dev" || version == "" {
+	switch {
+	case version == "dev" || version == "":
 		branch = "dev"
+	case strings.Contains(version, "-dev"):
+		branch = "dev"
+	case strings.Contains(version, "-next"):
+		branch = "dev"
+	default:
+		branch = "main"
 	}
 
 	return &Config{

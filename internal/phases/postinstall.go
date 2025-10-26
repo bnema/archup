@@ -486,7 +486,6 @@ func (p *PostInstallPhase) copyShellTemplates(archupDefault, archupDefaultBash s
 		config.ShellInitTemplate:      filepath.Join(archupDefaultBash, "init"),
 		config.ShellAliasesTemplate:   filepath.Join(archupDefaultBash, "aliases"),
 		config.ShellEnvsTemplate:      filepath.Join(archupDefaultBash, "envs"),
-		config.ShellFunctionsTemplate: filepath.Join(archupDefaultBash, "functions"),
 		config.ShellRcTemplate:        filepath.Join(archupDefaultBash, "rc"),
 		config.StarshipConfigTemplate: filepath.Join(archupDefault, "starship.toml"),
 	}
