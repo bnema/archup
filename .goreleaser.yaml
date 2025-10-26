@@ -149,8 +149,8 @@ release:
   # Auto-detect prerelease from version (v1.0.0-rc1, v1.0.0-alpha, etc.)
   prerelease: auto
 
-  # Mark as latest release
-  make_latest: true
+  # Don't mark prereleases as latest
+  make_latest: false
 
   # Replace existing release notes
   mode: replace
