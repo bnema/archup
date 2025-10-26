@@ -1,0 +1,160 @@
+# GoReleaser configuration for ArchUp installer
+# https://goreleaser.com
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  # Main build - static binary for Arch Linux ISO
+  - id: archup-installer
+    main: ./cmd/archup-installer
+    binary: archup-installer
+
+    env:
+      - CGO_ENABLED=0
+
+    goos:
+      - linux
+
+    goarch:
+      - amd64
+
+    # Version information via ldflags
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+
+    # Build flags for reproducible builds
+    flags:
+      - -trimpath
+
+archives:
+  - id: default
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+    format_overrides:
+      - goos: linux
+        format: tar.gz
+    files:
+      - LICENSE
+      - README.md
+      - CHANGELOG.md
+      - logo.txt
+      - install.sh
+      - install/**/*
+
+checksum:
+  name_template: 'checksums.txt'
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^ci:'
+      - '^chore:'
+      - '^build\(deps\):'
+      - 'Merge pull request'
+      - 'Merge branch'
+  groups:
+    - title: 'Features'
+      regexp: '^feat(\(.+\))?:'
+      order: 0
+    - title: 'Bug Fixes'
+      regexp: '^fix(\(.+\))?:'
+      order: 1
+    - title: 'Performance'
+      regexp: '^perf(\(.+\))?:'
+      order: 2
+    - title: 'Refactoring'
+      regexp: '^refactor(\(.+\))?:'
+      order: 3
+    - title: 'Documentation'
+      regexp: '^docs(\(.+\))?:'
+      order: 4
+    - title: 'Other Changes'
+      order: 999
+
+release:
+  github:
+    owner: bnema
+    name: archup
+
+  # Don't auto-publish as draft initially
+  draft: false
+
+  # Replace existing draft if it exists
+  replace_existing_draft: true
+
+  # Header for release notes
+  header: |
+    ## {{.Tag}} Release
+
+    ArchUp installer with Go-based TUI for automated Arch Linux installation.
+
+    Released on {{.Date}}
+
+  # Footer with installation instructions
+  footer: |
+    ---
+
+    ## Installation
+
+    ### Quick Install (from Arch Linux ISO)
+    ```bash
+    curl -fsSL https://archup.run/install/bin | bash
+    ```
+
+    ### Install Pre-release/Dev Version
+    ```bash
+    curl -fsSL https://archup.run/install/bin | bash -s -- --dev
+    ```
+
+    ### Install Specific Version
+    ```bash
+    curl -fsSL https://archup.run/install/bin | bash -s -- --version {{.Tag}}
+    ```
+
+    ### Manual Install
+    ```bash
+    # Download binary
+    wget https://github.com/bnema/archup/releases/download/{{.Tag}}/archup-installer
+
+    # Verify checksum
+    wget https://github.com/bnema/archup/releases/download/{{.Tag}}/checksums.txt
+    sha256sum -c checksums.txt --ignore-missing
+
+    # Install
+    chmod +x archup-installer
+    sudo install -m 755 archup-installer /usr/local/bin/
+    ```
+
+    ---
+
+    **Full Changelog**: https://github.com/bnema/archup/compare/{{.PreviousTag}}...{{.Tag}}
+
+  # Auto-detect prerelease from version (v1.0.0-rc1, v1.0.0-alpha, etc.)
+  prerelease: auto
+
+  # Mark as latest release
+  make_latest: true
+
+  # Replace existing release notes
+  mode: replace
+
+  # Also upload standalone binary
+  extra_files:
+    - glob: build/archup-installer

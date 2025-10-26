@@ -42,16 +42,6 @@ build-static:
 	CGO_ENABLED=0 go build $(GOFLAGS) $(LDFLAGS) -a -installsuffix cgo -o $(BUILD_DIR)/$(BINARY_NAME) ./$(CMD_DIR)
 	@echo "Static build complete: $(BUILD_DIR)/$(BINARY_NAME)"
 
-## build-tiny: Build with TinyGo for minimal binary size (requires Go 1.19-1.24)
-build-tiny:
-	@echo "Building with TinyGo $(BINARY_NAME) $(VERSION)..."
-	@mkdir -p $(BUILD_DIR)
-	@which tinygo > /dev/null || (echo "TinyGo not installed. Install from: https://tinygo.org/getting-started/install/" && exit 1)
-	@echo "NOTE: TinyGo requires system Go version 1.19-1.24. Current: $$(go version | awk '{print $$3}')"
-	tinygo build -o $(BUILD_DIR)/$(BINARY_NAME)-tiny $(LDFLAGS) ./$(CMD_DIR) || (echo "TinyGo build failed. System Go version incompatible or packages not supported." && exit 1)
-	@echo "TinyGo build complete: $(BUILD_DIR)/$(BINARY_NAME)-tiny"
-	@ls -lh $(BUILD_DIR)/$(BINARY_NAME)-tiny
-
 ## install: Install the binary to system
 install: build
 	@echo "Installing $(BINARY_NAME) to $(INSTALL_DIR)..."
