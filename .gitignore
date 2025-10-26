@@ -12,6 +12,7 @@
 
 pkg/
 src/
+build/
 CLAUDE.md
 
 
