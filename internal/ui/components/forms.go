@@ -2,18 +2,21 @@ package components
 
 import (
 	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/bnema/archup/internal/ui/styles"
 )
 
 // FormBuilder provides reusable form components
 type FormBuilder struct {
 	accessible bool
+	width      int
 }
 
-// NewFormBuilder creates a new form builder
-func NewFormBuilder(accessible bool) *FormBuilder {
+// NewFormBuilder creates a new form builder with specified width
+func NewFormBuilder(accessible bool, width int) *FormBuilder {
 	return &FormBuilder{
 		accessible: accessible,
+		width:      width,
 	}
 }
 
@@ -63,23 +66,31 @@ func (fb *FormBuilder) MultiSelect(title string, options []string, value *[]stri
 	return ms
 }
 
-// Confirm creates a yes/no confirmation with inline button alignment
+// Confirm creates a yes/no confirmation with left-aligned buttons
 func (fb *FormBuilder) Confirm(title, affirmative, negative string, value *bool) *huh.Confirm {
 	return huh.NewConfirm().
 		Title(title).
 		Affirmative(affirmative).
 		Negative(negative).
 		Value(value).
-		Inline(true)
+		WithButtonAlignment(lipgloss.Left)
 }
 
 // CreateForm creates a form with accessibility settings and custom theme
 func (fb *FormBuilder) CreateForm(groups ...*huh.Group) *huh.Form {
-	const maxFormWidth = 80 // Maximum width for better readability
+	// Use 70% of terminal width for better readability (max 80)
+	formWidth := fb.width * 70 / 100
+	if formWidth > 80 {
+		formWidth = 80
+	}
+	if formWidth < 40 {
+		formWidth = 40 // Minimum width
+	}
 
 	form := huh.NewForm(groups...).
 		WithTheme(styles.HuhTheme()).
-		WithWidth(maxFormWidth)
+		WithKeyMap(CreateTTYKeyMap()).
+		WithWidth(formWidth)
 
 	if fb.accessible {
 		form.WithAccessible(true)

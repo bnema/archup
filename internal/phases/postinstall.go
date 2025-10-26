@@ -509,14 +509,8 @@ func (p *PostInstallPhase) copyShellTemplates(archupDefault, archupDefaultBash s
 
 // readTemplate reads a template file from install path
 func (p *PostInstallPhase) readTemplate(filename string) ([]byte, error) {
-	installPath := os.Getenv("ARCHUP_INSTALL")
-	switch {
-	case installPath == "":
-		home := os.Getenv("HOME")
-		installPath = filepath.Join(home, config.DefaultInstallPath)
-	}
-
-	templatePath := filepath.Join(installPath, filename)
+	// Use DefaultInstallDir directly to match where bootstrap downloads files
+	templatePath := filepath.Join(config.DefaultInstallDir, filename)
 	return os.ReadFile(templatePath)
 }
 

@@ -54,8 +54,9 @@ func main() {
 		log.Info("Running in DRY-RUN mode - commands will be logged but not executed")
 	}
 
-	// Load or create config
-	cfg := config.NewConfig()
+	// Load or create config (pass version to determine correct branch for downloads)
+	cfg := config.NewConfig(version)
+	log.Info("Config initialized", "version", version, "raw_url", cfg.RawURL)
 
 	// Initialize orchestrator
 	orchestrator := phases.NewOrchestrator(cfg, config.DefaultLogPath)

@@ -235,7 +235,14 @@ type Config struct {
 }
 
 // NewConfig creates a new Config with sensible defaults
-func NewConfig() *Config {
+// version parameter determines which branch to use for downloads (dev builds use dev branch)
+func NewConfig(version string) *Config {
+	// Determine which branch to use based on version
+	branch := "main"
+	if version == "dev" || version == "" {
+		branch = "dev"
+	}
+
 	return &Config{
 		Locale:                       "en_US.UTF-8",
 		Timezone:                     "UTC",
@@ -251,13 +258,13 @@ func NewConfig() *Config {
 		ConfigPath:                   DefaultConfigPath,
 		LogPath:                      DefaultLogPath,
 		RepoURL:                      "https://github.com/bnema/archup",
-		RawURL:                       "https://raw.githubusercontent.com/bnema/archup/main",
+		RawURL:                       fmt.Sprintf("https://raw.githubusercontent.com/bnema/archup/%s", branch),
 	}
 }
 
 // Load reads configuration from a shell-compatible config file
-func Load(path string) (*Config, error) {
-	cfg := NewConfig()
+func Load(path string, version string) (*Config, error) {
+	cfg := NewConfig(version)
 	cfg.ConfigPath = path
 
 	file, err := os.Open(path)

@@ -359,13 +359,8 @@ func (p *ReposPhase) installAURHelper(progressChan chan<- ProgressUpdate) error 
 
 // getInstallPath constructs full path to install file
 func (p *ReposPhase) getInstallPath(filename string) string {
-	installPath := os.Getenv("ARCHUP_INSTALL")
-	switch {
-	case installPath == "":
-		home := os.Getenv("HOME")
-		installPath = filepath.Join(home, config.DefaultInstallPath)
-	}
-	return filepath.Join(installPath, filename)
+	// Use DefaultInstallDir directly to match where bootstrap downloads files
+	return filepath.Join(config.DefaultInstallDir, filename)
 }
 
 // PostCheck validates repository configuration
