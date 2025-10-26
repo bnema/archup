@@ -6,6 +6,7 @@ import (
 	"github.com/bnema/archup/internal/config"
 	"github.com/bnema/archup/internal/logger"
 	"github.com/bnema/archup/internal/phases"
+	"github.com/bnema/archup/internal/system"
 	"github.com/bnema/archup/internal/ui/components"
 	"github.com/bnema/archup/internal/ui/styles"
 	"github.com/charmbracelet/bubbles/spinner"
@@ -22,6 +23,7 @@ const (
 	StatePreflightForm
 	StateDiskForm
 	StateOptionsForm
+	StateAMDPStatePrompt // NEW: AMD P-State selection (shown only for AMD CPUs)
 	StateConfirmation
 	StateExecuting
 	StateComplete
@@ -42,6 +44,7 @@ type Model struct {
 	width        int
 	height       int
 	err          error
+	cpuInfo      *system.CPUInfo // Detected CPU information
 }
 
 // NewModel creates a new installer model
@@ -116,9 +119,20 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.currentForm = CreateDiskSelectionForm(m.config, m.formBuilder)
 				return m, m.currentForm.Init()
 
-			case StateConfirmation:
+			case StateAMDPStatePrompt:
 				m.state = StateOptionsForm
 				m.currentForm = CreateOptionsForm(m.config, m.formBuilder)
+				return m, m.currentForm.Init()
+
+			case StateConfirmation:
+				// Go back to AMD P-State prompt if we have AMD CPU, otherwise options
+				if m.cpuInfo != nil && m.cpuInfo.Vendor == system.CPUVendorAMD && len(m.cpuInfo.AMDPStateModes) > 0 {
+					m.state = StateAMDPStatePrompt
+					m.currentForm = CreateAMDPStateForm(m.config, m.cpuInfo, m.formBuilder)
+				} else {
+					m.state = StateOptionsForm
+					m.currentForm = CreateOptionsForm(m.config, m.formBuilder)
+				}
 				return m, m.currentForm.Init()
 			}
 		}
@@ -161,7 +175,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	// Update current form if showing one
 	switch m.state {
-	case StatePreflightForm, StateDiskForm, StateOptionsForm:
+	case StatePreflightForm, StateDiskForm, StateOptionsForm, StateAMDPStatePrompt:
 		switch {
 		case m.currentForm != nil:
 			// Don't pass WindowSizeMsg to form to preserve our max width
@@ -200,7 +214,7 @@ func (m *Model) View() string {
 			centerText(WelcomeTagline, m.width) + "\n\n" +
 			centerText(styles.HelpStyle.Render("Press ENTER to start installation"), m.width)
 
-	case StatePreflightForm, StateDiskForm, StateOptionsForm:
+	case StatePreflightForm, StateDiskForm, StateOptionsForm, StateAMDPStatePrompt:
 		switch {
 		case m.currentForm != nil:
 			header := centerText(m.renderPhaseHeader(), m.width)
@@ -257,8 +271,28 @@ func (m *Model) handleFormComplete() tea.Cmd {
 		m.logger.Info("Options form completed",
 			"kernel", m.config.KernelChoice,
 			"encryption", m.config.EncryptionType)
-		// Move directly to confirmation
-		// Encryption password is already handled in preflight form
+
+		// Detect CPU and check if we need to show AMD P-State prompt
+		cpuInfo, err := system.DetectCPUInfo()
+		if err == nil {
+			m.cpuInfo = cpuInfo
+			// Show AMD P-State prompt only for AMD CPUs with P-State support
+			if cpuInfo.Vendor == system.CPUVendorAMD && len(cpuInfo.AMDPStateModes) > 0 {
+				m.logger.Info("AMD CPU detected - showing P-State configuration",
+					"zen_gen", cpuInfo.AMDZenGen.Label,
+					"modes", len(cpuInfo.AMDPStateModes))
+				m.state = StateAMDPStatePrompt
+				m.currentForm = CreateAMDPStateForm(m.config, cpuInfo, m.formBuilder)
+				return m.currentForm.Init()
+			}
+		}
+
+		// Move directly to confirmation if not AMD or detection failed
+		m.state = StateConfirmation
+		return nil
+
+	case StateAMDPStatePrompt:
+		m.logger.Info("AMD P-State configuration completed", "mode", m.config.AMDPState)
 		m.state = StateConfirmation
 		return nil
 
@@ -277,6 +311,12 @@ func (m *Model) renderConfirmation() string {
 	s += fmt.Sprintf("Disk: %s\n", m.config.TargetDisk)
 	s += fmt.Sprintf("Kernel: %s\n", m.config.KernelChoice)
 	s += fmt.Sprintf("Encryption: %s\n", m.config.EncryptionType)
+
+	// Show AMD P-State mode if configured
+	if m.config.AMDPState != "" {
+		s += fmt.Sprintf("AMD P-State: %s\n", m.config.AMDPState)
+	}
+
 	s += "\n"
 	s += styles.WarningStyle.Render("WARNING: This will erase all data on "+m.config.TargetDisk) + "\n\n"
 	s += styles.HelpStyle.Render("Press ENTER to continue, Ctrl+C to cancel")
@@ -330,10 +370,19 @@ func (m *Model) renderPhaseHeader() string {
 	case StateOptionsForm:
 		stepNum = "3"
 		stepName = "Installation Options"
+	case StateAMDPStatePrompt:
+		stepNum = "4"
+		stepName = "AMD P-State Configuration"
 	default:
 		return ""
 	}
 
-	header := fmt.Sprintf("ArchUp Install - Step %s/3: %s", stepNum, stepName)
+	// Total steps depends on whether AMD prompt is shown
+	totalSteps := "3"
+	if m.state == StateAMDPStatePrompt {
+		totalSteps = "4"
+	}
+
+	header := fmt.Sprintf("ArchUp Install - Step %s/%s: %s", stepNum, totalSteps, stepName)
 	return styles.TitleStyle.Render(header)
 }

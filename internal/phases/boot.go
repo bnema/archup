@@ -195,9 +195,21 @@ func (p *BootPhase) configureLimine(progressChan chan<- ProgressUpdate) error {
 	// Add AMD-specific kernel parameters if configured
 	switch {
 	case p.config.AMDPState != "":
-		amdParams := fmt.Sprintf("amd_pstate=%s", p.config.AMDPState)
-		kernelParams = fmt.Sprintf("%s %s", kernelParams, amdParams)
-		p.SendOutput(progressChan, fmt.Sprintf("Added AMD P-State: %s", p.config.AMDPState))
+		// Detect CPU to get Zen generation for proper kernel params
+		cpuInfo, err := system.DetectCPUInfo()
+		var amdParams string
+		if err == nil && cpuInfo.AMDZenGen != nil {
+			// Use helper function that adds extra params for Zen 2 if needed
+			amdParams = system.GetAMDPStateKernelParams(cpuInfo.AMDZenGen, system.AMDPStateMode(p.config.AMDPState))
+		} else {
+			// Fallback to simple parameter if detection fails
+			amdParams = fmt.Sprintf("amd_pstate=%s", p.config.AMDPState)
+		}
+
+		if amdParams != "" {
+			kernelParams = fmt.Sprintf("%s %s", kernelParams, amdParams)
+			p.SendOutput(progressChan, fmt.Sprintf("Added AMD P-State: %s", amdParams))
+		}
 	}
 
 	// Add quiet/splash parameters

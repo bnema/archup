@@ -22,6 +22,12 @@ func CreatePreflightForm(cfg *config.Config, fb *components.FormBuilder) *huh.Fo
 		cfg.Timezone = config.TimezoneDefault
 	}
 
+	// Set default keymap if not already set
+	switch {
+	case cfg.Keymap == "":
+		cfg.Keymap = config.KeymapDefault
+	}
+
 	return fb.CreateForm(
 		// System configuration
 		huh.NewGroup(
@@ -179,6 +185,41 @@ func CreateOptionsForm(cfg *config.Config, fb *components.FormBuilder) *huh.Form
 	}
 
 	return fb.CreateForm(groups...)
+}
+
+// CreateAMDPStateForm creates AMD P-State driver selection form
+// This form is only shown for AMD CPUs that support P-State
+func CreateAMDPStateForm(cfg *config.Config, cpuInfo *system.CPUInfo, fb *components.FormBuilder) *huh.Form {
+	// Build P-State mode options based on available modes
+	var modeOptions []huh.Option[string]
+
+	for _, mode := range cpuInfo.AMDPStateModes {
+		desc := system.GetPStateModeDescription(mode)
+		label := fmt.Sprintf("%s - %s", mode, desc)
+
+		// Mark recommended mode
+		if mode == cpuInfo.RecommendedPStateMode {
+			label += " (recommended)"
+		}
+
+		modeOptions = append(modeOptions, huh.NewOption(label, string(mode)))
+	}
+
+	// Build description text
+	zenLabel := "Unknown"
+	if cpuInfo.AMDZenGen != nil {
+		zenLabel = cpuInfo.AMDZenGen.Label
+	}
+
+	description := fmt.Sprintf("Detected: %s\nCPU: %s\n\nNote: Requires CPPC enabled in UEFI (AMD CBS > NBIO > SMU > CPPC)",
+		zenLabel, cpuInfo.ModelName)
+
+	return fb.CreateForm(
+		huh.NewGroup(
+			fb.SelectWithOptions("AMD P-State Mode", modeOptions, &cfg.AMDPState).
+				Description(description),
+		).Title("AMD P-State Configuration"),
+	)
 }
 
 // FormatDiskOption formats a disk into a user-friendly option string (DRY helper)
