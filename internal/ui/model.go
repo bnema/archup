@@ -8,6 +8,7 @@ import (
 	"github.com/bnema/archup/internal/phases"
 	"github.com/bnema/archup/internal/ui/components"
 	"github.com/bnema/archup/internal/ui/styles"
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
@@ -33,8 +34,10 @@ type Model struct {
 	orchestrator *phases.Orchestrator
 	config       *config.Config
 	currentForm  *huh.Form
+	formBuilder  *components.FormBuilder
 	output       *components.OutputViewer
 	logger       *logger.Logger
+	spinner      spinner.Model
 	version      string
 	width        int
 	height       int
@@ -44,11 +47,18 @@ type Model struct {
 // NewModel creates a new installer model
 func NewModel(orchestrator *phases.Orchestrator, cfg *config.Config, log *logger.Logger, version string) *Model {
 	log.Info("UI Model created", "version", version)
+
+	s := spinner.New()
+	s.Spinner = spinner.Line
+	s.Style = styles.SpinnerStyle
+
 	return &Model{
 		state:        StateShowLogo,
 		orchestrator: orchestrator,
 		config:       cfg,
+		formBuilder:  components.NewFormBuilder(false, 80), // Initial width, will update on WindowSizeMsg
 		logger:       log,
+		spinner:      s,
 		version:      version,
 		width:        80,
 		height:       24,
@@ -58,7 +68,7 @@ func NewModel(orchestrator *phases.Orchestrator, cfg *config.Config, log *logger
 
 // Init initializes the model
 func (m *Model) Init() tea.Cmd {
-	return nil
+	return m.spinner.Tick
 }
 
 // Update handles messages
@@ -68,6 +78,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		m.output.SetSize(msg.Width, msg.Height-10)
+		// Update formBuilder width for responsive forms
+		m.formBuilder = components.NewFormBuilder(false, msg.Width)
 
 	case tea.KeyMsg:
 		m.logger.Info("Key pressed", "key", msg.String(), "state", m.state)
@@ -82,7 +94,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case StateShowLogo:
 				m.logger.Info("Moving to preflight form")
 				m.state = StatePreflightForm
-				m.currentForm = CreatePreflightForm(m.config)
+				m.currentForm = CreatePreflightForm(m.config, m.formBuilder)
 				return m, m.currentForm.Init()
 
 			case StateConfirmation:
@@ -96,17 +108,17 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch m.state {
 			case StateDiskForm:
 				m.state = StatePreflightForm
-				m.currentForm = CreatePreflightForm(m.config)
+				m.currentForm = CreatePreflightForm(m.config, m.formBuilder)
 				return m, m.currentForm.Init()
 
 			case StateOptionsForm:
 				m.state = StateDiskForm
-				m.currentForm = CreateDiskSelectionForm(m.config)
+				m.currentForm = CreateDiskSelectionForm(m.config, m.formBuilder)
 				return m, m.currentForm.Init()
 
 			case StateConfirmation:
 				m.state = StateOptionsForm
-				m.currentForm = CreateOptionsForm(m.config)
+				m.currentForm = CreateOptionsForm(m.config, m.formBuilder)
 				return m, m.currentForm.Init()
 			}
 		}
@@ -170,8 +182,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, cmd
 		}
 	case StateExecuting:
-		// Update output viewer
-		return m, m.output.Update(msg)
+		// Update spinner and output viewer
+		var cmd tea.Cmd
+		m.spinner, cmd = m.spinner.Update(msg)
+		return m, tea.Batch(cmd, m.output.Update(msg))
 	}
 
 	return m, nil
@@ -198,7 +212,8 @@ func (m *Model) View() string {
 		return m.renderConfirmation()
 
 	case StateExecuting:
-		return styles.TitleStyle.Render("Installing ArchUp...") + "\n\n" + m.output.View()
+		title := m.spinner.View() + " Installation in progress..."
+		return styles.TitleStyle.Render(title) + "\n\n" + m.output.View()
 
 	case StateError:
 		return styles.RenderError(fmt.Sprintf("Error: %v", m.err))
@@ -229,13 +244,13 @@ func (m *Model) handleFormComplete() tea.Cmd {
 		}
 
 		m.state = StateDiskForm
-		m.currentForm = CreateDiskSelectionForm(m.config)
+		m.currentForm = CreateDiskSelectionForm(m.config, m.formBuilder)
 		return m.currentForm.Init()
 
 	case StateDiskForm:
 		m.logger.Info("Disk selection completed", "disk", m.config.TargetDisk)
 		m.state = StateOptionsForm
-		m.currentForm = CreateOptionsForm(m.config)
+		m.currentForm = CreateOptionsForm(m.config, m.formBuilder)
 		return m.currentForm.Init()
 
 	case StateOptionsForm:
@@ -270,10 +285,14 @@ func (m *Model) renderConfirmation() string {
 
 // executeNextPhase executes the next pending phase
 func (m *Model) executeNextPhase() tea.Cmd {
-	return func() tea.Msg {
-		err := m.orchestrator.ExecuteNext()
-		return phaseCompleteMsg{err: err}
-	}
+	// Execute the phase in the background AND start listening for progress updates
+	return tea.Batch(
+		func() tea.Msg {
+			err := m.orchestrator.ExecuteNext()
+			return phaseCompleteMsg{err: err}
+		},
+		waitForProgress(m.orchestrator.ProgressChannel()),
+	)
 }
 
 // waitForProgress waits for progress updates

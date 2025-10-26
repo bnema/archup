@@ -92,10 +92,6 @@ func (p *BootstrapPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResult
 			destPath: filepath.Join(config.DefaultInstallDir, "configs", "shell", "envs"),
 		},
 		{
-			url:      fmt.Sprintf("%s/install/configs/shell/functions", p.config.RawURL),
-			destPath: filepath.Join(config.DefaultInstallDir, "configs", "shell", "functions"),
-		},
-		{
 			url:      fmt.Sprintf("%s/install/configs/shell/rc", p.config.RawURL),
 			destPath: filepath.Join(config.DefaultInstallDir, "configs", "shell", "rc"),
 		},

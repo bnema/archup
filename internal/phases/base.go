@@ -205,14 +205,8 @@ func (p *BaseInstallPhase) runPacstrap(progressChan chan<- ProgressUpdate) error
 // loadBasePackages reads the base package list from file
 func (p *BaseInstallPhase) loadBasePackages() ([]string, error) {
 	// Read from install directory (downloaded during bootstrap)
-	installPath := os.Getenv("ARCHUP_INSTALL")
-	switch {
-	case installPath == "":
-		home := os.Getenv("HOME")
-		installPath = home + "/" + config.DefaultInstallPath
-	}
-
-	packageFile := installPath + "/" + config.BasePackagesFile
+	// Use DefaultInstallDir directly to match where bootstrap downloads files
+	packageFile := config.DefaultInstallDir + "/" + config.BasePackagesFile
 
 	file, err := os.Open(packageFile)
 	switch {

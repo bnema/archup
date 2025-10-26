@@ -11,8 +11,7 @@ import (
 )
 
 // CreatePreflightForm creates the initial configuration form with all user identity fields
-func CreatePreflightForm(cfg *config.Config) *huh.Form {
-	fb := components.NewFormBuilder(false)
+func CreatePreflightForm(cfg *config.Config, fb *components.FormBuilder) *huh.Form {
 
 	// Auto-detect timezone from API, fallback to default if detection fails
 	detectedTimezone := system.DetectTimezone()
@@ -61,19 +60,21 @@ func CreatePreflightForm(cfg *config.Config) *huh.Form {
 }
 
 // CreateDiskSelectionForm creates disk selection form with detailed disk information
-func CreateDiskSelectionForm(cfg *config.Config) *huh.Form {
-	fb := components.NewFormBuilder(false)
+func CreateDiskSelectionForm(cfg *config.Config, fb *components.FormBuilder) *huh.Form {
 
 	// Detect available disks
 	disks, err := system.ListDisks()
 
-	var diskOptions []string
+	var diskOptions []huh.Option[string]
 	switch {
 	case err != nil:
-		// Fallback to empty list if detection fails
-		diskOptions = []string{"No disks detected"}
+		// Fallback to empty option if detection fails
+		diskOptions = []huh.Option[string]{
+			huh.NewOption("No disks detected", ""),
+		}
 	default:
 		// Format disk options with detailed info: "/dev/sda (500GB) Samsung SSD [S3Z9NB0K123456]"
+		// Use disk.Path as value and formatted string as display label
 		for _, disk := range disks {
 			label := disk.Path + " (" + disk.Size + ")"
 
@@ -95,21 +96,20 @@ func CreateDiskSelectionForm(cfg *config.Config) *huh.Form {
 				label += " " + disk.Vendor
 			}
 
-			diskOptions = append(diskOptions, label)
+			diskOptions = append(diskOptions, huh.NewOption(label, disk.Path))
 		}
 	}
 
 	return fb.CreateForm(
 		huh.NewGroup(
-			fb.Select(SectionDiskSelection, diskOptions, &cfg.TargetDisk).
+			fb.SelectWithOptions(SectionDiskSelection, diskOptions, &cfg.TargetDisk).
 				Description(WarnDiskErase),
 		),
 	)
 }
 
 // CreateOptionsForm creates installation options form with CPU detection and descriptions
-func CreateOptionsForm(cfg *config.Config) *huh.Form {
-	fb := components.NewFormBuilder(false)
+func CreateOptionsForm(cfg *config.Config, fb *components.FormBuilder) *huh.Form {
 
 	// Auto-detect CPU information
 	cpuInfo, err := system.DetectCPUInfo()
