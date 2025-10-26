@@ -67,6 +67,7 @@ func (p *ReposPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResult {
 	switch err := p.installExtraPackages(progressChan); {
 	case err != nil:
 		// Don't fail the phase, just warn
+		p.logger.Warn("Extra packages installation failed", "error", err)
 		p.SendOutput(progressChan, fmt.Sprintf("[WARN] Some extra packages failed: %v", err))
 	}
 
@@ -283,15 +284,18 @@ func (p *ReposPhase) installExtraPackages(progressChan chan<- ProgressUpdate) er
 		return nil
 	}
 
+	p.logger.Info("Installing extra packages", "count", len(packages), "packages", strings.Join(packages, ", "))
 	p.SendOutput(progressChan, fmt.Sprintf("Installing %d extra packages...", len(packages)))
 
 	// Install packages
 	installCmd := fmt.Sprintf("pacman -S --noconfirm %s", strings.Join(packages, " "))
 	switch err := system.ChrootExec(p.logger.LogPath(),config.PathMnt, installCmd); {
 	case err != nil:
+		p.logger.Error("Failed to install extra packages", "error", err, "packages", strings.Join(packages, ", "))
 		return fmt.Errorf("failed to install extra packages: %w", err)
 	}
 
+	p.logger.Info("Extra packages installed successfully", "count", len(packages))
 	p.SendOutput(progressChan, fmt.Sprintf("[OK] Installed %d extra packages", len(packages)))
 
 	return nil

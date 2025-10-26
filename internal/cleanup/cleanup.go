@@ -3,6 +3,7 @@ package cleanup
 import (
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -17,8 +18,10 @@ import (
 // 2. Close LUKS/dm-crypt mappings (cryptroot and all others)
 // 3. Disable swap
 // 4. Kill stuck pacstrap/arch-chroot processes
-// 5. Remove installation config file
-// 6. Sync filesystems
+// 5. Wipe /mnt directory contents (fresh start for next install)
+// 6. Remove installation config file
+// 7. Remove archived log files (*.log.TIMESTAMP)
+// 8. Sync filesystems
 func Run(log *logger.Logger) error {
 	log.Info("Starting comprehensive cleanup")
 
@@ -26,10 +29,12 @@ func Run(log *logger.Logger) error {
 	cleanupEncryption(log)
 	cleanupSwap(log)
 	cleanupProcesses(log)
+	cleanupMountPoint(log)
 	cleanupConfig(log)
+	cleanupOldLogs(log)
 	cleanupSync(log)
 
-	log.Info("Cleanup complete")
+	log.Info("Cleanup complete - system ready for fresh install")
 	return nil
 }
 
@@ -178,6 +183,50 @@ func cleanupProcesses(log *logger.Logger) {
 	}
 }
 
+// cleanupMountPoint wipes /mnt directory for a fresh install
+func cleanupMountPoint(log *logger.Logger) {
+	log.Info("Wiping /mnt directory for fresh install")
+
+	mountPoint := config.PathMnt
+
+	// Verify /mnt is not mounted before wiping
+	if isMounted(mountPoint) {
+		log.Warn("Mount point still mounted, skipping wipe", "path", mountPoint)
+		return
+	}
+
+	// Remove all contents of /mnt
+	entries, err := os.ReadDir(mountPoint)
+	if err != nil {
+		if os.IsNotExist(err) {
+			log.Info("Mount point doesn't exist, nothing to clean", "path", mountPoint)
+			return
+		}
+		log.Warn("Failed to read mount point", "path", mountPoint, "error", err)
+		return
+	}
+
+	if len(entries) == 0 {
+		log.Info("Mount point already empty", "path", mountPoint)
+		return
+	}
+
+	removedCount := 0
+	for _, entry := range entries {
+		entryPath := filepath.Join(mountPoint, entry.Name())
+		if err := os.RemoveAll(entryPath); err == nil {
+			removedCount++
+			log.Info("Removed", "path", entryPath)
+		} else {
+			log.Warn("Failed to remove", "path", entryPath, "error", err)
+		}
+	}
+
+	if removedCount > 0 {
+		log.Info("Wiped mount point", "removed_items", removedCount)
+	}
+}
+
 // cleanupConfig removes the installation config file.
 func cleanupConfig(log *logger.Logger) {
 	log.Info("Removing installation config file")
@@ -189,6 +238,45 @@ func cleanupConfig(log *logger.Logger) {
 		} else {
 			log.Warn("Failed to remove config file", "path", configPath, "error", err)
 		}
+	}
+}
+
+// cleanupOldLogs removes archived log files (*.log.TIMESTAMP pattern).
+func cleanupOldLogs(log *logger.Logger) {
+	log.Info("Removing archived log files")
+
+	logDir := filepath.Dir(config.DefaultLogPath)
+	logBase := filepath.Base(config.DefaultLogPath)
+
+	// Find all archived logs matching pattern: archup-install.log.2025-10-26_203045
+	pattern := filepath.Join(logDir, logBase+".*")
+	matches, err := filepath.Glob(pattern)
+	if err != nil {
+		log.Warn("Failed to find archived logs", "error", err)
+		return
+	}
+
+	if len(matches) == 0 {
+		log.Info("No archived logs to clean up")
+		return
+	}
+
+	removedCount := 0
+	for _, archiveFile := range matches {
+		// Skip the current log file itself
+		if archiveFile == config.DefaultLogPath {
+			continue
+		}
+
+		if err := os.Remove(archiveFile); err == nil {
+			removedCount++
+		} else {
+			log.Warn("Failed to remove archived log", "file", archiveFile, "error", err)
+		}
+	}
+
+	if removedCount > 0 {
+		log.Info("Removed archived logs", "count", removedCount)
 	}
 }
 

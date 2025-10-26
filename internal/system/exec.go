@@ -89,6 +89,7 @@ func Run(cfg RunConfig) CommandResult {
 			output.WriteString(line + "\n")
 			if logFile != nil {
 				fmt.Fprintln(logFile, line)
+				logFile.Sync() // Flush to disk immediately
 			}
 		}
 	}()
@@ -103,6 +104,7 @@ func Run(cfg RunConfig) CommandResult {
 			output.WriteString(line + "\n")
 			if logFile != nil {
 				fmt.Fprintln(logFile, line)
+				logFile.Sync() // Flush to disk immediately
 			}
 		}
 	}()
