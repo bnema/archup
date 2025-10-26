@@ -28,7 +28,7 @@ func CreatePreflightForm(cfg *config.Config) *huh.Form {
 		huh.NewGroup(
 			fb.TextInput("Hostname", "> ", &cfg.Hostname, validation.ValidateHostname),
 			fb.TextInput("Username", "> ", &cfg.Username, validation.ValidateUsername),
-		).Title(SectionUserIdentity).Description(SectionUserIdentity),
+		).Title(SectionUserIdentity),
 
 		// Passwords
 		huh.NewGroup(
