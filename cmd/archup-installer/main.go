@@ -42,7 +42,7 @@ func main() {
 	// Handle --cleanup flag
 	if *doCleanup {
 		if err := cleanup.Run(log); err != nil {
-			fmt.Fprintf(os.Stderr, "Cleanup failed: %v\n", err)
+			log.Error("Cleanup failed", "error", err)
 			os.Exit(1)
 		}
 		os.Exit(0)
@@ -73,7 +73,7 @@ func main() {
 
 	for _, phase := range phasesToRegister {
 		if err := orchestrator.RegisterPhase(phase); err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to register phase: %v\n", err)
+			log.Error("Failed to register phase", "error", err)
 			os.Exit(1)
 		}
 	}
@@ -84,7 +84,7 @@ func main() {
 	// Run Bubbletea app
 	p := tea.NewProgram(model, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
-		fmt.Printf("Error running installer: %v\n", err)
+		log.Error("Error running installer", "error", err)
 		os.Exit(1)
 	}
 }
