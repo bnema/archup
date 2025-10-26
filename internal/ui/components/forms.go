@@ -1,6 +1,9 @@
 package components
 
-import "github.com/charmbracelet/huh"
+import (
+	"github.com/charmbracelet/huh"
+	"github.com/bnema/archup/internal/ui/styles"
+)
 
 // FormBuilder provides reusable form components
 type FormBuilder struct {
@@ -69,9 +72,11 @@ func (fb *FormBuilder) Confirm(title, affirmative, negative string, value *bool)
 		Value(value)
 }
 
-// CreateForm creates a form with accessibility settings
+// CreateForm creates a form with accessibility settings and custom theme
 func (fb *FormBuilder) CreateForm(groups ...*huh.Group) *huh.Form {
-	form := huh.NewForm(groups...)
+	form := huh.NewForm(groups...).
+		WithTheme(styles.HuhTheme())
+
 	if fb.accessible {
 		form.WithAccessible(true)
 	}
