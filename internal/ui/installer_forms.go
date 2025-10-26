@@ -14,12 +14,12 @@ import (
 func CreatePreflightForm(cfg *config.Config) *huh.Form {
 	fb := components.NewFormBuilder(false)
 
-	// Auto-detect timezone from API
+	// Auto-detect timezone from API, fallback to default if detection fails
 	detectedTimezone := system.DetectTimezone()
 	switch {
 	case detectedTimezone != "":
 		cfg.Timezone = detectedTimezone
-	case cfg.Timezone == "":
+	default:
 		cfg.Timezone = config.TimezoneDefault
 	}
 
