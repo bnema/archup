@@ -305,7 +305,17 @@ func (p *ReposPhase) enableChaoticAUR(progressChan chan<- ProgressUpdate) error 
 
 	// Download and install chaotic-keyring and chaotic-mirrorlist
 	p.SendOutput(progressChan, "Downloading Chaotic-AUR packages...")
-	switch err := p.chrExec.DownloadAndInstallPackages(p.logger.LogPath(), config.PathMnt, keyringURL, mirrorlistURL); {
+
+	// Parse mirror URLs (pipe-separated for fallbacks)
+	var urls []string
+	for _, url := range strings.Split(keyringURL, "|") {
+		urls = append(urls, strings.TrimSpace(url))
+	}
+	for _, url := range strings.Split(mirrorlistURL, "|") {
+		urls = append(urls, strings.TrimSpace(url))
+	}
+
+	switch err := p.chrExec.DownloadAndInstallPackages(p.logger.LogPath(), config.PathMnt, urls...); {
 	case err != nil:
 		p.logger.Warn("Chaotic-AUR packages unavailable, skipping", "error", err)
 		p.SendOutput(progressChan, "[WARN] Chaotic-AUR unavailable, skipping (AUR helper will be built from source)")
