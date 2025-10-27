@@ -183,6 +183,25 @@ var PlymouthFiles = []string{
 	"progress_box.png",
 }
 
+// Post-boot paths and files
+const (
+	PathMntPostBoot      = "/mnt/usr/local/share/archup/post-boot"
+	PathMntSystemdSystem = "/mnt/etc/systemd/system"
+	PostBootServiceName  = "archup-first-boot.service"
+)
+
+// Post-boot script files to download
+var PostBootScripts = []string{
+	"all.sh",
+	"snapper.sh",
+	"ufw.sh",
+	"ssh-keygen.sh",
+	"archup-cli.sh",
+}
+
+// Post-boot service template URL path
+const PostBootServiceTemplate = "assets/systemd/archup-first-boot.service"
+
 // Config holds the installation configuration
 // This mirrors the shell script's config format for compatibility
 type Config struct {

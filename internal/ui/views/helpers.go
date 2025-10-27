@@ -1,15 +1,15 @@
-package ui
+package views
 
 import (
 	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/bnema/archup/internal/ui/styles"
 )
 
 const (
-	// Logo ASCII art (from logo.txt)
+	WelcomeTagline = "A minimal, slightly opinionated Arch Linux installer."
+
 	logoASCII = `  ░█████╗░██████╗░░█████╗░██╗░░██╗██╗░░░██╗██████╗░
   ██╔══██╗██╔══██╗██╔══██╗██║░░██║██║░░░██║██╔══██╗
   ███████║██████╔╝██║░░╚═╝███████║██║░░░██║██████╔╝
@@ -26,7 +26,6 @@ type Logo struct {
 }
 
 // NewLogo creates a new Logo instance
-// version should be injected via ldflags: -ldflags "-X main.version=v1.0.0"
 func NewLogo(version string) *Logo {
 	lines := strings.Split(logoASCII, "\n")
 	width := 0
@@ -47,7 +46,12 @@ func NewLogo(version string) *Logo {
 	}
 }
 
-// Render renders the logo in full blue
+// RenderCentered renders the logo centered using lipgloss alignment
+func (l *Logo) RenderCentered(termWidth int) string {
+	return l.Render()
+}
+
+// Render renders the logo
 func (l *Logo) Render() string {
 	lines := strings.Split(logoASCII, "\n")
 	var rendered strings.Builder
@@ -58,52 +62,20 @@ func (l *Logo) Render() string {
 			continue
 		}
 
-		// Render entire logo in blue
-		rendered.WriteString(styles.LogoCyanStyle.Render(line))
+		rendered.WriteString(line)
 		rendered.WriteString("\n")
 	}
 
-	// Add version below logo
 	rendered.WriteString("\n")
-	versionLine := "  " + l.version
-	rendered.WriteString(styles.LogoCyanStyle.Render(versionLine))
-	rendered.WriteString("\n")
+	rendered.WriteString(fmt.Sprintf("  %s\n", l.version))
 
 	return rendered.String()
 }
 
-// RenderCentered renders the logo centered using lipgloss alignment
-func (l *Logo) RenderCentered(termWidth int) string {
-	return l.Render()
-}
-
-// Width returns the logo width
-func (l *Logo) Width() int {
-	return l.width
-}
-
-// Height returns the logo height (including version line)
-func (l *Logo) Height() int {
-	return l.height + 2 // +2 for blank line and version
-}
-
-// ClearScreen clears the screen and displays the logo at the top
-func ClearScreen(termWidth int, version string) string {
-	logo := NewLogo(version)
-	return fmt.Sprintf("\033[H\033[2J\n%s", logo.RenderCentered(termWidth))
-}
-
-// RenderWithMessage renders the logo with a message below it
-func RenderWithMessage(termWidth int, version, message string) string {
-	logo := NewLogo(version)
-	logoStr := logo.RenderCentered(termWidth)
-
-	// Center the message
-	paddingLeft := (termWidth - lipgloss.Width(message)) / 2
-	if paddingLeft < 0 {
-		paddingLeft = 0
-	}
-	padding := strings.Repeat(" ", paddingLeft)
-
-	return fmt.Sprintf("%s\n%s%s\n", logoStr, padding, message)
+// CenterText centers text within a given width using lipgloss
+func CenterText(text string, width int) string {
+	return lipgloss.NewStyle().
+		Width(width).
+		AlignHorizontal(lipgloss.Center).
+		Render(text)
 }
