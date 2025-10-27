@@ -6,7 +6,10 @@ import (
 	"testing"
 
 	"github.com/bnema/archup/internal/config"
+	"github.com/bnema/archup/internal/interfaces/mocks"
 	"github.com/bnema/archup/internal/logger"
+	"github.com/bnema/archup/internal/system"
+	"go.uber.org/mock/gomock"
 )
 
 // TestEnableMultilibParsing tests the multilib section and Include line parsing
@@ -536,12 +539,18 @@ func TestReposPhasePreCheckValidation(t *testing.T) {
 			mockSysExec := mocks.NewMockSystemExecutor(ctrl)
 			mockChrExec := mocks.NewMockChrootExecutor(ctrl)
 
+			// Set up expected mock calls based on whether we'll pass AUR helper validation
+			// AUR helper validation happens first, so if invalid helper, we won't call RunSimple
+			if !tt.expectError || (tt.expectError && tt.errorMsg != "invalid AUR helper") {
+				mockSysExec.EXPECT().RunSimple("mountpoint", "-q", config.PathMnt).Return(system.CommandResult{ExitCode: 0}).Times(1)
+				mockFS.EXPECT().Stat(config.PathMntEtcPacmanConf).Return(mockFileInfo{}, nil).Times(1)
+				mockFS.EXPECT().IsNotExist(gomock.Any()).Return(false).Times(1)
+			}
+
 			// Create ReposPhase
 			phase := NewReposPhase(cfg, log, mockFS, mockSysExec, mockChrExec)
 
-			// Note: PreCheck also validates /mnt is mounted and pacman.conf exists
-			// In a real test environment, these would fail, so we're only testing
-			// the validation logic here by checking the error message
+			// Note: PreCheck validates AUR helper first, then /mnt is mounted, and pacman.conf exists
 			err := phase.PreCheck()
 
 			if tt.expectError {

@@ -1,22 +1,15 @@
 package views
 
 import (
-	"fmt"
 	"strings"
 
+	"github.com/bnema/archup/internal/ui/assets"
 	"github.com/bnema/archup/internal/ui/styles"
 	"github.com/charmbracelet/lipgloss"
 )
 
 const (
 	WelcomeTagline = "A minimal, slightly opinionated Arch Linux installer."
-
-	logoASCII = `  ░█████╗░██████╗░░█████╗░██╗░░██╗██╗░░░██╗██████╗░
-  ██╔══██╗██╔══██╗██╔══██╗██║░░██║██║░░░██║██╔══██╗
-  ███████║██████╔╝██║░░╚═╝███████║██║░░░██║██████╔╝
-  ██╔══██║██╔══██╗██║░░██╗██╔══██║██║░░░██║██╔═══╝░
-  ██║░░██║██║░░██║╚█████╔╝██║░░██║╚██████╔╝██║░░░░░
-  ╚═╝░░╚═╝╚═╝░░╚═╝░╚════╝░╚═╝░░╚═╝░╚═════╝░╚═╝░░░░░`
 )
 
 // Logo represents the ArchUp logo display
@@ -28,7 +21,7 @@ type Logo struct {
 
 // NewLogo creates a new Logo instance
 func NewLogo(version string) *Logo {
-	lines := strings.Split(logoASCII, "\n")
+	lines := strings.Split(assets.LogoASCII, "\n")
 	width := 0
 	for _, line := range lines {
 		if len(line) > width {
@@ -52,9 +45,9 @@ func (l *Logo) RenderCentered(termWidth int) string {
 	return l.Render()
 }
 
-// Render renders the logo with theme colors
+// Render renders the logo with character-level styling
 func (l *Logo) Render() string {
-	lines := strings.Split(logoASCII, "\n")
+	lines := strings.Split(assets.LogoASCII, "\n")
 	var rendered strings.Builder
 
 	for _, line := range lines {
@@ -63,14 +56,26 @@ func (l *Logo) Render() string {
 			continue
 		}
 
-		// Apply bright cyan color to the logo
-		rendered.WriteString(styles.LogoCyanStyle.Render(line))
+		// Apply conditional styling based on character
+		var styledLine strings.Builder
+		for _, ch := range line {
+			if string(ch) == "░" {
+				// Use darker blue for border character
+				styledLine.WriteString(styles.LogoBlueStyle.Render(string(ch)))
+			} else {
+				// Use bright cyan for main logo
+				styledLine.WriteString(styles.LogoCyanStyle.Render(string(ch)))
+			}
+		}
+		rendered.WriteString(styledLine.String())
 		rendered.WriteString("\n")
 	}
 
+	// Add version below logo
 	rendered.WriteString("\n")
-	// Apply dimmed style to version
-	rendered.WriteString(styles.HelpStyle.Render(fmt.Sprintf("  %s\n", l.version)))
+	versionLine := "  " + l.version
+	rendered.WriteString(styles.HelpStyle.Render(versionLine))
+	rendered.WriteString("\n")
 
 	return rendered.String()
 }

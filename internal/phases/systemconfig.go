@@ -2,30 +2,35 @@ package phases
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/bnema/archup/internal/config"
+	"github.com/bnema/archup/internal/interfaces"
 	"github.com/bnema/archup/internal/logger"
-	"github.com/bnema/archup/internal/system"
 )
 
 // ConfigPhase handles system configuration
 type ConfigPhase struct {
 	*BasePhase
+	fs      interfaces.FileSystem
+	sysExec interfaces.SystemExecutor
+	chrExec interfaces.ChrootExecutor
 }
 
 // NewConfigPhase creates a new config phase
-func NewConfigPhase(cfg *config.Config, log *logger.Logger) *ConfigPhase {
+func NewConfigPhase(cfg *config.Config, log *logger.Logger, fs interfaces.FileSystem, sysExec interfaces.SystemExecutor, chrExec interfaces.ChrootExecutor) *ConfigPhase {
 	return &ConfigPhase{
 		BasePhase: NewBasePhase("config", "System Configuration", cfg, log),
+		fs:        fs,
+		sysExec:   sysExec,
+		chrExec:   chrExec,
 	}
 }
 
 // PreCheck validates configuration prerequisites
 func (p *ConfigPhase) PreCheck() error {
 	// Verify /mnt is mounted
-	result := system.RunSimple("mountpoint", "-q", config.PathMnt)
+	result := p.sysExec.RunSimple("mountpoint", "-q", config.PathMnt)
 	switch {
 	case result.ExitCode != 0:
 		return fmt.Errorf("%s is not mounted", config.PathMnt)
@@ -97,13 +102,13 @@ func (p *ConfigPhase) configureSystem(progressChan chan<- ProgressUpdate) error 
 	// Set timezone
 	timezonePath := filepath.Join(config.PathUsrShareZoneinfo, p.config.Timezone)
 	tzCmd := fmt.Sprintf("ln -sf %s %s", timezonePath, config.PathEtcLocaltime)
-	switch err := system.ChrootExec(p.logger.LogPath(),config.PathMnt, tzCmd); {
+	switch err := p.chrExec.ChrootExec(p.logger.LogPath(),config.PathMnt, tzCmd); {
 	case err != nil:
 		return fmt.Errorf("failed to set timezone: %w", err)
 	}
 
 	// Set hardware clock
-	switch err := system.ChrootExec(p.logger.LogPath(),config.PathMnt, "hwclock --systohc"); {
+	switch err := p.chrExec.ChrootExec(p.logger.LogPath(),config.PathMnt, "hwclock --systohc"); {
 	case err != nil:
 		return fmt.Errorf("failed to set hardware clock: %w", err)
 	}
@@ -112,18 +117,18 @@ func (p *ConfigPhase) configureSystem(progressChan chan<- ProgressUpdate) error 
 
 	// Set locale
 	localeGen := p.config.Locale + " UTF-8\n"
-	switch err := os.WriteFile(config.PathMntEtcLocaleGen, []byte(localeGen), 0644); {
+	switch err := p.fs.WriteFile(config.PathMntEtcLocaleGen, []byte(localeGen), 0644); {
 	case err != nil:
 		return fmt.Errorf("failed to write locale.gen: %w", err)
 	}
 
-	switch err := system.ChrootExec(p.logger.LogPath(),config.PathMnt, "locale-gen"); {
+	switch err := p.chrExec.ChrootExec(p.logger.LogPath(),config.PathMnt, "locale-gen"); {
 	case err != nil:
 		return fmt.Errorf("failed to generate locale: %w", err)
 	}
 
 	localeConf := fmt.Sprintf("LANG=%s\n", p.config.Locale)
-	switch err := os.WriteFile(config.PathMntEtcLocaleConf, []byte(localeConf), 0644); {
+	switch err := p.fs.WriteFile(config.PathMntEtcLocaleConf, []byte(localeConf), 0644); {
 	case err != nil:
 		return fmt.Errorf("failed to write locale.conf: %w", err)
 	}
@@ -134,7 +139,7 @@ func (p *ConfigPhase) configureSystem(progressChan chan<- ProgressUpdate) error 
 	switch {
 	case p.config.Keymap != "":
 		vconsoleConf := fmt.Sprintf("KEYMAP=%s\n", p.config.Keymap)
-		switch err := os.WriteFile(config.PathMntEtcVconsole, []byte(vconsoleConf), 0644); {
+		switch err := p.fs.WriteFile(config.PathMntEtcVconsole, []byte(vconsoleConf), 0644); {
 		case err != nil:
 			return fmt.Errorf("failed to write vconsole.conf: %w", err)
 		}
@@ -142,7 +147,7 @@ func (p *ConfigPhase) configureSystem(progressChan chan<- ProgressUpdate) error 
 	}
 
 	// Set hostname
-	switch err := os.WriteFile(config.PathMntEtcHostname, []byte(p.config.Hostname+"\n"), 0644); {
+	switch err := p.fs.WriteFile(config.PathMntEtcHostname, []byte(p.config.Hostname+"\n"), 0644); {
 	case err != nil:
 		return fmt.Errorf("failed to write hostname: %w", err)
 	}
@@ -153,7 +158,7 @@ func (p *ConfigPhase) configureSystem(progressChan chan<- ProgressUpdate) error 
 127.0.1.1   %s.localdomain %s
 `, p.config.Hostname, p.config.Hostname)
 
-	switch err := os.WriteFile(config.PathMntEtcHosts, []byte(hostsContent), 0644); {
+	switch err := p.fs.WriteFile(config.PathMntEtcHosts, []byte(hostsContent), 0644); {
 	case err != nil:
 		return fmt.Errorf("failed to write hosts file: %w", err)
 	}
@@ -168,7 +173,7 @@ func (p *ConfigPhase) configureNetwork(progressChan chan<- ProgressUpdate) error
 	p.SendOutput(progressChan, "Configuring network...")
 
 	// Enable NetworkManager service
-	switch err := system.ChrootSystemctl(p.logger.LogPath(),config.PathMnt, "enable", config.ServiceNetworkManager); {
+	switch err := p.chrExec.ChrootSystemctl(p.logger.LogPath(),config.PathMnt, "enable", config.ServiceNetworkManager); {
 	case err != nil:
 		return fmt.Errorf("failed to enable NetworkManager: %w", err)
 	}
@@ -184,20 +189,20 @@ func (p *ConfigPhase) createUser(progressChan chan<- ProgressUpdate) error {
 
 	// Create user with home directory
 	userAddCmd := fmt.Sprintf("useradd -m -G %s -s %s %s", config.GroupWheel, config.ShellBash, p.config.Username)
-	switch err := system.ChrootExec(p.logger.LogPath(),config.PathMnt, userAddCmd); {
+	switch err := p.chrExec.ChrootExec(p.logger.LogPath(),config.PathMnt, userAddCmd); {
 	case err != nil:
 		return fmt.Errorf("failed to create user: %w", err)
 	}
 
 	// Set user password using stdin (secure - not visible in process list)
 	userPassInput := fmt.Sprintf("%s:%s", p.config.Username, p.config.UserPassword)
-	switch err := system.ChrootExecWithStdin(p.logger.LogPath(), config.PathMnt, "chpasswd", userPassInput); {
+	switch err := p.chrExec.ChrootExecWithStdin(p.logger.LogPath(), config.PathMnt, "chpasswd", userPassInput); {
 	case err != nil:
 		return fmt.Errorf("failed to set user password: %w", err)
 	}
 
 	// Enable sudo for wheel group (passwordless for convenience)
-	switch err := os.WriteFile(config.PathMntEtcSudoersD, []byte(config.SudoersWheelContent), config.SudoersWheelPerms); {
+	switch err := p.fs.WriteFile(config.PathMntEtcSudoersD, []byte(config.SudoersWheelContent), config.SudoersWheelPerms); {
 	case err != nil:
 		return fmt.Errorf("failed to write sudoers config: %w", err)
 	}
@@ -214,14 +219,14 @@ func (p *ConfigPhase) configureZram(progressChan chan<- ProgressUpdate) error {
 
 	// Create zram-generator config
 	zramConfigPath := filepath.Join(config.PathMntEtcSystemd, config.FileZramGenerator)
-	switch err := os.WriteFile(zramConfigPath, []byte(config.ZramConfigContent), 0644); {
+	switch err := p.fs.WriteFile(zramConfigPath, []byte(config.ZramConfigContent), 0644); {
 	case err != nil:
 		return fmt.Errorf("failed to write zram-generator.conf: %w", err)
 	}
 
 	// Create sysctl config for zram optimization
 	sysctlConfigPath := filepath.Join(config.PathMntEtcSysctlD, config.FileSysctlZramParams)
-	switch err := os.WriteFile(sysctlConfigPath, []byte(config.ZramSysctlContent), 0644); {
+	switch err := p.fs.WriteFile(sysctlConfigPath, []byte(config.ZramSysctlContent), 0644); {
 	case err != nil:
 		return fmt.Errorf("failed to write sysctl zram config: %w", err)
 	}
@@ -234,21 +239,21 @@ func (p *ConfigPhase) configureZram(progressChan chan<- ProgressUpdate) error {
 // PostCheck validates configuration
 func (p *ConfigPhase) PostCheck() error {
 	// Verify hostname was set
-	switch _, err := os.Stat(config.PathMntEtcHostname); {
-	case os.IsNotExist(err):
+	switch _, err := p.fs.Stat(config.PathMntEtcHostname); {
+	case p.fs.IsNotExist(err):
 		return fmt.Errorf("hostname file was not created")
 	}
 
 	// Verify locale was set
-	switch _, err := os.Stat(config.PathMntEtcLocaleConf); {
-	case os.IsNotExist(err):
+	switch _, err := p.fs.Stat(config.PathMntEtcLocaleConf); {
+	case p.fs.IsNotExist(err):
 		return fmt.Errorf("locale.conf was not created")
 	}
 
 	// Verify zram config exists
 	zramConfigPath := filepath.Join(config.PathMntEtcSystemd, config.FileZramGenerator)
-	switch _, err := os.Stat(zramConfigPath); {
-	case os.IsNotExist(err):
+	switch _, err := p.fs.Stat(zramConfigPath); {
+	case p.fs.IsNotExist(err):
 		return fmt.Errorf("zram-generator.conf was not created")
 	}
 

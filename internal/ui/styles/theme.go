@@ -163,6 +163,9 @@ var (
 	LogoWhiteStyle = lipgloss.NewStyle().
 			Foreground(ColorPureWhite)
 
+	LogoBlueStyle = lipgloss.NewStyle().
+			Foreground(ColorSkyBlue)
+
 	// Progress/Spinner styles
 	SpinnerStyle = lipgloss.NewStyle().
 			Foreground(ColorBrightCyan)

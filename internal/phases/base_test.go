@@ -62,7 +62,7 @@ func TestBaseInstallPhasePreCheck(t *testing.T) {
 				return
 			}
 			if tt.wantErr && err != nil {
-				if errMsg := err.Error(); tt.errContains != "" && !containsSubstringBaseTest(errMsg, tt.errContains) {
+				if errMsg := err.Error(); tt.errContains != "" && !containsSubstring(errMsg, tt.errContains) {
 					t.Errorf("PreCheck() error = %q, should contain %q", errMsg, tt.errContains)
 				}
 			}
@@ -284,7 +284,7 @@ func TestBaseInstallPhaseGenerateFstab(t *testing.T) {
 				return
 			}
 			if tt.wantErr && err != nil {
-				if errMsg := err.Error(); tt.errContains != "" && !containsSubstringBaseTest(errMsg, tt.errContains) {
+				if errMsg := err.Error(); tt.errContains != "" && !containsSubstring(errMsg, tt.errContains) {
 					t.Errorf("generateFstab() error = %q, should contain %q", errMsg, tt.errContains)
 				}
 			}
@@ -366,7 +366,7 @@ func TestBaseInstallPhasePostCheck(t *testing.T) {
 				return
 			}
 			if tt.wantErr && err != nil {
-				if errMsg := err.Error(); tt.errContains != "" && !containsSubstringBaseTest(errMsg, tt.errContains) {
+				if errMsg := err.Error(); tt.errContains != "" && !containsSubstring(errMsg, tt.errContains) {
 					t.Errorf("PostCheck() error = %q, should contain %q", errMsg, tt.errContains)
 				}
 			}
@@ -456,14 +456,4 @@ func TestBaseInstallPhaseCanSkip(t *testing.T) {
 	if phase.CanSkip() {
 		t.Error("CanSkip() = true, want false")
 	}
-}
-
-// Helper function for substring matching (avoid duplication across test files)
-func containsSubstringBaseTest(s, substr string) bool {
-	for i := 0; i < len(s)-len(substr)+1; i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }

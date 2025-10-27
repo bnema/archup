@@ -3,31 +3,34 @@ package phases
 import (
 	"bufio"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/bnema/archup/internal/config"
+	"github.com/bnema/archup/internal/interfaces"
 	"github.com/bnema/archup/internal/logger"
-	"github.com/bnema/archup/internal/system"
 )
 
 // BaseInstallPhase handles base system installation
 type BaseInstallPhase struct {
 	*BasePhase
+	fs      interfaces.FileSystem
+	sysExec interfaces.SystemExecutor
 	packages []string
 }
 
 // NewBaseInstallPhase creates a new base installation phase
-func NewBaseInstallPhase(cfg *config.Config, log *logger.Logger) *BaseInstallPhase {
+func NewBaseInstallPhase(cfg *config.Config, log *logger.Logger, fs interfaces.FileSystem, sysExec interfaces.SystemExecutor) *BaseInstallPhase {
 	return &BaseInstallPhase{
 		BasePhase: NewBasePhase("base", "Base System Installation", cfg, log),
+		fs:        fs,
+		sysExec:   sysExec,
 	}
 }
 
 // PreCheck validates prerequisites
 func (p *BaseInstallPhase) PreCheck() error {
 	// Verify /mnt is mounted
-	result := system.RunSimple("mountpoint", "-q", "/mnt")
+	result := p.sysExec.RunSimple("mountpoint", "-q", "/mnt")
 	switch {
 	case result.ExitCode != 0:
 		return fmt.Errorf("/mnt is not mounted")
@@ -103,7 +106,7 @@ func (p *BaseInstallPhase) detectCPU(progressChan chan<- ProgressUpdate) error {
 	p.SendOutput(progressChan, "Detecting CPU vendor...")
 
 	// Read /proc/cpuinfo to detect vendor
-	file, err := os.Open("/proc/cpuinfo")
+	file, err := p.fs.Open("/proc/cpuinfo")
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to read /proc/cpuinfo: %w", err)
@@ -208,7 +211,7 @@ func (p *BaseInstallPhase) loadBasePackages() ([]string, error) {
 	// Use DefaultInstallDir directly to match where bootstrap downloads files
 	packageFile := config.DefaultInstallDir + "/" + config.BasePackagesFile
 
-	file, err := os.Open(packageFile)
+	file, err := p.fs.Open(packageFile)
 	switch {
 	case err != nil:
 		return nil, fmt.Errorf("failed to open %s: %w", packageFile, err)
@@ -244,7 +247,7 @@ func (p *BaseInstallPhase) loadBasePackages() ([]string, error) {
 func (p *BaseInstallPhase) generateFstab(progressChan chan<- ProgressUpdate) error {
 	p.SendOutput(progressChan, "Generating fstab with UUIDs...")
 
-	result := system.RunSimple("sh", "-c", "genfstab -U /mnt >> /mnt/etc/fstab")
+	result := p.sysExec.RunSimple("sh", "-c", "genfstab -U /mnt >> /mnt/etc/fstab")
 	switch {
 	case result.ExitCode != 0:
 		return fmt.Errorf("genfstab failed: %w", result.Error)
@@ -257,14 +260,14 @@ func (p *BaseInstallPhase) generateFstab(progressChan chan<- ProgressUpdate) err
 // PostCheck validates installation
 func (p *BaseInstallPhase) PostCheck() error {
 	// Check if base system exists
-	result := system.RunSimple("test", "-d", "/mnt/usr")
+	result := p.sysExec.RunSimple("test", "-d", "/mnt/usr")
 	switch {
 	case result.ExitCode != 0:
 		return fmt.Errorf("/mnt/usr does not exist")
 	}
 
 	// Check if fstab exists
-	result = system.RunSimple("test", "-f", "/mnt/etc/fstab")
+	result = p.sysExec.RunSimple("test", "-f", "/mnt/etc/fstab")
 	switch {
 	case result.ExitCode != 0:
 		return fmt.Errorf("/mnt/etc/fstab was not created")

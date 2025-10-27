@@ -346,12 +346,4 @@ func (m *MockWriteCloser) Close() error {
 	return nil
 }
 
-// containsSubstring helper function (also defined in preflight_test.go)
-func containsSubstring(s, substr string) bool {
-	for i := 0; i < len(s)-len(substr)+1; i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
-}
+// containsSubstring is defined in helpers_test.go to avoid duplication

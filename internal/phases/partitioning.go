@@ -5,19 +5,21 @@ import (
 	"strings"
 
 	"github.com/bnema/archup/internal/config"
+	"github.com/bnema/archup/internal/interfaces"
 	"github.com/bnema/archup/internal/logger"
-	"github.com/bnema/archup/internal/system"
 )
 
 // PartitioningPhase handles disk partitioning, formatting, and mounting
 type PartitioningPhase struct {
 	*BasePhase
+	sysExec interfaces.SystemExecutor
 }
 
 // NewPartitioningPhase creates a new partitioning phase
-func NewPartitioningPhase(cfg *config.Config, log *logger.Logger) *PartitioningPhase {
+func NewPartitioningPhase(cfg *config.Config, log *logger.Logger, sysExec interfaces.SystemExecutor) *PartitioningPhase {
 	return &PartitioningPhase{
 		BasePhase: NewBasePhase("partitioning", "Disk Partitioning", cfg, log),
+		sysExec:   sysExec,
 	}
 }
 
@@ -186,7 +188,7 @@ func (p *PartitioningPhase) formatEncryptedRoot(progressChan chan<- ProgressUpda
 
 	// Note: In real implementation, pipe password securely via stdin
 	// For now, documenting the approach
-	result = system.RunSimple("sh", "-c",
+	result = p.sysExec.RunSimple("sh", "-c",
 		fmt.Sprintf("printf '%%s' '%s' | cryptsetup luksFormat --type luks2 --batch-mode --pbkdf argon2id --iter-time 2000 --label ARCHUP_LUKS --key-file - %s",
 			password, p.config.RootPartition))
 
@@ -196,7 +198,7 @@ func (p *PartitioningPhase) formatEncryptedRoot(progressChan chan<- ProgressUpda
 	}
 
 	// Open LUKS container
-	result = system.RunSimple("sh", "-c",
+	result = p.sysExec.RunSimple("sh", "-c",
 		fmt.Sprintf("printf '%%s' '%s' | cryptsetup open --key-file=- %s cryptroot",
 			password, p.config.RootPartition))
 
@@ -255,7 +257,7 @@ func (p *PartitioningPhase) createSubvolumes(progressChan chan<- ProgressUpdate)
 	result = p.logger.ExecCommand("btrfs", "subvolume", "create", "/mnt/@")
 	switch {
 	case result.ExitCode != 0:
-		system.RunSimple("umount", "/mnt") // Cleanup
+		p.sysExec.RunSimple("umount", "/mnt") // Cleanup
 		return fmt.Errorf("@ subvolume creation failed: %w", result.Error)
 	}
 
@@ -263,7 +265,7 @@ func (p *PartitioningPhase) createSubvolumes(progressChan chan<- ProgressUpdate)
 	result = p.logger.ExecCommand("btrfs", "subvolume", "create", "/mnt/@home")
 	switch {
 	case result.ExitCode != 0:
-		system.RunSimple("umount", "/mnt") // Cleanup
+		p.sysExec.RunSimple("umount", "/mnt") // Cleanup
 		return fmt.Errorf("@home subvolume creation failed: %w", result.Error)
 	}
 
@@ -334,7 +336,7 @@ func (p *PartitioningPhase) mountFilesystems(progressChan chan<- ProgressUpdate)
 // PostCheck validates mounts
 func (p *PartitioningPhase) PostCheck() error {
 	// Verify /mnt is mounted
-	result := system.RunSimple("mountpoint", "-q", "/mnt")
+	result := p.sysExec.RunSimple("mountpoint", "-q", "/mnt")
 	switch {
 	case result.ExitCode != 0:
 		return fmt.Errorf("/mnt is not mounted")
@@ -346,16 +348,16 @@ func (p *PartitioningPhase) PostCheck() error {
 // Rollback unmounts filesystems
 func (p *PartitioningPhase) Rollback() error {
 	// Unmount in reverse order
-	system.RunSimple("umount", "/mnt/boot")
-	system.RunSimple("umount", "/mnt/home")
-	system.RunSimple("umount", "/mnt")
+	p.sysExec.RunSimple("umount", "/mnt/boot")
+	p.sysExec.RunSimple("umount", "/mnt/home")
+	p.sysExec.RunSimple("umount", "/mnt")
 
 	// Close LUKS if encrypted
 	switch p.config.EncryptionType {
 	case config.EncryptionLUKS, config.EncryptionLUKSLVM:
 		switch {
 		case p.config.CryptDevice != "":
-			system.RunSimple("cryptsetup", "close", "cryptroot")
+			p.sysExec.RunSimple("cryptsetup", "close", "cryptroot")
 		}
 	}
 

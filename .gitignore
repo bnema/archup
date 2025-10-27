@@ -22,6 +22,7 @@ coverage.out
 /*.md
 !README.md
 !CHANGELOG.md
+!LICENSE.md
 !RELEASING.md
 
 

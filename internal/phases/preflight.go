@@ -2,30 +2,33 @@ package phases
 
 import (
 	"fmt"
-	"os"
-	"os/exec"
 	"strings"
 
 	"github.com/bnema/archup/internal/config"
+	"github.com/bnema/archup/internal/interfaces"
 	"github.com/bnema/archup/internal/logger"
 )
 
 // PreflightPhase handles system validation and initial configuration
 type PreflightPhase struct {
 	*BasePhase
+	fs      interfaces.FileSystem
+	cmdExec interfaces.CommandExecutor
 }
 
 // NewPreflightPhase creates a new preflight phase
-func NewPreflightPhase(cfg *config.Config, log *logger.Logger) *PreflightPhase {
+func NewPreflightPhase(cfg *config.Config, log *logger.Logger, fs interfaces.FileSystem, cmdExec interfaces.CommandExecutor) *PreflightPhase {
 	return &PreflightPhase{
 		BasePhase: NewBasePhase("preflight", "Preflight Checks", cfg, log),
+		fs:        fs,
+		cmdExec:   cmdExec,
 	}
 }
 
 // PreCheck validates system requirements
 func (p *PreflightPhase) PreCheck() error {
 	// Check for Arch Linux
-	if _, err := os.Stat("/etc/arch-release"); os.IsNotExist(err) {
+	if _, err := p.fs.Stat("/etc/arch-release"); p.fs.IsNotExist(err) {
 		return fmt.Errorf("must be running on Arch Linux or Arch ISO")
 	}
 
@@ -38,13 +41,13 @@ func (p *PreflightPhase) PreCheck() error {
 	}
 
 	for marker, name := range derivatives {
-		if _, err := os.Stat(marker); err == nil {
+		if _, err := p.fs.Stat(marker); err == nil {
 			return fmt.Errorf("must be vanilla Arch (detected %s)", name)
 		}
 	}
 
 	// Check architecture
-	out, err := exec.Command("uname", "-m").Output()
+	out, err := p.cmdExec.Execute("uname", "-m")
 	arch := strings.TrimSpace(string(out))
 
 	switch {
@@ -55,12 +58,12 @@ func (p *PreflightPhase) PreCheck() error {
 	}
 
 	// Check UEFI
-	if _, err := os.Stat("/sys/firmware/efi/efivars"); os.IsNotExist(err) {
+	if _, err := p.fs.Stat("/sys/firmware/efi/efivars"); p.fs.IsNotExist(err) {
 		return fmt.Errorf("must be UEFI boot mode (legacy BIOS not supported)")
 	}
 
 	// Check Secure Boot
-	out, err = exec.Command("bootctl", "status").Output()
+	out, err = p.cmdExec.Execute("bootctl", "status")
 	switch {
 	case err == nil && strings.Contains(string(out), "Secure Boot: enabled"):
 		return fmt.Errorf("Secure Boot must be disabled")

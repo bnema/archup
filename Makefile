@@ -3,6 +3,11 @@
 
 # Get version from git tag or use dev
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+# Append branch name if not on main
+CURRENT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null)
+ifeq ($(CURRENT_BRANCH),dev)
+	VERSION := $(VERSION)-dev
+endif
 LDFLAGS := -ldflags "-X main.version=$(VERSION)"
 LDFLAGS_STRIP := -ldflags "-X main.version=$(VERSION) -s -w"
 

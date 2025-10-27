@@ -4,29 +4,33 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"path/filepath"
 
 	"github.com/bnema/archup/internal/config"
+	"github.com/bnema/archup/internal/interfaces"
 	"github.com/bnema/archup/internal/logger"
 )
 
 // BootstrapPhase handles initial setup and file downloads
 type BootstrapPhase struct {
 	*BasePhase
+	httpClient interfaces.HTTPClient
+	fs         interfaces.FileSystem
 }
 
 // NewBootstrapPhase creates a new bootstrap phase
-func NewBootstrapPhase(cfg *config.Config, log *logger.Logger) *BootstrapPhase {
+func NewBootstrapPhase(cfg *config.Config, log *logger.Logger, httpClient interfaces.HTTPClient, fs interfaces.FileSystem) *BootstrapPhase {
 	return &BootstrapPhase{
-		BasePhase: NewBasePhase("bootstrap", "Bootstrap", cfg, log),
+		BasePhase:  NewBasePhase("bootstrap", "Bootstrap", cfg, log),
+		httpClient: httpClient,
+		fs:         fs,
 	}
 }
 
 // PreCheck validates bootstrap prerequisites
 func (p *BootstrapPhase) PreCheck() error {
 	// Check internet connectivity
-	resp, err := http.Get("https://raw.githubusercontent.com")
+	resp, err := p.httpClient.Get("https://raw.githubusercontent.com")
 	switch {
 	case err != nil:
 		return fmt.Errorf("no internet connectivity: %w", err)
@@ -41,7 +45,7 @@ func (p *BootstrapPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResult
 	p.SendOutput(progressChan, "Starting bootstrap phase...")
 
 	// Create install directory
-	switch err := os.MkdirAll(config.DefaultInstallDir, 0755); {
+	switch err := p.fs.MkdirAll(config.DefaultInstallDir, 0755); {
 	case err != nil:
 		p.SendError(progressChan, err)
 		return PhaseResult{Success: false, Error: err}
@@ -126,13 +130,13 @@ func (p *BootstrapPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResult
 func (p *BootstrapPhase) downloadFile(url, destPath string) error {
 	// Create destination directory if needed
 	destDir := filepath.Dir(destPath)
-	switch err := os.MkdirAll(destDir, 0755); {
+	switch err := p.fs.MkdirAll(destDir, 0755); {
 	case err != nil:
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
 	// Download file
-	resp, err := http.Get(url)
+	resp, err := p.httpClient.Get(url)
 	switch {
 	case err != nil:
 		return fmt.Errorf("HTTP request failed: %w", err)
@@ -145,7 +149,7 @@ func (p *BootstrapPhase) downloadFile(url, destPath string) error {
 	}
 
 	// Create destination file
-	destFile, err := os.Create(destPath)
+	destFile, err := p.fs.Create(destPath)
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to create file: %w", err)
@@ -164,7 +168,7 @@ func (p *BootstrapPhase) downloadFile(url, destPath string) error {
 // Rollback removes downloaded files
 func (p *BootstrapPhase) Rollback() error {
 	// Remove install directory
-	switch err := os.RemoveAll(config.DefaultInstallDir); {
+	switch err := p.fs.RemoveAll(config.DefaultInstallDir); {
 	case err != nil:
 		return fmt.Errorf("failed to remove install directory: %w", err)
 	}
