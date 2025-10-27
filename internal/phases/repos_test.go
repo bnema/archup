@@ -271,6 +271,9 @@ func BenchmarkMultilibParsing(b *testing.B) {
 
 // TestReposPhaseStructure tests that ReposPhase can be properly initialized
 func TestReposPhaseStructure(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	// Create a temporary directory for log file
 	tmpDir := t.TempDir()
 	logPath := filepath.Join(tmpDir, "test.log")
@@ -285,8 +288,13 @@ func TestReposPhaseStructure(t *testing.T) {
 	// Create config
 	cfg := config.NewConfig("test")
 
+	// Create mocks
+	mockFS := mocks.NewMockFileSystem(ctrl)
+	mockSysExec := mocks.NewMockSystemExecutor(ctrl)
+	mockChrExec := mocks.NewMockChrootExecutor(ctrl)
+
 	// Create ReposPhase
-	phase := NewReposPhase(cfg, log)
+	phase := NewReposPhase(cfg, log, mockFS, mockSysExec, mockChrExec)
 
 	// Verify initialization
 	if phase == nil {
@@ -516,12 +524,20 @@ func TestReposPhasePreCheckValidation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
 			// Create config with test AUR helper
 			cfg := config.NewConfig("test")
 			cfg.AURHelper = tt.aurHelper
 
+			// Create mocks
+			mockFS := mocks.NewMockFileSystem(ctrl)
+			mockSysExec := mocks.NewMockSystemExecutor(ctrl)
+			mockChrExec := mocks.NewMockChrootExecutor(ctrl)
+
 			// Create ReposPhase
-			phase := NewReposPhase(cfg, log)
+			phase := NewReposPhase(cfg, log, mockFS, mockSysExec, mockChrExec)
 
 			// Note: PreCheck also validates /mnt is mounted and pacman.conf exists
 			// In a real test environment, these would fail, so we're only testing
