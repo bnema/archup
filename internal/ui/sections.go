@@ -1,5 +1,15 @@
 package ui
 
+import "github.com/charmbracelet/lipgloss"
+
+// CenterText centers text within a given width using lipgloss
+func CenterText(text string, width int) string {
+	return lipgloss.NewStyle().
+		Width(width).
+		AlignHorizontal(lipgloss.Center).
+		Render(text)
+}
+
 // Form section descriptions (DRY: centralized text)
 const (
 	// Welcome

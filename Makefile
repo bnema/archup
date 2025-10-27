@@ -1,56 +1,105 @@
-.PHONY: check check-syntax check-shellcheck clean help
+# ArchUp Go Installer Makefile
+# Builds the Go-based installer with proper version injection
 
-# Default target
-help:
-	@echo "archup - Makefile targets:"
-	@echo ""
-	@echo "  make check          - Run all checks (syntax + shellcheck)"
-	@echo "  make check-syntax   - Check shell script syntax with bash -n"
-	@echo "  make check-shellcheck - Run shellcheck linting"
-	@echo "  make clean          - Remove generated files"
-	@echo ""
+# Get version from git tag or use dev
+VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+LDFLAGS := -ldflags "-X main.version=$(VERSION)"
+LDFLAGS_STRIP := -ldflags "-X main.version=$(VERSION) -s -w"
 
-# Run all checks
-check: check-syntax check-shellcheck
-	@echo ""
-	@echo "✓ All checks passed!"
+# Build settings
+BINARY_NAME := archup-installer
+BUILD_DIR := build
+CMD_DIR := cmd/archup-installer
+INSTALL_DIR := /usr/local/bin
 
-# Check syntax with bash -n
-check-syntax:
-	@echo "========================================="
-	@echo "Checking shell script syntax..."
-	@echo "========================================="
-	@for script in install.sh install/bootstrap.sh install/helpers/*.sh install/preflight/*.sh install/partitioning/*.sh install/base/*.sh install/config/*.sh install/boot/*.sh install/repos/*.sh install/post-install/*.sh install/post-boot/*.sh; do \
-		if [ -f "$$script" ]; then \
-			echo "Checking: $$script"; \
-			bash -n "$$script" || exit 1; \
-		fi \
-	done
-	@echo "✓ Syntax check passed"
+# Go build flags
+GOFLAGS := -trimpath
+CGO_ENABLED := 0
 
-# Run shellcheck
-check-shellcheck:
-	@echo ""
-	@echo "========================================="
-	@echo "Running shellcheck..."
-	@echo "========================================="
-	@if ! command -v shellcheck >/dev/null 2>&1; then \
-		echo "⚠ shellcheck not found, skipping..."; \
-		echo "Install with: sudo pacman -S shellcheck"; \
-		exit 0; \
-	fi
-	@for script in install.sh install/bootstrap.sh install/helpers/*.sh install/preflight/*.sh install/partitioning/*.sh install/base/*.sh install/config/*.sh install/boot/*.sh install/repos/*.sh install/post-install/*.sh install/post-boot/*.sh; do \
-		if [ -f "$$script" ]; then \
-			echo ""; \
-			echo "Checking: $$script"; \
-			shellcheck --exclude=SC1090,SC1091,SC2086,SC2004,SC2059,SC2129,SC2155 "$$script" || exit 1; \
-		fi \
-	done
-	@echo ""
-	@echo "✓ shellcheck passed"
+.PHONY: all build clean install uninstall run test fmt vet lint mod-tidy help
 
-# Clean generated files
+all: build
+
+## build: Build the installer binary with version injection
+build:
+	@echo "Building $(BINARY_NAME) $(VERSION)..."
+	@mkdir -p $(BUILD_DIR)
+	CGO_ENABLED=$(CGO_ENABLED) go build $(GOFLAGS) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) ./$(CMD_DIR)
+	@echo "Build complete: $(BUILD_DIR)/$(BINARY_NAME)"
+
+## build-release: Build optimized release binary (stripped, smaller size)
+build-release:
+	@echo "Building release $(BINARY_NAME) $(VERSION)..."
+	@mkdir -p $(BUILD_DIR)
+	CGO_ENABLED=0 go build $(GOFLAGS) $(LDFLAGS_STRIP) -o $(BUILD_DIR)/$(BINARY_NAME) ./$(CMD_DIR)
+	@echo "Release build complete: $(BUILD_DIR)/$(BINARY_NAME)"
+	@ls -lh $(BUILD_DIR)/$(BINARY_NAME)
+
+## build-static: Build fully static binary (no dependencies)
+build-static:
+	@echo "Building static $(BINARY_NAME) $(VERSION)..."
+	@mkdir -p $(BUILD_DIR)
+	CGO_ENABLED=0 go build $(GOFLAGS) $(LDFLAGS) -a -installsuffix cgo -o $(BUILD_DIR)/$(BINARY_NAME) ./$(CMD_DIR)
+	@echo "Static build complete: $(BUILD_DIR)/$(BINARY_NAME)"
+
+## install: Install the binary to system
+install: build
+	@echo "Installing $(BINARY_NAME) to $(INSTALL_DIR)..."
+	@sudo install -m 755 $(BUILD_DIR)/$(BINARY_NAME) $(INSTALL_DIR)/$(BINARY_NAME)
+	@echo "Installed successfully"
+
+## uninstall: Remove the binary from system
+uninstall:
+	@echo "Uninstalling $(BINARY_NAME)..."
+	@sudo rm -f $(INSTALL_DIR)/$(BINARY_NAME)
+	@echo "Uninstalled successfully"
+
+## run: Build and run the installer
+run: build
+	@echo "Running $(BINARY_NAME)..."
+	@$(BUILD_DIR)/$(BINARY_NAME)
+
+## test: Run tests
+test:
+	@echo "Running tests..."
+	@go test -v -race -coverprofile=coverage.out ./...
+	@go tool cover -func=coverage.out
+
+## fmt: Format all Go code
+fmt:
+	@echo "Formatting code..."
+	@go fmt ./...
+	@gofmt -s -w .
+
+## vet: Run go vet
+vet:
+	@echo "Running go vet..."
+	@go vet ./...
+
+## lint: Run golangci-lint (install with: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest)
+lint:
+	@echo "Running golangci-lint..."
+	@which golangci-lint > /dev/null || (echo "golangci-lint not installed. Install with: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest" && exit 1)
+	@golangci-lint run ./...
+
+## mod-tidy: Tidy go.mod
+mod-tidy:
+	@echo "Tidying go.mod..."
+	@go mod tidy
+
+## clean: Remove build artifacts
 clean:
-	@echo "Cleaning generated files..."
-	@rm -f /var/log/archup-install.log
-	@echo "✓ Clean complete"
+	@echo "Cleaning build artifacts..."
+	@rm -rf $(BUILD_DIR)
+	@rm -f coverage.out
+	@echo "Clean complete"
+
+## version: Show version information
+version:
+	@echo "Version: $(VERSION)"
+
+## help: Show this help message
+help:
+	@echo "ArchUp Go Installer - Makefile Commands"
+	@echo ""
+	@sed -n 's/^##//p' $(MAKEFILE_LIST) | column -t -s ':' | sed -e 's/^/ /'

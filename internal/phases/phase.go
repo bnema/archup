@@ -46,7 +46,7 @@ type PhaseResult struct {
 type ProgressUpdate struct {
 	PhaseName   string
 	Step        string
-	OutputLine  string // For streaming command output (e.g., pacman)
+	OutputLine  string
 	Current     int
 	Total       int
 	IsComplete  bool
@@ -94,7 +94,7 @@ type BasePhase struct {
 	description string
 	status      PhaseStatus
 	config      *config.Config
-	logger      *logger.Logger // Logger with dry-run support
+	logger      *logger.Logger
 }
 
 // NewBasePhase creates a new base phase

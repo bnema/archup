@@ -85,10 +85,14 @@ func (p *PostInstallPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResu
 		return PhaseResult{Success: false, Error: err}
 	}
 
-	// Step 5: Post-boot setup (skipped for now)
+	// Step 5: Post-boot setup
 	currentStep++
-	p.SendProgress(progressChan, "Post-boot setup...", currentStep, totalSteps)
-	p.SendOutput(progressChan, "[SKIP] Post-boot setup not implemented")
+	p.SendProgress(progressChan, "Setting up post-boot scripts...", currentStep, totalSteps)
+	switch err := p.setupPostBoot(progressChan); {
+	case err != nil:
+		p.SendError(progressChan, err)
+		return PhaseResult{Success: false, Error: err}
+	}
 
 	// Step 6: Pacman hooks
 	currentStep++
@@ -641,4 +645,121 @@ func (p *PostInstallPhase) Rollback() error {
 // CanSkip returns false - post-install cannot be skipped
 func (p *PostInstallPhase) CanSkip() bool {
 	return false
+}
+
+// setupPostBoot downloads and configures first-boot service
+func (p *PostInstallPhase) setupPostBoot(progressChan chan<- ProgressUpdate) error {
+	p.SendOutput(progressChan, "Configuring first-boot service...")
+
+	switch err := os.MkdirAll(config.PathMntPostBoot, 0755); {
+	case err != nil:
+		return fmt.Errorf("failed to create post-boot directory: %w", err)
+	}
+
+	// Download logo.txt
+	p.SendOutput(progressChan, "Downloading logo.txt...")
+	logoURL := fmt.Sprintf("%s/logo.txt", p.config.RawURL)
+	resp, err := http.Get(logoURL)
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to download logo.txt: %w", err)
+	case resp.StatusCode != http.StatusOK:
+		resp.Body.Close()
+		return fmt.Errorf("failed to download logo.txt: HTTP %d", resp.StatusCode)
+	}
+
+	logoPath := filepath.Join(config.PathMntPostBoot, "logo.txt")
+	logoFile, err := os.Create(logoPath)
+	switch {
+	case err != nil:
+		resp.Body.Close()
+		return fmt.Errorf("failed to create logo.txt: %w", err)
+	}
+
+	_, err = io.Copy(logoFile, resp.Body)
+	logoFile.Close()
+	resp.Body.Close()
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to save logo.txt: %w", err)
+	}
+
+	// Download all post-boot scripts
+	for _, script := range config.PostBootScripts {
+		p.SendOutput(progressChan, fmt.Sprintf("Downloading %s...", script))
+
+		scriptURL := fmt.Sprintf("%s/assets/post-boot/%s", p.config.RawURL, script)
+		resp, err := http.Get(scriptURL)
+		switch {
+		case err != nil:
+			return fmt.Errorf("failed to download %s: %w", script, err)
+		case resp.StatusCode != http.StatusOK:
+			resp.Body.Close()
+			return fmt.Errorf("failed to download %s: HTTP %d", script, resp.StatusCode)
+		}
+
+		scriptPath := filepath.Join(config.PathMntPostBoot, script)
+		scriptFile, err := os.Create(scriptPath)
+		switch {
+		case err != nil:
+			resp.Body.Close()
+			return fmt.Errorf("failed to create %s: %w", script, err)
+		}
+
+		_, err = io.Copy(scriptFile, resp.Body)
+		scriptFile.Close()
+		resp.Body.Close()
+
+		switch {
+		case err != nil:
+			return fmt.Errorf("failed to save %s: %w", script, err)
+		}
+
+		switch err := os.Chmod(scriptPath, 0755); {
+		case err != nil:
+			return fmt.Errorf("failed to set permissions on %s: %w", script, err)
+		}
+	}
+
+	p.SendOutput(progressChan, "[OK] Post-boot scripts downloaded")
+
+	// Download service template
+	p.SendOutput(progressChan, "Creating systemd service...")
+	serviceURL := fmt.Sprintf("%s/%s", p.config.RawURL, config.PostBootServiceTemplate)
+	resp, err = http.Get(serviceURL)
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to download service template: %w", err)
+	case resp.StatusCode != http.StatusOK:
+		resp.Body.Close()
+		return fmt.Errorf("failed to download service template: HTTP %d", resp.StatusCode)
+	}
+
+	templateBytes, err := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to read service template: %w", err)
+	}
+
+	serviceContent := string(templateBytes)
+	serviceContent = strings.ReplaceAll(serviceContent, "__ARCHUP_EMAIL__", p.config.Email)
+	serviceContent = strings.ReplaceAll(serviceContent, "__ARCHUP_USERNAME__", p.config.Username)
+
+	servicePath := filepath.Join(config.PathMntSystemdSystem, config.PostBootServiceName)
+	switch err := os.WriteFile(servicePath, []byte(serviceContent), 0644); {
+	case err != nil:
+		return fmt.Errorf("failed to write service file: %w", err)
+	}
+
+	p.SendOutput(progressChan, "[OK] Service file created")
+
+	p.SendOutput(progressChan, "Enabling first-boot service...")
+	switch err := system.ChrootSystemctl(p.logger.LogPath(), config.PathMnt, "enable", config.PostBootServiceName); {
+	case err != nil:
+		return fmt.Errorf("failed to enable service: %w", err)
+	}
+
+	p.SendOutput(progressChan, "[OK] First-boot service enabled")
+	return nil
 }

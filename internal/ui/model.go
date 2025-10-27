@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/bnema/archup/internal/config"
 	"github.com/bnema/archup/internal/logger"
@@ -9,10 +10,10 @@ import (
 	"github.com/bnema/archup/internal/system"
 	"github.com/bnema/archup/internal/ui/components"
 	"github.com/bnema/archup/internal/ui/styles"
+	"github.com/bnema/archup/internal/ui/views"
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
 )
 
 // ModelState represents the current UI state
@@ -23,28 +24,32 @@ const (
 	StatePreflightForm
 	StateDiskForm
 	StateOptionsForm
-	StateAMDPStatePrompt // NEW: AMD P-State selection (shown only for AMD CPUs)
+	StateAMDPStatePrompt
 	StateConfirmation
 	StateExecuting
 	StateComplete
+	StateResultsSuccess
+	StateResultsError
 	StateError
 )
 
 // Model is the main Bubbletea application model
 type Model struct {
-	state        ModelState
-	orchestrator *phases.Orchestrator
-	config       *config.Config
-	currentForm  *huh.Form
-	formBuilder  *components.FormBuilder
-	output       *components.OutputViewer
-	logger       *logger.Logger
-	spinner      spinner.Model
-	version      string
-	width        int
-	height       int
-	err          error
-	cpuInfo      *system.CPUInfo // Detected CPU information
+	state            ModelState
+	orchestrator     *phases.Orchestrator
+	config           *config.Config
+	currentForm      *huh.Form
+	formBuilder      *components.FormBuilder
+	output           *components.OutputViewer
+	logger           *logger.Logger
+	spinner          spinner.Model
+	version          string
+	width            int
+	height           int
+	err              error
+	cpuInfo          *system.CPUInfo
+	installStartTime time.Time
+	installEndTime   time.Duration
 }
 
 // NewModel creates a new installer model
@@ -71,6 +76,7 @@ func NewModel(orchestrator *phases.Orchestrator, cfg *config.Config, log *logger
 
 // Init initializes the model
 func (m *Model) Init() tea.Cmd {
+	m.installStartTime = time.Now()
 	return m.spinner.Tick
 }
 
@@ -142,7 +148,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case msg.err != nil:
 			m.logger.Error("Phase execution failed", "error", msg.err)
 			m.err = msg.err
-			m.state = StateError
+			m.installEndTime = time.Since(m.installStartTime)
+			m.state = StateResultsError
 			return m, tea.Quit
 		}
 
@@ -150,11 +157,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch {
 		case m.orchestrator.IsComplete():
 			m.logger.Info("All phases completed successfully")
-			m.state = StateComplete
+			m.installEndTime = time.Since(m.installStartTime)
+			m.state = StateResultsSuccess
 			return m, tea.Quit
 		default:
 			m.logger.Info("Continuing to next phase")
-			// Continue with next phase
 			return m, m.executeNextPhase()
 		}
 
@@ -209,31 +216,33 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *Model) View() string {
 	switch m.state {
 	case StateShowLogo:
-		logo := NewLogo(m.version)
-		return logo.RenderCentered(m.width) + "\n\n\n" +
-			centerText(WelcomeTagline, m.width) + "\n\n" +
-			centerText(styles.HelpStyle.Render("Press ENTER to start installation"), m.width)
+		return views.RenderWelcome(m)
 
 	case StatePreflightForm, StateDiskForm, StateOptionsForm, StateAMDPStatePrompt:
-		switch {
-		case m.currentForm != nil:
-			header := centerText(m.renderPhaseHeader(), m.width)
-			return header + "\n\n" + m.currentForm.View()
-		}
-		return "Loading form..."
+		return views.RenderForm(m)
 
 	case StateConfirmation:
-		return m.renderConfirmation()
+		return views.RenderConfirmation(m)
 
 	case StateExecuting:
-		title := m.spinner.View() + " Installation in progress..."
-		return styles.TitleStyle.Render(title) + "\n\n" + m.output.View()
+		return views.RenderExecuting(m)
 
-	case StateError:
-		return styles.RenderError(fmt.Sprintf("Error: %v", m.err))
+	case StateResultsSuccess:
+		phaseDurations := m.orchestrator.GetPhaseDurations()
+		return views.RenderSuccess(m, m.installEndTime, phaseDurations)
 
-	case StateComplete:
-		return styles.RenderSuccess("Installation complete! You can now reboot.")
+	case StateResultsError:
+		phaseName := "unknown"
+		if phase := m.orchestrator.CurrentPhase(); phase != nil {
+			phaseName = phase.Name()
+		}
+		return views.RenderError(m, m.err, phaseName, m.installEndTime)
+
+	case StateComplete, StateError:
+		if m.err != nil {
+			return styles.RenderError(fmt.Sprintf("Error: %v", m.err))
+		}
+		return styles.RenderSuccess("Installation complete!")
 
 	default:
 		return "Unknown state"
@@ -303,25 +312,14 @@ func (m *Model) handleFormComplete() tea.Cmd {
 	}
 }
 
-// renderConfirmation renders the confirmation screen
-func (m *Model) renderConfirmation() string {
-	s := styles.TitleStyle.Render("Confirm Installation") + "\n\n"
-	s += fmt.Sprintf("Hostname: %s\n", m.config.Hostname)
-	s += fmt.Sprintf("Username: %s\n", m.config.Username)
-	s += fmt.Sprintf("Disk: %s\n", m.config.TargetDisk)
-	s += fmt.Sprintf("Kernel: %s\n", m.config.KernelChoice)
-	s += fmt.Sprintf("Encryption: %s\n", m.config.EncryptionType)
-
-	// Show AMD P-State mode if configured
-	if m.config.AMDPState != "" {
-		s += fmt.Sprintf("AMD P-State: %s\n", m.config.AMDPState)
-	}
-
-	s += "\n"
-	s += styles.WarningStyle.Render("WARNING: This will erase all data on "+m.config.TargetDisk) + "\n\n"
-	s += styles.HelpStyle.Render("Press ENTER to continue, Ctrl+C to cancel")
-	return s
-}
+// Getter methods for views package
+func (m *Model) Width() int { return m.width }
+func (m *Model) Version() string { return m.version }
+func (m *Model) Config() *config.Config { return m.config }
+func (m *Model) CurrentForm() *huh.Form { return m.currentForm }
+func (m *Model) Spinner() spinner.Model { return m.spinner }
+func (m *Model) Output() *components.OutputViewer { return m.output }
+func (m *Model) RenderPhaseHeader() string { return m.renderPhaseHeader() }
 
 // executeNextPhase executes the next pending phase
 func (m *Model) executeNextPhase() tea.Cmd {
@@ -346,15 +344,6 @@ func waitForProgress(progressChan <-chan phases.ProgressUpdate) tea.Cmd {
 type phaseCompleteMsg struct {
 	err error
 }
-
-// centerText centers text within a given width using lipgloss
-func centerText(text string, width int) string {
-	return lipgloss.NewStyle().
-		Width(width).
-		AlignHorizontal(lipgloss.Center).
-		Render(text)
-}
-
 
 // renderPhaseHeader renders phase progress header
 func (m *Model) renderPhaseHeader() string {

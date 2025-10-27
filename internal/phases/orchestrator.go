@@ -2,27 +2,32 @@ package phases
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/bnema/archup/internal/config"
 )
 
 // Orchestrator manages the execution of installation phases
 type Orchestrator struct {
-	phases      []Phase
-	currentIdx  int
-	config      *config.Config
-	logPath     string
-	progressCh  chan ProgressUpdate
+	phases           []Phase
+	currentIdx       int
+	config           *config.Config
+	logPath          string
+	progressCh       chan ProgressUpdate
+	installStartTime time.Time
+	phaseDurations   map[string]time.Duration
 }
 
 // NewOrchestrator creates a new phase orchestrator
 func NewOrchestrator(cfg *config.Config, logPath string) *Orchestrator {
 	return &Orchestrator{
-		phases:     make([]Phase, 0),
-		currentIdx: -1,
-		config:     cfg,
-		logPath:    logPath,
-		progressCh: make(chan ProgressUpdate, 100),
+		phases:           make([]Phase, 0),
+		currentIdx:       -1,
+		config:           cfg,
+		logPath:          logPath,
+		progressCh:       make(chan ProgressUpdate, 100),
+		installStartTime: time.Now(),
+		phaseDurations:   make(map[string]time.Duration),
 	}
 }
 
@@ -75,7 +80,6 @@ func (o *Orchestrator) ProgressChannel() <-chan ProgressUpdate {
 
 // ExecutePhase runs a specific phase
 func (o *Orchestrator) ExecutePhase(phase Phase) error {
-	// Update current index
 	for i, p := range o.phases {
 		if p.Name() == phase.Name() {
 			o.currentIdx = i
@@ -83,19 +87,21 @@ func (o *Orchestrator) ExecutePhase(phase Phase) error {
 		}
 	}
 
-	// Pre-check
+	startTime := time.Now()
+
 	phase.SetStatus(StatusRunning)
 	if err := phase.PreCheck(); err != nil {
 		phase.SetStatus(StatusFailed)
 		return fmt.Errorf("pre-check failed: %w", err)
 	}
 
-	// Execute
 	result := phase.Execute(o.progressCh)
+	duration := time.Since(startTime)
+	o.phaseDurations[phase.Name()] = duration
+
 	if !result.Success {
 		phase.SetStatus(StatusFailed)
 
-		// Attempt rollback
 		if rbErr := phase.Rollback(); rbErr != nil {
 			return fmt.Errorf("execution failed: %v, rollback failed: %v", result.Error, rbErr)
 		}
@@ -103,7 +109,6 @@ func (o *Orchestrator) ExecutePhase(phase Phase) error {
 		return fmt.Errorf("execution failed: %w", result.Error)
 	}
 
-	// Post-check
 	if err := phase.PostCheck(); err != nil {
 		phase.SetStatus(StatusFailed)
 		return fmt.Errorf("post-check failed: %w", err)
@@ -184,4 +189,14 @@ func (o *Orchestrator) HasFailed() bool {
 		}
 	}
 	return false
+}
+
+// GetTotalDuration returns total installation time
+func (o *Orchestrator) GetTotalDuration() time.Duration {
+	return time.Since(o.installStartTime)
+}
+
+// GetPhaseDurations returns timing breakdown by phase
+func (o *Orchestrator) GetPhaseDurations() map[string]time.Duration {
+	return o.phaseDurations
 }
