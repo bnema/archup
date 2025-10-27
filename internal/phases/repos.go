@@ -9,6 +9,7 @@ import (
 	"github.com/bnema/archup/internal/config"
 	"github.com/bnema/archup/internal/interfaces"
 	"github.com/bnema/archup/internal/logger"
+	"github.com/bnema/archup/internal/system"
 )
 
 // Pacman configuration constants
@@ -270,7 +271,7 @@ func (p *ReposPhase) loadChaoticConfig() error {
 func (p *ReposPhase) enableChaoticAUR(progressChan chan<- ProgressUpdate) error {
 	p.SendOutput(progressChan, "Adding Chaotic-AUR repository...")
 
-	// Load configuration
+	// Load configuration for GPG key settings
 	switch err := p.loadChaoticConfig(); {
 	case err != nil:
 		return fmt.Errorf("failed to load Chaotic config: %w", err)
@@ -278,8 +279,6 @@ func (p *ReposPhase) enableChaoticAUR(progressChan chan<- ProgressUpdate) error 
 
 	keyID := p.chaoticConfig["CHAOTIC_KEY_ID"]
 	keyserver := p.chaoticConfig["CHAOTIC_KEYSERVER"]
-	keyringURL := p.chaoticConfig["CHAOTIC_KEYRING_URL"]
-	mirrorlistURL := p.chaoticConfig["CHAOTIC_MIRRORLIST_URL"]
 	repoName := p.chaoticConfig["CHAOTIC_REPO_NAME"]
 	mirrorlistPath := p.chaoticConfig["CHAOTIC_MIRRORLIST_PATH"]
 
@@ -303,22 +302,58 @@ func (p *ReposPhase) enableChaoticAUR(progressChan chan<- ProgressUpdate) error 
 
 	p.SendOutput(progressChan, "[OK] Chaotic GPG key imported")
 
+	// Fetch live mirrorlist from GitLab
+	p.SendOutput(progressChan, "Fetching Chaotic-AUR mirrors...")
+	mirrors, err := system.FetchChaoticMirrorlist()
+	switch {
+	case err != nil:
+		p.logger.Warn("Failed to fetch live Chaotic mirrors from GitLab, skipping Chaotic-AUR", "error", err)
+		p.SendOutput(progressChan, "[WARN] Chaotic-AUR unavailable (mirror fetch failed), skipping")
+		return nil // Don't fail, just skip
+	}
+
+	// Count enabled vs disabled mirrors
+	enabledCount := 0
+	for _, m := range mirrors {
+		if m.Enabled {
+			enabledCount++
+		}
+	}
+
+	p.logger.Info("Fetched live Chaotic-AUR mirrors from GitLab",
+		"total", len(mirrors),
+		"enabled", enabledCount,
+		"disabled", len(mirrors)-enabledCount)
+
+	// Build package URLs from live mirrors
+	const (
+		keyringPkg    = "chaotic-keyring.pkg.tar.zst"
+		mirrorlistPkg = "chaotic-mirrorlist.pkg.tar.zst"
+	)
+
+	keyringURLs := system.BuildPackageURLs(mirrors, keyringPkg, true)
+	mirrorlistURLs := system.BuildPackageURLs(mirrors, mirrorlistPkg, true)
+
+	if len(keyringURLs) == 0 || len(mirrorlistURLs) == 0 {
+		p.logger.Warn("Failed to build package URLs from mirrors, skipping Chaotic-AUR")
+		p.SendOutput(progressChan, "[WARN] Chaotic-AUR unavailable (no valid mirrors), skipping")
+		return nil // Don't fail, just skip
+	}
+
+	// Combine all URLs for download
+	var urls []string
+	urls = append(urls, keyringURLs...)
+	urls = append(urls, mirrorlistURLs...)
+
+	p.logger.Info("Built package URLs from live mirrors", "keyring_urls", len(keyringURLs), "mirrorlist_urls", len(mirrorlistURLs))
+
 	// Download and install chaotic-keyring and chaotic-mirrorlist
 	p.SendOutput(progressChan, "Downloading Chaotic-AUR packages...")
 
-	// Parse mirror URLs (pipe-separated for fallbacks)
-	var urls []string
-	for _, url := range strings.Split(keyringURL, "|") {
-		urls = append(urls, strings.TrimSpace(url))
-	}
-	for _, url := range strings.Split(mirrorlistURL, "|") {
-		urls = append(urls, strings.TrimSpace(url))
-	}
-
 	switch err := p.chrExec.DownloadAndInstallPackages(p.logger.LogPath(), config.PathMnt, urls...); {
 	case err != nil:
-		p.logger.Warn("Chaotic-AUR packages unavailable, skipping", "error", err)
-		p.SendOutput(progressChan, "[WARN] Chaotic-AUR unavailable, skipping (AUR helper will be built from source)")
+		p.logger.Warn("Failed to download/install Chaotic packages, skipping Chaotic-AUR", "error", err)
+		p.SendOutput(progressChan, "[WARN] Chaotic-AUR unavailable (package download failed), skipping")
 		return nil // IMPORTANT: Exit early, don't add to pacman.conf
 	}
 
@@ -351,7 +386,7 @@ func (p *ReposPhase) enableChaoticAUR(progressChan chan<- ProgressUpdate) error 
 	}
 
 	// Update package databases
-	switch err := p.chrExec.ChrootExec(p.logger.LogPath(),config.PathMnt, "pacman -Sy --noconfirm"); {
+	switch err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, "pacman -Sy --noconfirm"); {
 	case err != nil:
 		return fmt.Errorf("failed to update package databases: %w", err)
 	}
