@@ -42,6 +42,7 @@ type Model struct {
 	formBuilder      *components.FormBuilder
 	output           *components.OutputViewer
 	logger           *logger.Logger
+	system           *system.System
 	spinner          spinner.Model
 	version          string
 	width            int
@@ -66,6 +67,7 @@ func NewModel(orchestrator *phases.Orchestrator, cfg *config.Config, log *logger
 		config:       cfg,
 		formBuilder:  components.NewFormBuilder(false, 80), // Initial width, will update on WindowSizeMsg
 		logger:       log,
+		system:       system.NewSystem(log.Slog()),
 		spinner:      s,
 		version:      version,
 		width:        80,
@@ -103,7 +105,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case StateShowLogo:
 				m.logger.Info("Moving to preflight form")
 				m.state = StatePreflightForm
-				m.currentForm = CreatePreflightForm(m.config, m.formBuilder)
+				m.currentForm = CreatePreflightForm(m.config, m.formBuilder, m.system)
 				return m, m.currentForm.Init()
 
 			case StateConfirmation:
@@ -117,7 +119,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch m.state {
 			case StateDiskForm:
 				m.state = StatePreflightForm
-				m.currentForm = CreatePreflightForm(m.config, m.formBuilder)
+				m.currentForm = CreatePreflightForm(m.config, m.formBuilder, m.system)
 				return m, m.currentForm.Init()
 
 			case StateOptionsForm:

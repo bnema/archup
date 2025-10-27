@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/bnema/archup/internal/config"
+	"github.com/bnema/archup/internal/phases"
 	"github.com/bnema/archup/internal/system"
 	"github.com/bnema/archup/internal/ui/components"
 	"github.com/bnema/archup/internal/validation"
@@ -11,10 +12,10 @@ import (
 )
 
 // CreatePreflightForm creates the initial configuration form with all user identity fields
-func CreatePreflightForm(cfg *config.Config, fb *components.FormBuilder) *huh.Form {
+func CreatePreflightForm(cfg *config.Config, fb *components.FormBuilder, sys *system.System) *huh.Form {
 
 	// Auto-detect timezone from API, fallback to default if detection fails
-	detectedTimezone := system.DetectTimezone()
+	detectedTimezone := sys.DetectTimezone()
 	switch {
 	case detectedTimezone != "":
 		cfg.Timezone = detectedTimezone
@@ -140,8 +141,8 @@ func CreateOptionsForm(cfg *config.Config, fb *components.FormBuilder) *huh.Form
 	// Page 2: Repository and package management options
 	aurOptions := []huh.Option[string]{
 		huh.NewOption("None", ""),
-		components.CreateOption("Paru", DescAURHelperParu, config.AURHelperParu),
-		components.CreateOption("Yay", DescAURHelperYay, config.AURHelperYay),
+		components.CreateOption("Paru", DescAURHelperParu, phases.AURHelperParu),
+		components.CreateOption("Yay", DescAURHelperYay, phases.AURHelperYay),
 	}
 
 	packageManagementGroup := huh.NewGroup(

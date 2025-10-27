@@ -49,11 +49,6 @@ const (
 	KernelLinuxCachyOS  = "linux-cachyos"
 )
 
-// AUR helpers
-const (
-	AURHelperParu = "paru"
-	AURHelperYay  = "yay"
-)
 
 // System paths
 const (
@@ -96,7 +91,7 @@ const (
 const (
 	LocaleDefault     = "en_US.UTF-8"
 	LocaleDefaultGen  = "en_US.UTF-8 UTF-8"
-	TimezoneDefault   = "UTC"
+	TimezoneDefault   = ""
 	KeymapDefault     = "us"
 )
 
@@ -159,6 +154,7 @@ const (
 const (
 	PathMntEtcPacmanConf = "/mnt/etc/pacman.conf"
 )
+
 
 // PostInstall paths
 const (
