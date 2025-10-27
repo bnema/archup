@@ -5,13 +5,43 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/bnema/archup/internal/config"
 	"github.com/bnema/archup/internal/logger"
 	"github.com/bnema/archup/internal/system"
 )
+
+// Pacman configuration constants
+const (
+	pacmanMultilibSectionDisabled = "#[multilib]"
+	pacmanMultilibSectionEnabled  = "[multilib]"
+	pacmanMultilibIncludeDisabled = "#Include = /etc/pacman.d/mirrorlist"
+	pacmanMultilibIncludeEnabled  = "Include = /etc/pacman.d/mirrorlist"
+	pacmanSectionPrefix           = "["
+)
+
+// AUR helper constants and validation
+const (
+	AURHelperParu = "paru"
+	AURHelperYay  = "yay"
+)
+
+// ValidAURHelpers contains the list of supported AUR helpers
+var ValidAURHelpers = []string{AURHelperParu, AURHelperYay}
+
+// IsValidAURHelper validates if the given AUR helper is supported
+func IsValidAURHelper(helper string) bool {
+	if helper == "" {
+		return true // Empty is valid (no AUR helper)
+	}
+	for _, valid := range ValidAURHelpers {
+		if helper == valid {
+			return true
+		}
+	}
+	return false
+}
 
 // ReposPhase handles repository configuration
 type ReposPhase struct {
@@ -29,6 +59,12 @@ func NewReposPhase(cfg *config.Config, log *logger.Logger) *ReposPhase {
 
 // PreCheck validates repos prerequisites
 func (p *ReposPhase) PreCheck() error {
+	// Validate AUR helper first (config validation before system checks)
+	switch {
+	case p.config.AURHelper != "" && !IsValidAURHelper(p.config.AURHelper):
+		return fmt.Errorf("invalid AUR helper: %s (must be one of: %v)", p.config.AURHelper, ValidAURHelpers)
+	}
+
 	// Verify /mnt is mounted
 	result := system.RunSimple("mountpoint", "-q", config.PathMnt)
 	switch {
@@ -47,7 +83,7 @@ func (p *ReposPhase) PreCheck() error {
 
 // Execute runs the repos phase
 func (p *ReposPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResult {
-	p.SendProgress(progressChan, "Starting repository configuration...", 1, 4)
+	p.SendProgress(progressChan, "Starting repository configuration...", 1, 5)
 
 	// Step 1: Enable multilib (optional)
 	switch {
@@ -61,9 +97,18 @@ func (p *ReposPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResult {
 		p.SendOutput(progressChan, "[SKIP] Multilib disabled")
 	}
 
-	p.SendProgress(progressChan, "Installing extra packages...", 2, 4)
+	// Step 2: Sync package databases after enabling multilib
+	p.SendProgress(progressChan, "Syncing package databases...", 2, 5)
+	switch err := p.syncDatabases(progressChan); {
+	case err != nil:
+		p.logger.Warn("Database sync failed", "error", err)
+		p.SendOutput(progressChan, fmt.Sprintf("[WARN] Database sync failed: %v", err))
+		// Don't fail the phase, just warn
+	}
 
-	// Step 2: Install extra packages (always, from official repos)
+	p.SendProgress(progressChan, "Installing extra packages...", 3, 5)
+
+	// Step 3: Install extra packages (always, from official repos)
 	switch err := p.installExtraPackages(progressChan); {
 	case err != nil:
 		// Don't fail the phase, just warn
@@ -71,9 +116,9 @@ func (p *ReposPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResult {
 		p.SendOutput(progressChan, fmt.Sprintf("[WARN] Some extra packages failed: %v", err))
 	}
 
-	p.SendProgress(progressChan, "Configuring Chaotic-AUR...", 3, 4)
+	p.SendProgress(progressChan, "Configuring Chaotic-AUR...", 4, 5)
 
-	// Step 3: Enable Chaotic-AUR (optional)
+	// Step 4: Enable Chaotic-AUR (optional)
 	switch {
 	case p.config.EnableChaotic:
 		switch err := p.enableChaoticAUR(progressChan); {
@@ -85,9 +130,9 @@ func (p *ReposPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResult {
 		p.SendOutput(progressChan, "[SKIP] Chaotic-AUR disabled")
 	}
 
-	p.SendProgress(progressChan, "Installing AUR helper...", 4, 4)
+	p.SendProgress(progressChan, "Installing AUR helper...", 5, 5)
 
-	// Step 4: Install AUR helper (optional)
+	// Step 5: Install AUR helper (optional)
 	switch {
 	case p.config.AURHelper != "":
 		switch err := p.installAURHelper(progressChan); {
@@ -99,10 +144,23 @@ func (p *ReposPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResult {
 		p.SendOutput(progressChan, "[SKIP] AUR helper disabled")
 	}
 
-	p.SendProgress(progressChan, "Repository configuration complete", 4, 4)
+	p.SendProgress(progressChan, "Repository configuration complete", 5, 5)
 	p.SendComplete(progressChan, "Repositories configured successfully")
 
 	return PhaseResult{Success: true, Message: "Repos configuration complete"}
+}
+
+// syncDatabases syncs pacman package databases
+func (p *ReposPhase) syncDatabases(progressChan chan<- ProgressUpdate) error {
+	p.SendOutput(progressChan, "Syncing package databases...")
+
+	switch err := system.ChrootExec(p.logger.LogPath(), config.PathMnt, "pacman -Sy --noconfirm"); {
+	case err != nil:
+		return fmt.Errorf("failed to sync databases: %w", err)
+	}
+
+	p.SendOutput(progressChan, "[OK] Package databases synced")
+	return nil
 }
 
 // enableMultilib enables multilib repository
@@ -118,19 +176,40 @@ func (p *ReposPhase) enableMultilib(progressChan chan<- ProgressUpdate) error {
 
 	contentStr := string(content)
 
-	// Check if already enabled
+	// Check if already fully enabled (both section and Include line uncommented)
+	hasMultilibSection := strings.Contains(contentStr, "[multilib]") && !strings.Contains(contentStr, "#[multilib]")
+	hasMultilibInclude := strings.Contains(contentStr, pacmanMultilibIncludeEnabled)
+
 	switch {
-	case strings.Contains(contentStr, "[multilib]") && !strings.Contains(contentStr, "#[multilib]"):
+	case hasMultilibSection && hasMultilibInclude:
 		p.SendOutput(progressChan, "[OK] Multilib already enabled")
 		return nil
 	}
 
-	// Uncomment multilib section
-	multilibRegex := regexp.MustCompile(`(?m)^#\[multilib\]`)
-	contentStr = multilibRegex.ReplaceAllString(contentStr, "[multilib]")
+	// Uncomment multilib section and its Include line in context-aware manner
+	// This ensures we only uncomment the Include that's right after [multilib]
+	lines := strings.Split(contentStr, "\n")
+	inMultilib := false
+	for i, line := range lines {
+		trimmedLine := strings.TrimSpace(line)
 
-	includeRegex := regexp.MustCompile(`(?m)^#Include = /etc/pacman.d/mirrorlist`)
-	contentStr = includeRegex.ReplaceAllString(contentStr, "Include = /etc/pacman.d/mirrorlist")
+		switch {
+		case trimmedLine == pacmanMultilibSectionDisabled:
+			lines[i] = pacmanMultilibSectionEnabled
+			inMultilib = true
+		case trimmedLine == pacmanMultilibSectionEnabled:
+			// Already enabled, track that we're in multilib section
+			inMultilib = true
+		case inMultilib && trimmedLine == pacmanMultilibIncludeDisabled:
+			// Uncomment the Include line, preserving indentation
+			lines[i] = strings.Replace(line, "#Include", "Include", 1)
+			inMultilib = false // Only uncomment the first Include after [multilib]
+		case inMultilib && strings.HasPrefix(trimmedLine, pacmanSectionPrefix) && trimmedLine != pacmanMultilibSectionEnabled:
+			// Exited multilib section without finding Include
+			inMultilib = false
+		}
+	}
+	contentStr = strings.Join(lines, "\n")
 
 	// Write updated config
 	switch err := os.WriteFile(config.PathMntEtcPacmanConf, []byte(contentStr), 0644); {
@@ -201,26 +280,31 @@ func (p *ReposPhase) enableChaoticAUR(progressChan chan<- ProgressUpdate) error 
 
 	// Import GPG key
 	recvKeyCmd := fmt.Sprintf("pacman-key --recv-key %s --keyserver %s", keyID, keyserver)
-	switch err := system.ChrootExec(p.logger.LogPath(),config.PathMnt, recvKeyCmd); {
+	switch err := system.ChrootExec(p.logger.LogPath(), config.PathMnt, recvKeyCmd); {
 	case err != nil:
-		return fmt.Errorf("failed to receive Chaotic GPG key: %w", err)
+		p.logger.Warn("Failed to receive Chaotic GPG key, skipping Chaotic-AUR", "error", err)
+		p.SendOutput(progressChan, "[WARN] Chaotic-AUR unavailable (GPG key fetch failed)")
+		return nil // Don't fail, just skip
 	}
 
 	// Locally sign the key
 	lsignKeyCmd := fmt.Sprintf("pacman-key --lsign-key %s", keyID)
-	switch err := system.ChrootExec(p.logger.LogPath(),config.PathMnt, lsignKeyCmd); {
+	switch err := system.ChrootExec(p.logger.LogPath(), config.PathMnt, lsignKeyCmd); {
 	case err != nil:
-		return fmt.Errorf("failed to sign Chaotic GPG key: %w", err)
+		p.logger.Warn("Failed to sign Chaotic GPG key, skipping Chaotic-AUR", "error", err)
+		p.SendOutput(progressChan, "[WARN] Chaotic-AUR unavailable (GPG key signing failed)")
+		return nil // Don't fail, just skip
 	}
 
 	p.SendOutput(progressChan, "[OK] Chaotic GPG key imported")
 
 	// Download and install chaotic-keyring and chaotic-mirrorlist
 	p.SendOutput(progressChan, "Downloading Chaotic-AUR packages...")
-	if err := system.DownloadAndInstallPackages(p.logger.LogPath(), config.PathMnt, keyringURL, mirrorlistURL); err != nil {
+	switch err := system.DownloadAndInstallPackages(p.logger.LogPath(), config.PathMnt, keyringURL, mirrorlistURL); {
+	case err != nil:
 		p.logger.Warn("Chaotic-AUR packages unavailable, skipping", "error", err)
 		p.SendOutput(progressChan, "[WARN] Chaotic-AUR unavailable, skipping (AUR helper will be built from source)")
-		return nil
+		return nil // IMPORTANT: Exit early, don't add to pacman.conf
 	}
 
 	p.SendOutput(progressChan, "[OK] Chaotic packages installed")
@@ -271,6 +355,25 @@ func (p *ReposPhase) enableChaoticAUR(progressChan chan<- ProgressUpdate) error 
 	return nil
 }
 
+// installPackagesIndividually tries to install packages one by one for resilience
+func (p *ReposPhase) installPackagesIndividually(packages []string, progressChan chan<- ProgressUpdate) (int, []string) {
+	failedPkgs := []string{}
+	successCount := 0
+
+	for _, pkg := range packages {
+		individualCmd := fmt.Sprintf("pacman -S --noconfirm --needed %s", pkg)
+		switch err := system.ChrootExec(p.logger.LogPath(), config.PathMnt, individualCmd); {
+		case err != nil:
+			p.logger.Warn("Failed to install package", "package", pkg, "error", err)
+			failedPkgs = append(failedPkgs, pkg)
+		default:
+			successCount++
+		}
+	}
+
+	return successCount, failedPkgs
+}
+
 // installExtraPackages installs packages from extra.packages file
 func (p *ReposPhase) installExtraPackages(progressChan chan<- ProgressUpdate) error {
 	p.SendOutput(progressChan, "Installing extra packages...")
@@ -288,16 +391,36 @@ func (p *ReposPhase) installExtraPackages(progressChan chan<- ProgressUpdate) er
 	p.logger.Info("Installing extra packages", "count", len(packages), "packages", strings.Join(packages, ", "))
 	p.SendOutput(progressChan, fmt.Sprintf("Installing %d extra packages...", len(packages)))
 
-	// Install packages
-	installCmd := fmt.Sprintf("pacman -S --noconfirm %s", strings.Join(packages, " "))
-	switch err := system.ChrootExec(p.logger.LogPath(),config.PathMnt, installCmd); {
-	case err != nil:
-		p.logger.Error("Failed to install extra packages", "error", err, "packages", strings.Join(packages, ", "))
-		return fmt.Errorf("failed to install extra packages: %w", err)
+	// Try batch installation first
+	installCmd := fmt.Sprintf("pacman -S --noconfirm --needed %s", strings.Join(packages, " "))
+	switch err := system.ChrootExec(p.logger.LogPath(), config.PathMnt, installCmd); {
+	case err == nil:
+		p.logger.Info("Extra packages installed successfully", "count", len(packages))
+		p.SendOutput(progressChan, fmt.Sprintf("[OK] Installed %d extra packages", len(packages)))
+		return nil
 	}
 
-	p.logger.Info("Extra packages installed successfully", "count", len(packages))
-	p.SendOutput(progressChan, fmt.Sprintf("[OK] Installed %d extra packages", len(packages)))
+	// Batch installation failed, try individual packages for resilience
+	p.logger.Warn("Batch installation failed, trying individual packages", "error", err)
+	p.SendOutput(progressChan, "[WARN] Batch installation failed, trying individual packages...")
+
+	successCount, failedPkgs := p.installPackagesIndividually(packages, progressChan)
+
+	// Report results
+	switch {
+	case len(failedPkgs) > 0:
+		p.SendOutput(progressChan, fmt.Sprintf("[WARN] Failed to install: %s", strings.Join(failedPkgs, ", ")))
+		p.logger.Warn("Some packages failed to install", "failed_count", len(failedPkgs), "packages", failedPkgs)
+	}
+
+	switch {
+	case successCount > 0:
+		p.SendOutput(progressChan, fmt.Sprintf("[OK] Installed %d/%d packages", successCount, len(packages)))
+		p.logger.Info("Partial package installation successful", "success_count", successCount, "total", len(packages))
+	default:
+		p.SendOutput(progressChan, "[ERROR] Failed to install any packages")
+		return fmt.Errorf("failed to install all %d packages", len(packages))
+	}
 
 	return nil
 }
@@ -342,25 +465,47 @@ func (p *ReposPhase) loadExtraPackages() ([]string, error) {
 func (p *ReposPhase) installAURHelper(progressChan chan<- ProgressUpdate) error {
 	p.SendOutput(progressChan, fmt.Sprintf("Building %s from AUR...", p.config.AURHelper))
 
+	// Ensure build dependencies are installed
+	p.SendOutput(progressChan, "Verifying build dependencies...")
+	depsCmd := "pacman -S --needed --noconfirm base-devel git"
+	switch err := system.ChrootExec(p.logger.LogPath(), config.PathMnt, depsCmd); {
+	case err != nil:
+		p.logger.Warn("Failed to install build dependencies", "error", err)
+		// Don't fail, they might already be installed
+	}
+
 	// Build AUR helper from source
 	buildCmd := fmt.Sprintf(`
 		su - %s -c '
-			cd /tmp &&
-			git clone https://aur.archlinux.org/%s.git &&
-			cd %s &&
-			makepkg -si --noconfirm
-		'
-	`, p.config.Username, p.config.AURHelper, p.config.AURHelper)
+			set -e
+			cd /tmp || exit 1
 
-	if err := system.ChrootExec(p.logger.LogPath(), config.PathMnt, buildCmd); err != nil {
+			# Clean up any previous build
+			rm -rf %s
+
+			# Clone AUR repository
+			git clone https://aur.archlinux.org/%s.git || exit 1
+			cd %s || exit 1
+
+			# Build and install
+			makepkg -si --noconfirm || exit 1
+		'
+	`, p.config.Username, p.config.AURHelper, p.config.AURHelper, p.config.AURHelper)
+
+	switch err := system.ChrootExec(p.logger.LogPath(), config.PathMnt, buildCmd); {
+	case err != nil:
 		return fmt.Errorf("failed to build %s: %w", p.config.AURHelper, err)
 	}
 
-	// Cleanup
-	cleanupCmd := fmt.Sprintf("rm -rf /home/%s/tmp/%s", p.config.Username, p.config.AURHelper)
-	system.ChrootExec(p.logger.LogPath(), config.PathMnt, cleanupCmd)
+	// Cleanup build directory
+	cleanupCmd := fmt.Sprintf("rm -rf /tmp/%s", p.config.AURHelper)
+	switch err := system.ChrootExec(p.logger.LogPath(), config.PathMnt, cleanupCmd); {
+	case err != nil:
+		p.logger.Warn("Failed to cleanup AUR helper build directory", "error", err)
+		// Don't fail, just warn
+	}
 
-	p.SendOutput(progressChan, fmt.Sprintf("[OK] %s built and installed", p.config.AURHelper))
+	p.SendOutput(progressChan, fmt.Sprintf("[OK] %s built and installed successfully", p.config.AURHelper))
 
 	return nil
 }
