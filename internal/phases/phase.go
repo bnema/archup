@@ -178,6 +178,12 @@ func (b *BasePhase) SendError(progressChan chan<- ProgressUpdate, err error) {
 
 // SendOutput is a helper to send command output line
 func (b *BasePhase) SendOutput(progressChan chan<- ProgressUpdate, line string) {
+	// Log the output
+	if b.logger != nil {
+		b.logger.Info(line)
+	}
+
+	// Send to progress channel for TUI display
 	if progressChan != nil {
 		progressChan <- ProgressUpdate{
 			PhaseName:  b.name,
