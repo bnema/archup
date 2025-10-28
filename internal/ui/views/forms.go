@@ -16,12 +16,10 @@ func RenderForm(m model.UI) string {
 	form := m.CurrentForm().View()
 	content := styles.FormContainerStyle.Render(header + "\n\n" + form)
 
-	// Center the container on screen, but keep form content left-aligned
-	return lipgloss.Place(
+	// Center the container horizontally on screen, keep form content left-aligned
+	return lipgloss.PlaceHorizontal(
 		m.Width(),
-		m.Height(),
 		lipgloss.Center,
-		lipgloss.Top,
 		content,
 		lipgloss.WithWhitespaceChars(" "),
 	)
