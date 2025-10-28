@@ -59,6 +59,17 @@ func (p *BaseInstallPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResu
 		return PhaseResult{Success: false, Error: err}
 	}
 
+	// Step 2.5: Configure CachyOS repository on ISO if needed
+	switch {
+	case p.config.KernelChoice == config.KernelLinuxCachyOS:
+		p.SendProgress(progressChan, "Configuring CachyOS repository...", 2, 5)
+		switch err := p.configureCachyOSRepo(progressChan); {
+		case err != nil:
+			p.SendError(progressChan, err)
+			return PhaseResult{Success: false, Error: err}
+		}
+	}
+
 	p.SendProgress(progressChan, "Installing base system...", 3, 5)
 
 	// Step 3: Run pacstrap
@@ -98,6 +109,147 @@ func (p *BaseInstallPhase) configurePacman(progressChan chan<- ProgressUpdate) e
 	}
 
 	p.SendOutput(progressChan, "[OK] Pacman configured: ParallelDownloads=10")
+	return nil
+}
+
+// configureCachyOSRepo configures CachyOS repository on the ISO before pacstrap
+func (p *BaseInstallPhase) configureCachyOSRepo(progressChan chan<- ProgressUpdate) error {
+	p.SendOutput(progressChan, "Configuring CachyOS repository on live system...")
+
+	// Import CachyOS GPG key
+	p.SendOutput(progressChan, "Importing CachyOS GPG key...")
+	result := p.logger.ExecCommand("pacman-key", "--recv-keys", "F3B607488DB35A47", "--keyserver", "keyserver.ubuntu.com")
+	switch {
+	case result.ExitCode != 0:
+		return fmt.Errorf("failed to receive CachyOS GPG key: %w", result.Error)
+	}
+
+	result = p.logger.ExecCommand("pacman-key", "--lsign-key", "F3B607488DB35A47")
+	switch {
+	case result.ExitCode != 0:
+		return fmt.Errorf("failed to sign CachyOS GPG key: %w", result.Error)
+	}
+
+	p.SendOutput(progressChan, "[OK] GPG key imported")
+
+	// Check if CachyOS repo already configured
+	content, err := p.fs.ReadFile("/etc/pacman.conf")
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to read pacman.conf: %w", err)
+	}
+
+	contentStr := string(content)
+	if !strings.Contains(contentStr, "[cachyos]") {
+		// Add CachyOS repo before [core] repository
+		p.SendOutput(progressChan, "Adding CachyOS repository to pacman.conf...")
+
+		// Find [core] and insert before it
+		lines := strings.Split(contentStr, "\n")
+		var newLines []string
+		inserted := false
+
+		for _, line := range lines {
+			if !inserted && strings.TrimSpace(line) == "[core]" {
+				newLines = append(newLines, "# CachyOS repositories")
+				newLines = append(newLines, "[cachyos]")
+				newLines = append(newLines, "Include = /etc/pacman.d/cachyos-mirrorlist")
+				newLines = append(newLines, "")
+				inserted = true
+			}
+			newLines = append(newLines, line)
+		}
+
+		contentStr = strings.Join(newLines, "\n")
+
+		switch err := p.fs.WriteFile("/etc/pacman.conf", []byte(contentStr), 0644); {
+		case err != nil:
+			return fmt.Errorf("failed to write pacman.conf: %w", err)
+		}
+	}
+
+	// Create CachyOS mirrorlist
+	p.SendOutput(progressChan, "Creating CachyOS mirrorlist...")
+	mirrorlist := "## CachyOS mirrorlist\nServer = https://mirror.cachyos.org/repo/$arch/$repo\n"
+
+	switch err := p.fs.WriteFile("/etc/pacman.d/cachyos-mirrorlist", []byte(mirrorlist), 0644); {
+	case err != nil:
+		return fmt.Errorf("failed to create cachyos-mirrorlist: %w", err)
+	}
+
+	// Sync databases
+	p.SendOutput(progressChan, "Syncing package databases...")
+	result = p.logger.ExecCommand("pacman", "-Sy")
+	switch {
+	case result.ExitCode != 0:
+		return fmt.Errorf("failed to sync databases: %w", result.Error)
+	}
+
+	p.SendOutput(progressChan, "[OK] CachyOS repository configured")
+	return nil
+}
+
+// copyCachyOSConfig copies CachyOS repository configuration to installed system
+func (p *BaseInstallPhase) copyCachyOSConfig(progressChan chan<- ProgressUpdate) error {
+	// Read ISO's pacman.conf to check if CachyOS is configured
+	content, err := p.fs.ReadFile("/etc/pacman.conf")
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to read ISO pacman.conf: %w", err)
+	}
+
+	isoContent := string(content)
+
+	// Read installed system's pacman.conf
+	mntContent, err := p.fs.ReadFile("/mnt/etc/pacman.conf")
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to read /mnt/etc/pacman.conf: %w", err)
+	}
+
+	mntContentStr := string(mntContent)
+
+	// Add CachyOS repo before [core] if not already present
+	if !strings.Contains(mntContentStr, "[cachyos]") && strings.Contains(isoContent, "[cachyos]") {
+		lines := strings.Split(mntContentStr, "\n")
+		var newLines []string
+		inserted := false
+
+		for _, line := range lines {
+			if !inserted && strings.TrimSpace(line) == "[core]" {
+				newLines = append(newLines, "# CachyOS repositories")
+				newLines = append(newLines, "[cachyos]")
+				newLines = append(newLines, "Include = /etc/pacman.d/cachyos-mirrorlist")
+				newLines = append(newLines, "")
+				inserted = true
+			}
+			newLines = append(newLines, line)
+		}
+
+		mntContentStr = strings.Join(newLines, "\n")
+
+		switch err := p.fs.WriteFile("/mnt/etc/pacman.conf", []byte(mntContentStr), 0644); {
+		case err != nil:
+			return fmt.Errorf("failed to write /mnt/etc/pacman.conf: %w", err)
+		}
+
+		p.SendOutput(progressChan, "[OK] Added CachyOS to installed system's pacman.conf")
+	}
+
+	// Copy mirrorlist from ISO to installed system
+	result := p.logger.ExecCommand("mkdir", "-p", "/mnt/etc/pacman.d")
+	switch {
+	case result.ExitCode != 0:
+		return fmt.Errorf("failed to create /mnt/etc/pacman.d: %w", result.Error)
+	}
+
+	result = p.logger.ExecCommand("cp", "/etc/pacman.d/cachyos-mirrorlist", "/mnt/etc/pacman.d/cachyos-mirrorlist")
+	switch {
+	case result.ExitCode != 0:
+		return fmt.Errorf("failed to copy cachyos-mirrorlist: %w", result.Error)
+	}
+
+	p.SendOutput(progressChan, "[OK] CachyOS repository configured in installed system")
 	return nil
 }
 
@@ -189,8 +341,15 @@ func (p *BaseInstallPhase) runPacstrap(progressChan chan<- ProgressUpdate) error
 		p.SendOutput(progressChan, "Adding cryptsetup for LUKS encryption")
 	}
 
-	p.SendOutput(progressChan, fmt.Sprintf("Installing %d packages...", len(packages)))
-	p.SendOutput(progressChan, "This may take several minutes...")
+	p.SendOutput(progressChan, fmt.Sprintf("Installing %d packages:", len(packages)))
+
+	// Show package list
+	for _, pkg := range packages {
+		p.SendOutput(progressChan, fmt.Sprintf("  - %s", pkg))
+	}
+
+	p.SendOutput(progressChan, "")
+	p.SendOutput(progressChan, "Starting installation (this may take several minutes)...")
 
 	// Run pacstrap
 	args := append([]string{"/mnt"}, packages...)
@@ -202,6 +361,16 @@ func (p *BaseInstallPhase) runPacstrap(progressChan chan<- ProgressUpdate) error
 	}
 
 	p.SendOutput(progressChan, fmt.Sprintf("[OK] Installed %d packages", len(packages)))
+
+	// Copy CachyOS configuration to installed system if needed
+	switch {
+	case p.config.KernelChoice == config.KernelLinuxCachyOS:
+		p.SendOutput(progressChan, "Configuring CachyOS repository in installed system...")
+		if err := p.copyCachyOSConfig(progressChan); err != nil {
+			return fmt.Errorf("failed to configure CachyOS in installed system: %w", err)
+		}
+	}
+
 	return nil
 }
 
