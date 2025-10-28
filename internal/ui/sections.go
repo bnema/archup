@@ -48,6 +48,6 @@ const (
 	DescMultilib     = "Required for 32-bit applications and Wine"
 	DescChaoticAUR   = "Community repository with pre-built AUR packages"
 	DescAURHelper    = "Tool for installing packages from Arch User Repository"
-	DescAURHelperParu = "Faster with more features (recommended)"
-	DescAURHelperYay  = "Classic, widely compatible"
+	DescAURHelperParu = "Rust-based AUR helper"
+	DescAURHelperYay  = "Go-based AUR helper"
 )
