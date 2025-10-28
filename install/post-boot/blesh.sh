@@ -48,6 +48,6 @@ EOF
 # Cleanup
 rm -rf /tmp/ble.sh
 
-echo "✓ ble.sh installed successfully"
+echo "[OK] ble.sh installed successfully"
 echo "  Location: $BLESH_INSTALL_DIR/share/blesh"
 echo "  Note: ble.sh will be active on next shell session"

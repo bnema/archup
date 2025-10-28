@@ -35,7 +35,7 @@ BINARY_PATH="${GOBIN}/archup-cli"
 
 # Verify installation
 if [ -x "$BINARY_PATH" ]; then
-  echo "✓ archup-cli installed successfully"
+  echo "[OK] archup-cli installed successfully"
   echo "  Location: $BINARY_PATH"
   echo "  Version: $($BINARY_PATH --version 2>/dev/null || echo 'unknown')"
   echo ""
