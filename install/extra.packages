@@ -39,6 +39,7 @@ fzf
 ripgrep
 bat
 fd
+tree
 btop
 git-delta
 dust
