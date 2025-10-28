@@ -79,8 +79,9 @@ func (fb *FormBuilder) Confirm(title, affirmative, negative string, value *bool)
 // CreateForm creates a form with accessibility settings and custom theme
 func (fb *FormBuilder) CreateForm(groups ...*huh.Group) *huh.Form {
 	formWidth := fb.width
-	if formWidth > 76 {
-		formWidth = 76
+	// Cap to MaxFormWidth from styles
+	if formWidth > styles.MaxFormWidth {
+		formWidth = styles.MaxFormWidth
 	}
 	if formWidth < 40 {
 		formWidth = 40

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bnema/archup/internal/ui/styles"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -51,7 +52,7 @@ func (l *Logo) RenderCentered(termWidth int) string {
 	return l.Render()
 }
 
-// Render renders the logo
+// Render renders the logo with theme colors
 func (l *Logo) Render() string {
 	lines := strings.Split(logoASCII, "\n")
 	var rendered strings.Builder
@@ -62,12 +63,14 @@ func (l *Logo) Render() string {
 			continue
 		}
 
-		rendered.WriteString(line)
+		// Apply bright cyan color to the logo
+		rendered.WriteString(styles.LogoCyanStyle.Render(line))
 		rendered.WriteString("\n")
 	}
 
 	rendered.WriteString("\n")
-	rendered.WriteString(fmt.Sprintf("  %s\n", l.version))
+	// Apply dimmed style to version
+	rendered.WriteString(styles.HelpStyle.Render(fmt.Sprintf("  %s\n", l.version)))
 
 	return rendered.String()
 }
