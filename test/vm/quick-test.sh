@@ -20,7 +20,7 @@ echo ""
 # Restore snapshot
 echo "[1/2] Restoring to snapshot: $SNAPSHOT_NAME"
 qemu-img snapshot -a "$SNAPSHOT_NAME" "$IMAGE"
-echo "✓ Restored"
+echo "[OK] Restored"
 echo ""
 
 # Start VM

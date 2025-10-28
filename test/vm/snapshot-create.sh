@@ -17,7 +17,7 @@ fi
 echo "Creating snapshot: $SNAPSHOT_NAME"
 qemu-img snapshot -c "$SNAPSHOT_NAME" "$IMAGE"
 
-echo "✓ Snapshot '$SNAPSHOT_NAME' created successfully"
+echo "[OK] Snapshot '$SNAPSHOT_NAME' created successfully"
 echo ""
 echo "Available snapshots:"
 qemu-img snapshot -l "$IMAGE"

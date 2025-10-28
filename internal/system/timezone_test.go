@@ -23,7 +23,7 @@ func TestDetectTimezoneSuccess(t *testing.T) {
 	if result == "" {
 		t.Logf("Timezone detection returned empty (network may be unavailable)")
 	} else if result == "Europe/Paris" || result != "" {
-		t.Logf("✓ Timezone detection successful: %s", result)
+		t.Logf("[OK] Timezone detection successful: %s", result)
 	}
 }
 

@@ -30,4 +30,4 @@ fi
 echo "Deleting snapshot: $SNAPSHOT_NAME"
 qemu-img snapshot -d "$SNAPSHOT_NAME" "$IMAGE"
 
-echo "✓ Snapshot '$SNAPSHOT_NAME' deleted successfully"
+echo "[OK] Snapshot '$SNAPSHOT_NAME' deleted successfully"

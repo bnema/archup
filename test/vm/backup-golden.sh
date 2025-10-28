@@ -30,7 +30,7 @@ echo "This may take a minute..."
 cp "$IMAGE" "$BACKUP"
 
 IMAGE_SIZE=$(du -h "$BACKUP" | cut -f1)
-echo "✓ Golden backup created: $BACKUP ($IMAGE_SIZE)"
+echo "[OK] Golden backup created: $BACKUP ($IMAGE_SIZE)"
 echo ""
 echo "To restore from golden backup:"
 echo "  cp $BACKUP $IMAGE"

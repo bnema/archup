@@ -41,7 +41,7 @@ REMOTE_SIZE=$(sshpass -p "$VM_PASS" ssh -p "$VM_PORT" -o StrictHostKeyChecking=n
   "$VM_USER@$VM_HOST" "stat -c%s $REMOTE_PATH/$BINARY_NAME" 2>&1 | grep -v "Warning: Permanently added" || true)
 
 if [ "$FILE_SIZE" = "$REMOTE_SIZE" ]; then
-    echo "✓ Binary pushed successfully!"
+    echo "[OK] Binary pushed successfully!"
     echo "  Location: $REMOTE_PATH/$BINARY_NAME"
     echo "  Size: $FILE_SIZE bytes"
 else

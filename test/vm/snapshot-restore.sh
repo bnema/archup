@@ -28,4 +28,4 @@ fi
 echo "Restoring to snapshot: $SNAPSHOT_NAME"
 qemu-img snapshot -a "$SNAPSHOT_NAME" "$IMAGE"
 
-echo "✓ VM successfully restored to '$SNAPSHOT_NAME'"
+echo "[OK] VM successfully restored to '$SNAPSHOT_NAME'"
