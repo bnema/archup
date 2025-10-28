@@ -2,9 +2,11 @@ package phases
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/bnema/archup/internal/config"
 	"github.com/bnema/archup/internal/interfaces"
@@ -46,10 +48,11 @@ func IsValidAURHelper(helper string) bool {
 // ReposPhase handles repository configuration
 type ReposPhase struct {
 	*BasePhase
-	fs            interfaces.FileSystem
-	sysExec       interfaces.SystemExecutor
-	chrExec       interfaces.ChrootExecutor
-	chaoticConfig map[string]string
+	fs                  interfaces.FileSystem
+	sysExec             interfaces.SystemExecutor
+	chrExec             interfaces.ChrootExecutor
+	chaoticConfig       map[string]string
+	chaoticAUREnabled   bool
 }
 
 // NewReposPhase creates a new repos phase
@@ -401,6 +404,7 @@ func (p *ReposPhase) enableChaoticAUR(progressChan chan<- ProgressUpdate) error 
 	}
 
 	p.SendOutput(progressChan, "[OK] Chaotic-AUR enabled successfully")
+	p.chaoticAUREnabled = true
 
 	return nil
 }
@@ -512,38 +516,101 @@ func (p *ReposPhase) loadExtraPackages() ([]string, error) {
 }
 
 // installAURHelper installs the selected AUR helper
+// Uses Chaotic-AUR if available, falls back to building from source
 func (p *ReposPhase) installAURHelper(progressChan chan<- ProgressUpdate) error {
-	p.SendOutput(progressChan, fmt.Sprintf("Building %s from AUR...", p.config.AURHelper))
+	helper := p.config.AURHelper
 
-	// Ensure build dependencies are installed
+	// Strategy 1: Try Chaotic-AUR if available
+	if p.chaoticAUREnabled {
+		p.SendOutput(progressChan, fmt.Sprintf("Attempting to install %s from Chaotic-AUR...", helper))
+		tryCmd := fmt.Sprintf("pacman -S --noconfirm --needed %s", helper)
+		switch err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, tryCmd); {
+		case err == nil:
+			p.SendOutput(progressChan, fmt.Sprintf("[OK] %s installed from Chaotic-AUR", helper))
+			p.logger.Info("AUR helper installed from Chaotic-AUR", "helper", helper)
+			return nil
+		default:
+			p.logger.Warn("Failed to install from Chaotic-AUR, building from source", "error", err)
+			p.SendOutput(progressChan, "[WARN] Chaotic-AUR installation failed, building from source...")
+		}
+	}
+
+	// Strategy 2: Build from source with proper dependency verification
+	p.SendOutput(progressChan, fmt.Sprintf("Building %s from AUR...", helper))
+	if err := p.ensureBuildDeps(progressChan, helper); err != nil {
+		return fmt.Errorf("failed to ensure build dependencies: %w", err)
+	}
+
+	if err := p.buildFromAUR(progressChan, helper); err != nil {
+		return fmt.Errorf("failed to build %s: %w", helper, err)
+	}
+
+	p.SendOutput(progressChan, fmt.Sprintf("[OK] %s built and installed successfully", helper))
+	p.logger.Info("AUR helper built from source", "helper", helper)
+
+	return nil
+}
+
+// ensureBuildDeps verifies and installs build dependencies
+func (p *ReposPhase) ensureBuildDeps(progressChan chan<- ProgressUpdate, helper string) error {
 	p.SendOutput(progressChan, "Verifying build dependencies...")
-	depsCmd := "pacman -S --needed --noconfirm base-devel git"
-	switch err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, depsCmd); {
+
+	// Always need base-devel and git
+	baseCmd := "pacman -S --needed --noconfirm base-devel git"
+	switch err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, baseCmd); {
 	case err != nil:
-		p.logger.Warn("Failed to install build dependencies", "error", err)
-		// Don't fail, they might already be installed
+		p.logger.Warn("Failed to install base-devel", "error", err)
+		return fmt.Errorf("failed to install base-devel: %w", err)
 	}
 
-	// Build AUR helper from source as configured user, then install as root
-	buildCmd := fmt.Sprintf(`
-		set -e
-
-		# Build as user (clone, build, etc.)
-		su - %s -c 'cd /tmp && rm -rf %s && git clone https://aur.archlinux.org/%s.git && cd %s && makepkg -s --noconfirm' || exit 1
-
-		# Install built package as root
-		pacman -U --noconfirm /tmp/%s/*.pkg.tar.zst || exit 1
-
-		# Clean up build directory
-		rm -rf /tmp/%s
-	`, p.config.Username, p.config.AURHelper, p.config.AURHelper, p.config.AURHelper, p.config.AURHelper, p.config.AURHelper)
-
-	switch err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, buildCmd); {
-	case err != nil:
-		return fmt.Errorf("failed to build %s: %w", p.config.AURHelper, err)
+	// Install language-specific dependencies
+	var langDeps string
+	switch helper {
+	case "yay":
+		langDeps = "go"
+	case "paru":
+		langDeps = "rust cargo"
 	}
 
-	p.SendOutput(progressChan, fmt.Sprintf("[OK] %s built and installed successfully", p.config.AURHelper))
+	if langDeps != "" {
+		p.SendOutput(progressChan, fmt.Sprintf("Installing %s dependencies...", helper))
+		depCmd := fmt.Sprintf("pacman -S --needed --noconfirm %s", langDeps)
+		switch err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, depCmd); {
+		case err != nil:
+			p.logger.Warn("Failed to install language dependencies", "helper", helper, "deps", langDeps, "error", err)
+			return fmt.Errorf("failed to install %s: %w", langDeps, err)
+		}
+	}
+
+	p.SendOutput(progressChan, "[OK] Build dependencies verified")
+	return nil
+}
+
+// buildFromAUR builds an AUR package from source with timeout
+func (p *ReposPhase) buildFromAUR(progressChan chan<- ProgressUpdate, helper string) error {
+	// Build as user with timeout (10 minutes max)
+	p.SendOutput(progressChan, fmt.Sprintf("Compiling %s (this may take a few minutes)...", helper))
+	buildCmd := fmt.Sprintf("su - %s -c 'cd /tmp && rm -rf %s && git clone https://aur.archlinux.org/%s.git && cd %s && makepkg -s --noconfirm'", p.config.Username, helper, helper, helper)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	switch err := p.chrExec.ChrootExecWithContext(ctx, p.logger.LogPath(), config.PathMnt, buildCmd); {
+	case err != nil:
+		return fmt.Errorf("build failed or timed out: %w", err)
+	}
+
+	// Install built package
+	p.SendOutput(progressChan, fmt.Sprintf("Installing %s...", helper))
+	installCmd := fmt.Sprintf("pacman -U --noconfirm /tmp/%s/*.pkg.tar.zst", helper)
+	switch err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, installCmd); {
+	case err != nil:
+		return fmt.Errorf("failed to install %s: %w", helper, err)
+	}
+
+	// Cleanup
+	cleanCmd := fmt.Sprintf("rm -rf /tmp/%s", helper)
+	_ = p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, cleanCmd)
 
 	return nil
 }
