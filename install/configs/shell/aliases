@@ -10,7 +10,7 @@ fi
 
 # Bat + FZF integration
 if command -v bat &> /dev/null && command -v fzf &> /dev/null; then
-  alias ff="fzf --preview 'bat --style=numbers --color=always {}'"
+  alias ff="fzf --preview '[[ -f {} ]] && bat --style=numbers --color=always {} || echo \"{}\"'"
 fi
 
 # Bat aliases
