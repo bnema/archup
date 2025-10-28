@@ -164,10 +164,13 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.networkErr = msg.err
 		if msg.err != nil {
 			m.logger.Warn("Network check failed", "error", msg.err)
-		} else {
-			m.logger.Info("Network check passed")
+			return m, nil
 		}
-		return m, nil
+		// Network check passed - automatically continue to preflight form
+		m.logger.Info("Network check passed - continuing automatically")
+		m.state = StatePreflightForm
+		m.currentForm = CreatePreflightForm(m.config, m.formBuilder, m.system)
+		return m, m.currentForm.Init()
 
 	case phaseCompleteMsg:
 		switch {
