@@ -1,6 +1,7 @@
 package interfaces
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"os"
@@ -38,6 +39,7 @@ type ChrootExecutor interface {
 	ChrootExec(logPath, mountPoint, command string, args ...string) error
 	ChrootSystemctl(logPath, mountPoint, action, service string) error
 	ChrootExecWithStdin(logPath, mountPoint, command, stdin string) error
+	ChrootExecWithContext(ctx context.Context, logPath, mountPoint, command string) error
 	ChrootPacman(logPath, mountPoint, operation string, packages ...string) error
 	DownloadAndInstallPackages(logPath, chrootPath string, urls ...string) error
 }
@@ -129,6 +131,10 @@ func (d *DefaultChrootExecutor) ChrootSystemctl(logPath, mountPoint, action, ser
 
 func (d *DefaultChrootExecutor) ChrootExecWithStdin(logPath, mountPoint, command, stdin string) error {
 	return system.ChrootExecWithStdin(logPath, mountPoint, command, stdin)
+}
+
+func (d *DefaultChrootExecutor) ChrootExecWithContext(ctx context.Context, logPath, mountPoint, command string) error {
+	return system.ChrootExecWithContext(ctx, logPath, mountPoint, command)
 }
 
 func (d *DefaultChrootExecutor) ChrootPacman(logPath, mountPoint, operation string, packages ...string) error {

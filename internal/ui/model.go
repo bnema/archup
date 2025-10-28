@@ -21,6 +21,7 @@ type ModelState int
 
 const (
 	StateShowLogo ModelState = iota
+	StateNetworkCheck
 	StatePreflightForm
 	StateDiskForm
 	StateOptionsForm
@@ -51,6 +52,8 @@ type Model struct {
 	cpuInfo          *system.CPUInfo
 	installStartTime time.Time
 	installEndTime   time.Duration
+	networkCheckDone bool
+	networkErr       error
 }
 
 // NewModel creates a new installer model
@@ -103,6 +106,17 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			switch m.state {
 			case StateShowLogo:
+				m.logger.Info("Moving to network check")
+				m.state = StateNetworkCheck
+				return m, m.checkNetwork()
+
+			case StateNetworkCheck:
+				// Handle retry if network check failed
+				if m.networkErr != nil {
+					m.logger.Info("Retrying network check")
+					return m, m.checkNetwork()
+				}
+				// Network check passed, move to preflight form
 				m.logger.Info("Moving to preflight form")
 				m.state = StatePreflightForm
 				m.currentForm = CreatePreflightForm(m.config, m.formBuilder, m.system)
@@ -144,6 +158,16 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.currentForm.Init()
 			}
 		}
+
+	case networkCheckMsg:
+		m.networkCheckDone = true
+		m.networkErr = msg.err
+		if msg.err != nil {
+			m.logger.Warn("Network check failed", "error", msg.err)
+		} else {
+			m.logger.Info("Network check passed")
+		}
+		return m, nil
 
 	case phaseCompleteMsg:
 		switch {
@@ -219,6 +243,9 @@ func (m *Model) View() string {
 	switch m.state {
 	case StateShowLogo:
 		return views.RenderWelcome(m)
+
+	case StateNetworkCheck:
+		return views.RenderNetworkCheck(m)
 
 	case StatePreflightForm, StateDiskForm, StateOptionsForm, StateAMDPStatePrompt:
 		return views.RenderForm(m)
@@ -322,6 +349,8 @@ func (m *Model) CurrentForm() *huh.Form { return m.currentForm }
 func (m *Model) Spinner() spinner.Model { return m.spinner }
 func (m *Model) Output() *components.OutputViewer { return m.output }
 func (m *Model) RenderPhaseHeader() string { return m.renderPhaseHeader() }
+func (m *Model) NetworkCheckDone() bool { return m.networkCheckDone }
+func (m *Model) NetworkErr() error { return m.networkErr }
 
 // executeNextPhase executes the next pending phase
 func (m *Model) executeNextPhase() tea.Cmd {
@@ -345,6 +374,19 @@ func waitForProgress(progressChan <-chan phases.ProgressUpdate) tea.Cmd {
 // phaseCompleteMsg signals phase execution completion
 type phaseCompleteMsg struct {
 	err error
+}
+
+// networkCheckMsg signals network check completion
+type networkCheckMsg struct {
+	err error
+}
+
+// checkNetwork runs network connectivity check in background
+func (m *Model) checkNetwork() tea.Cmd {
+	return func() tea.Msg {
+		err := system.CheckNetworkConnectivity()
+		return networkCheckMsg{err: err}
+	}
 }
 
 // renderPhaseHeader renders phase progress header

@@ -16,4 +16,6 @@ type UI interface {
 	Spinner() spinner.Model
 	Output() *components.OutputViewer
 	RenderPhaseHeader() string
+	NetworkCheckDone() bool
+	NetworkErr() error
 }

@@ -1,6 +1,7 @@
 package system
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -19,6 +20,33 @@ func ChrootExec(logPath, mountPoint, command string, args ...string) error {
 	if result.Error != nil {
 		return fmt.Errorf("failed to execute in chroot: %w", result.Error)
 	}
+	return nil
+}
+
+// ChrootExecWithContext executes a command inside chroot with timeout support via context
+// The context deadline will terminate the command if it takes too long
+func ChrootExecWithContext(ctx context.Context, logPath, mountPoint, command string) error {
+	cmd := exec.CommandContext(ctx, "arch-chroot", mountPoint, "bash", "-c", command)
+
+	// Set up logging
+	if logPath != "" {
+		logFile, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err == nil {
+			defer logFile.Close()
+			cmd.Stdout = logFile
+			cmd.Stderr = logFile
+		}
+	}
+
+	// Execute the command
+	if err := cmd.Run(); err != nil {
+		// Check if it was a context deadline exceeded
+		if ctx.Err() == context.DeadlineExceeded {
+			return fmt.Errorf("command timed out: %w", err)
+		}
+		return fmt.Errorf("failed to execute in chroot: %w", err)
+	}
+
 	return nil
 }
 
