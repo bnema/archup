@@ -283,7 +283,7 @@ func HuhTheme() *huh.Theme {
 	theme.Focused.Option = lipgloss.NewStyle().Foreground(lipgloss.Color("7"))                // White
 	theme.Focused.MultiSelectSelector = lipgloss.NewStyle().Foreground(lipgloss.Color("14")).SetString("> ")
 	theme.Focused.SelectedOption = lipgloss.NewStyle().Foreground(lipgloss.Color("14"))       // Bright cyan
-	theme.Focused.SelectedPrefix = lipgloss.NewStyle().Foreground(lipgloss.Color("10")).SetString("✓ ") // Bright green
+	theme.Focused.SelectedPrefix = lipgloss.NewStyle().Foreground(lipgloss.Color("10")).SetString("[OK] ") // Bright green
 	theme.Focused.UnselectedOption = lipgloss.NewStyle().Foreground(lipgloss.Color("7"))      // White
 	theme.Focused.UnselectedPrefix = lipgloss.NewStyle().Foreground(lipgloss.Color("8")).SetString("○ ") // Grey
 
@@ -317,7 +317,7 @@ func HuhTheme() *huh.Theme {
 	theme.Focused.TextInput.Prompt = lipgloss.NewStyle().Foreground(lipgloss.Color("14")).Bold(true) // Bright cyan
 
 	// Error styles
-	theme.Focused.ErrorIndicator = lipgloss.NewStyle().Foreground(lipgloss.Color("9")).SetString("✗ ") // Bright red
+	theme.Focused.ErrorIndicator = lipgloss.NewStyle().Foreground(lipgloss.Color("9")).SetString("[KO] ") // Bright red
 	theme.Focused.ErrorMessage = lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Bold(true)         // Bright red
 
 	return theme

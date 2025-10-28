@@ -12,19 +12,14 @@ import (
 func RenderSuccess(m model.UI, duration time.Duration, phaseDurations map[string]time.Duration) string {
 	cfg := m.Config()
 
-	s := styles.SuccessStyle.Render("✓ Installation Complete!") + "\n\n"
+	s := styles.SuccessStyle.Render("[OK] Installation Complete!") + "\n\n"
 	s += "Installation Summary:\n"
 	s += fmt.Sprintf("  Hostname: %s\n", cfg.Hostname)
 	s += fmt.Sprintf("  Disk: %s\n", cfg.TargetDisk)
 	s += fmt.Sprintf("  Kernel: %s\n", cfg.KernelChoice)
 	s += fmt.Sprintf("  Total Time: %s\n\n", formatDuration(duration))
 
-	s += "Phase Breakdown:\n"
-	for phase, dur := range phaseDurations {
-		s += fmt.Sprintf("  %s: %s\n", phase, formatDuration(dur))
-	}
-
-	s += "\nNext Steps:\n"
+	s += "Next Steps:\n"
 	s += "  1. Remove installation media\n"
 	s += "  2. Reboot the system\n"
 	s += "  3. First-boot setup will run automatically\n\n"
@@ -35,7 +30,7 @@ func RenderSuccess(m model.UI, duration time.Duration, phaseDurations map[string
 
 // RenderError renders the error screen with log tail (centered)
 func RenderError(m model.UI, err error, phaseName string, duration time.Duration) string {
-	s := styles.ErrorStyle.Render("✗ Installation Failed") + "\n\n"
+	s := styles.ErrorStyle.Render("[KO] Installation Failed") + "\n\n"
 	s += fmt.Sprintf("Phase: %s\n", phaseName)
 	s += fmt.Sprintf("Error: %v\n", err)
 	s += fmt.Sprintf("Duration before failure: %s\n\n", formatDuration(duration))
