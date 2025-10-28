@@ -193,6 +193,7 @@ var PostBootScripts = []string{
 	"ufw.sh",
 	"ssh-keygen.sh",
 	"archup-cli.sh",
+	"blesh.sh",
 }
 
 // Post-boot service template URL path
