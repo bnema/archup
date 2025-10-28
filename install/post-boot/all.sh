@@ -52,6 +52,16 @@ if [ -f /usr/local/share/archup/post-boot/archup-cli.sh ]; then
   fi
 fi
 
+# Install ble.sh (Bash Line Editor)
+if [ -f /usr/local/share/archup/post-boot/blesh.sh ]; then
+  echo "Installing ble.sh (Bash Line Editor)..." | tee -a "$LOG_FILE"
+  if bash /usr/local/share/archup/post-boot/blesh.sh >> "$LOG_FILE" 2>&1; then
+    echo "✓ ble.sh installed successfully" | tee -a "$LOG_FILE"
+  else
+    echo "✗ ble.sh installation failed (non-critical)" | tee -a "$LOG_FILE"
+  fi
+fi
+
 echo "=== First Boot Setup Complete ===" >> "$LOG_FILE"
 
 # Disable this service after first run
