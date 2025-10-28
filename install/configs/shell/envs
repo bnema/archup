@@ -1,14 +1,14 @@
-# Bat configuration
+# Bat configuration - use centralized theme symlink
 if command -v bat &> /dev/null; then
-  export BAT_THEME="Bleu"
+  export BAT_THEME="current"
 fi
 
 # FZF configuration
 # Note: Do NOT add --preview to FZF_DEFAULT_OPTS as it breaks non-file operations
 if command -v fzf &> /dev/null; then
-  # Source FZF Bleu theme if available
-  if [ -f "$HOME/.local/share/archup/current/theme/fzf/bleu.sh" ]; then
-    source "$HOME/.local/share/archup/current/theme/fzf/bleu.sh"
+  # Source FZF theme from centralized theme symlink
+  if [ -f "$HOME/.local/share/archup/themes/current/fzf.sh" ]; then
+    source "$HOME/.local/share/archup/themes/current/fzf.sh"
   fi
 
   # CTRL-T file/directory picker options

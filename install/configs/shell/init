@@ -1,6 +1,6 @@
-# Starship prompt
+# Starship prompt - use centralized theme symlink
 if command -v starship &> /dev/null; then
-  export STARSHIP_CONFIG="$HOME/.local/share/archup/default/starship.toml"
+  export STARSHIP_CONFIG="$HOME/.local/share/archup/themes/current/starship.toml"
   eval "$(starship init bash)"
 fi
 
