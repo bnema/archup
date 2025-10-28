@@ -5,8 +5,10 @@
 snapper
 snap-pac
 
-# Go toolchain (for AUR helper)
+# Build tools (for AUR helpers)
+base-devel
 go
+cargo
 
 # System utilities
 dosfstools

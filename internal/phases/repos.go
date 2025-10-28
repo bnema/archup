@@ -215,11 +215,12 @@ func (p *ReposPhase) enableChaoticAUR(progressChan chan<- ProgressUpdate) error 
 
 	p.SendOutput(progressChan, "[OK] Chaotic GPG key imported")
 
-	// Install chaotic-keyring and chaotic-mirrorlist
-	installCmd := fmt.Sprintf("pacman -U --noconfirm '%s' '%s'", keyringURL, mirrorlistURL)
-	switch err := system.ChrootExec(p.logger.LogPath(),config.PathMnt, installCmd); {
-	case err != nil:
-		return fmt.Errorf("failed to install Chaotic packages: %w", err)
+	// Download and install chaotic-keyring and chaotic-mirrorlist
+	p.SendOutput(progressChan, "Downloading Chaotic-AUR packages...")
+	if err := system.DownloadAndInstallPackages(p.logger.LogPath(), config.PathMnt, keyringURL, mirrorlistURL); err != nil {
+		p.logger.Warn("Chaotic-AUR packages unavailable, skipping", "error", err)
+		p.SendOutput(progressChan, "[WARN] Chaotic-AUR unavailable, skipping (AUR helper will be built from source)")
+		return nil
 	}
 
 	p.SendOutput(progressChan, "[OK] Chaotic packages installed")
@@ -339,24 +340,27 @@ func (p *ReposPhase) loadExtraPackages() ([]string, error) {
 
 // installAURHelper installs the selected AUR helper
 func (p *ReposPhase) installAURHelper(progressChan chan<- ProgressUpdate) error {
-	p.SendOutput(progressChan, fmt.Sprintf("Installing %s AUR helper...", p.config.AURHelper))
+	p.SendOutput(progressChan, fmt.Sprintf("Building %s from AUR...", p.config.AURHelper))
 
-	// Install AUR helper from Chaotic-AUR
-	installCmd := fmt.Sprintf("pacman -S --noconfirm %s", p.config.AURHelper)
-	switch err := system.ChrootExec(p.logger.LogPath(),config.PathMnt, installCmd); {
-	case err != nil:
-		return fmt.Errorf("failed to install %s: %w", p.config.AURHelper, err)
+	// Build AUR helper from source
+	buildCmd := fmt.Sprintf(`
+		su - %s -c '
+			cd /tmp &&
+			git clone https://aur.archlinux.org/%s.git &&
+			cd %s &&
+			makepkg -si --noconfirm
+		'
+	`, p.config.Username, p.config.AURHelper, p.config.AURHelper)
+
+	if err := system.ChrootExec(p.logger.LogPath(), config.PathMnt, buildCmd); err != nil {
+		return fmt.Errorf("failed to build %s: %w", p.config.AURHelper, err)
 	}
 
-	// Verify installation
-	verifyCmd := fmt.Sprintf("su - %s -c '%s --version'", p.config.Username, p.config.AURHelper)
-	result := system.RunSimple("arch-chroot", config.PathMnt, "sh", "-c", verifyCmd)
-	switch {
-	case result.ExitCode != 0:
-		return fmt.Errorf("%s verification failed", p.config.AURHelper)
-	}
+	// Cleanup
+	cleanupCmd := fmt.Sprintf("rm -rf /home/%s/tmp/%s", p.config.Username, p.config.AURHelper)
+	system.ChrootExec(p.logger.LogPath(), config.PathMnt, cleanupCmd)
 
-	p.SendOutput(progressChan, fmt.Sprintf("[OK] %s installed successfully", p.config.AURHelper))
+	p.SendOutput(progressChan, fmt.Sprintf("[OK] %s built and installed", p.config.AURHelper))
 
 	return nil
 }

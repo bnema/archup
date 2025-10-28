@@ -42,3 +42,24 @@ func PacmanRemove(logPath string, packages ...string) error {
 	}
 	return nil
 }
+
+// DownloadAndInstallPackages downloads packages from URLs using curl and installs them in chroot
+func DownloadAndInstallPackages(logPath, chrootPath string, urls ...string) error {
+	if len(urls) == 0 {
+		return fmt.Errorf("no URLs provided")
+	}
+
+	// Download and install in one command
+	cmd := "mkdir -p /tmp && "
+	for i, url := range urls {
+		cmd += fmt.Sprintf("curl -L -f -o /tmp/pkg%d.tar.zst '%s' && ", i, url)
+	}
+	cmd += "pacman -U --noconfirm /tmp/pkg*.tar.zst && rm -f /tmp/pkg*.tar.zst"
+
+	if err := ChrootExec(logPath, chrootPath, cmd); err != nil {
+		ChrootExec(logPath, chrootPath, "rm -f /tmp/pkg*.tar.zst") // Cleanup
+		return err
+	}
+
+	return nil
+}
