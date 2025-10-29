@@ -468,6 +468,37 @@ func (p *PostInstallPhase) configureShell(progressChan chan<- ProgressUpdate) er
 		return fmt.Errorf("failed to set ownership: %w", err)
 	}
 
+	// Clone bleu-theme repository
+	p.SendOutput(progressChan, "Cloning bleu-theme repository...")
+	themesDir := filepath.Join(userHome, ".local", "share", "archup", "themes")
+	bleuThemeDir := filepath.Join(themesDir, "bleu")
+	currentDir := filepath.Join(userHome, ".local", "share", "archup", "current")
+
+	cloneCmd := fmt.Sprintf("su - %s -c 'mkdir -p %s && git clone https://github.com/bnema/bleu-theme.git %s'",
+		username, themesDir, bleuThemeDir)
+	switch err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, cloneCmd); {
+	case err != nil:
+		p.SendOutput(progressChan, "[WARN] Failed to clone bleu-theme repository")
+	default:
+		p.SendOutput(progressChan, "[OK] Bleu-theme repository cloned")
+	}
+
+	// Create current theme symlink
+	symlinkCmd := fmt.Sprintf("su - %s -c 'mkdir -p %s && ln -snf %s %s/theme'",
+		username, currentDir, bleuThemeDir, currentDir)
+	switch err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, symlinkCmd); {
+	case err != nil:
+		p.SendOutput(progressChan, "[WARN] Failed to create theme symlink")
+	}
+
+	// Apply themes to CLI tools
+	p.SendOutput(progressChan, "Applying themes to CLI tools...")
+	switch err := p.applyThemes(progressChan, username, userHome); {
+	case err != nil:
+		// Non-fatal, log and continue
+		p.SendOutput(progressChan, "[WARN] Some themes failed to apply")
+	}
+
 	// Configure git delta
 	gitCommands := []string{
 		fmt.Sprintf("su - %s -c 'git config --global core.pager delta'", username),
@@ -495,12 +526,12 @@ func (p *PostInstallPhase) configureShell(progressChan chan<- ProgressUpdate) er
 // copyShellTemplates copies shell config templates to user directory
 func (p *PostInstallPhase) copyShellTemplates(archupDefault, archupDefaultBash string) error {
 	templates := map[string]string{
-		config.ShellConfigTemplate:    filepath.Join(archupDefaultBash, "shell"),
-		config.ShellInitTemplate:      filepath.Join(archupDefaultBash, "init"),
-		config.ShellAliasesTemplate:   filepath.Join(archupDefaultBash, "aliases"),
-		config.ShellEnvsTemplate:      filepath.Join(archupDefaultBash, "envs"),
-		config.ShellRcTemplate:        filepath.Join(archupDefaultBash, "rc"),
-		config.StarshipConfigTemplate: filepath.Join(archupDefault, "starship.toml"),
+		config.ShellConfigTemplate:  filepath.Join(archupDefaultBash, "shell"),
+		config.ShellInitTemplate:    filepath.Join(archupDefaultBash, "init"),
+		config.ShellAliasesTemplate: filepath.Join(archupDefaultBash, "aliases"),
+		config.ShellEnvsTemplate:    filepath.Join(archupDefaultBash, "envs"),
+		config.ShellRcTemplate:      filepath.Join(archupDefaultBash, "rc"),
+		// Note: starship.toml is now copied from bleu-theme in applyThemes()
 	}
 
 	for template, dest := range templates {
@@ -533,6 +564,66 @@ func (p *PostInstallPhase) setShellOwnership(userHome, username string) error {
 	chownCmd := fmt.Sprintf("chown -R %s:%s %s/.local %s/.bashrc",
 		username, username, relativeHome, relativeHome)
 	return p.chrExec.ChrootExec(p.logger.LogPath(),config.PathMnt, chownCmd)
+}
+
+// applyThemes applies bleu-theme to CLI tools
+func (p *PostInstallPhase) applyThemes(progressChan chan<- ProgressUpdate, username, userHome string) error {
+	themeDir := filepath.Join(userHome, ".local", "share", "archup", "current", "theme")
+	archupDefault := filepath.Join(userHome, ".local", "share", "archup", "default")
+
+	// Starship theme - copy to archup default location
+	p.SendOutput(progressChan, "Configuring starship theme...")
+	starshipCmd := fmt.Sprintf("su - %s -c 'cp %s/starship/bleu.toml %s/starship.toml'",
+		username, themeDir, archupDefault)
+	p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, starshipCmd)
+
+	// Eza theme
+	p.SendOutput(progressChan, "Configuring eza theme...")
+	ezaConfigDir := fmt.Sprintf("%s/.config/eza", userHome)
+	ezaCommands := []string{
+		fmt.Sprintf("su - %s -c 'mkdir -p %s'", username, ezaConfigDir),
+		fmt.Sprintf("su - %s -c 'cp %s/eza/theme.yml %s/'", username, themeDir, ezaConfigDir),
+	}
+	for _, cmd := range ezaCommands {
+		p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, cmd)
+	}
+
+	// Bat theme
+	p.SendOutput(progressChan, "Configuring bat theme...")
+	batThemeDir := fmt.Sprintf("%s/.config/bat/themes", userHome)
+	batCommands := []string{
+		fmt.Sprintf("su - %s -c 'mkdir -p %s'", username, batThemeDir),
+		fmt.Sprintf("su - %s -c 'cp %s/bat/bleu.tmTheme %s/'", username, themeDir, batThemeDir),
+		fmt.Sprintf("su - %s -c 'bat cache --build'", username),
+	}
+	for _, cmd := range batCommands {
+		p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, cmd)
+	}
+
+	// Btop theme
+	p.SendOutput(progressChan, "Configuring btop theme...")
+	btopThemeDir := fmt.Sprintf("%s/.config/btop/themes", userHome)
+	btopCommands := []string{
+		fmt.Sprintf("su - %s -c 'mkdir -p %s'", username, btopThemeDir),
+		fmt.Sprintf("su - %s -c 'cp %s/btop/bleu.theme %s/'", username, themeDir, btopThemeDir),
+	}
+	for _, cmd := range btopCommands {
+		p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, cmd)
+	}
+
+	// Yazi theme
+	p.SendOutput(progressChan, "Configuring yazi theme...")
+	yaziFlavorDir := fmt.Sprintf("%s/.config/yazi/flavors/bleu", userHome)
+	yaziCommands := []string{
+		fmt.Sprintf("su - %s -c 'mkdir -p %s'", username, yaziFlavorDir),
+		fmt.Sprintf("su - %s -c 'cp %s/yazi/bleu.toml %s/flavor.toml'", username, themeDir, yaziFlavorDir),
+	}
+	for _, cmd := range yaziCommands {
+		p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, cmd)
+	}
+
+	p.SendOutput(progressChan, "[OK] CLI themes configured")
+	return nil
 }
 
 // verifyInstallation performs comprehensive verification

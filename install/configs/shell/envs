@@ -1,11 +1,16 @@
 # Bat configuration
 if command -v bat &> /dev/null; then
-  export BAT_THEME="TwoDark"
+  export BAT_THEME="Bleu"
 fi
 
 # FZF configuration
 # Note: Do NOT add --preview to FZF_DEFAULT_OPTS as it breaks non-file operations
 if command -v fzf &> /dev/null; then
+  # Source FZF Bleu theme if available
+  if [ -f "$HOME/.local/share/archup/current/theme/fzf/bleu.sh" ]; then
+    source "$HOME/.local/share/archup/current/theme/fzf/bleu.sh"
+  fi
+
   # CTRL-T file/directory picker options
   if command -v bat &> /dev/null; then
     export FZF_CTRL_T_OPTS="--preview 'bat -n --color=always {}' --preview-window right:60%:wrap"
