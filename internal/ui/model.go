@@ -173,8 +173,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.currentForm.Init()
 
 	case phaseCompleteMsg:
-		switch {
-		case msg.err != nil:
+		if msg.err != nil {
 			m.logger.Error("Phase execution failed", "error", msg.err)
 			m.err = msg.err
 			m.installEndTime = time.Since(m.installStartTime)
@@ -224,8 +223,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.currentForm = f
 
 				// Check if form is completed
-				switch {
-				case m.currentForm.State == huh.StateCompleted:
+				if m.currentForm.State == huh.StateCompleted {
 					return m, m.handleFormComplete()
 				}
 			}
@@ -293,8 +291,7 @@ func (m *Model) handleFormComplete() tea.Cmd {
 			"use_same_password_for_encryption", m.config.UseSamePasswordForEncryption)
 
 		// Handle encryption password setting based on checkbox
-		switch {
-		case m.config.UseSamePasswordForEncryption:
+		if m.config.UseSamePasswordForEncryption {
 			m.config.EncryptPassword = m.config.UserPassword
 		}
 

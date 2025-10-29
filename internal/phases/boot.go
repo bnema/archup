@@ -34,15 +34,13 @@ func NewBootPhase(cfg *config.Config, log *logger.Logger, fs interfaces.FileSyst
 func (p *BootPhase) PreCheck() error {
 	// Verify /mnt is mounted
 	result := p.sysExec.RunSimple("mountpoint", "-q", config.PathMnt)
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("%s is not mounted", config.PathMnt)
 	}
 
 	// Verify boot partition is mounted
 	result = p.sysExec.RunSimple("mountpoint", "-q", config.PathMntBoot)
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("%s is not mounted", config.PathMntBoot)
 	}
 
@@ -54,8 +52,7 @@ func (p *BootPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResult {
 	p.SendProgress(progressChan, "Starting bootloader installation...", 1, 4)
 
 	// Step 1: Configure initramfs
-	switch err := p.configureMkinitcpio(progressChan); {
-	case err != nil:
+	if err := p.configureMkinitcpio(progressChan); err != nil {
 		p.SendError(progressChan, err)
 		return PhaseResult{Success: false, Error: err}
 	}
@@ -63,8 +60,7 @@ func (p *BootPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResult {
 	p.SendProgress(progressChan, "Installing Limine bootloader...", 2, 4)
 
 	// Step 2: Install Limine
-	switch err := p.installLimine(progressChan); {
-	case err != nil:
+	if err := p.installLimine(progressChan); err != nil {
 		p.SendError(progressChan, err)
 		return PhaseResult{Success: false, Error: err}
 	}
@@ -72,8 +68,7 @@ func (p *BootPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResult {
 	p.SendProgress(progressChan, "Configuring Limine...", 3, 4)
 
 	// Step 3: Configure Limine
-	switch err := p.configureLimine(progressChan); {
-	case err != nil:
+	if err := p.configureLimine(progressChan); err != nil {
 		p.SendError(progressChan, err)
 		return PhaseResult{Success: false, Error: err}
 	}
@@ -81,8 +76,7 @@ func (p *BootPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResult {
 	p.SendProgress(progressChan, "Creating UEFI boot entry...", 4, 4)
 
 	// Step 4: Create UEFI boot entry
-	switch err := p.createUEFIEntry(progressChan); {
-	case err != nil:
+	if err := p.createUEFIEntry(progressChan); err != nil {
 		p.SendError(progressChan, err)
 		return PhaseResult{Success: false, Error: err}
 	}
@@ -99,8 +93,7 @@ func (p *BootPhase) configureMkinitcpio(progressChan chan<- ProgressUpdate) erro
 
 	// Read current mkinitcpio.conf
 	content, err := p.fs.ReadFile(config.PathMntEtcMkinitcpio)
-	switch {
-	case err != nil:
+	if err != nil {
 		return fmt.Errorf("failed to read mkinitcpio.conf: %w", err)
 	}
 
@@ -120,15 +113,13 @@ func (p *BootPhase) configureMkinitcpio(progressChan chan<- ProgressUpdate) erro
 	newContent := hooksRegex.ReplaceAllString(string(content), hooks)
 
 	// Write updated config
-	switch err := p.fs.WriteFile(config.PathMntEtcMkinitcpio, []byte(newContent), 0644); {
-	case err != nil:
+	if err := p.fs.WriteFile(config.PathMntEtcMkinitcpio, []byte(newContent), 0644); err != nil {
 		return fmt.Errorf("failed to write mkinitcpio.conf: %w", err)
 	}
 
 	// Regenerate initramfs
 	p.SendOutput(progressChan, "Regenerating initramfs...")
-	switch err := p.chrExec.ChrootExec(p.logger.LogPath(),config.PathMnt, "mkinitcpio -P"); {
-	case err != nil:
+	if err := p.chrExec.ChrootExec(p.logger.LogPath(),config.PathMnt, "mkinitcpio -P"); err != nil {
 		return fmt.Errorf("failed to regenerate initramfs: %w", err)
 	}
 
@@ -151,8 +142,7 @@ func (p *BootPhase) installLimine(progressChan chan<- ProgressUpdate) error {
 	}
 
 	// Create Limine directory
-	switch err := p.fs.MkdirAll(config.PathMntBootEFILimine, 0755); {
-	case err != nil:
+	if err := p.fs.MkdirAll(config.PathMntBootEFILimine, 0755); err != nil {
 		return fmt.Errorf("failed to create Limine directory: %w", err)
 	}
 
@@ -162,8 +152,7 @@ func (p *BootPhase) installLimine(progressChan chan<- ProgressUpdate) error {
 
 	cpCmd := fmt.Sprintf("cp %s %s", srcBootloader, dstBootloader)
 	result := p.logger.ExecCommand("sh", "-c", cpCmd)
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("failed to copy Limine bootloader: %w", result.Error)
 	}
 
@@ -179,8 +168,7 @@ func (p *BootPhase) configureLimine(progressChan chan<- ProgressUpdate) error {
 	// Get root partition UUID
 	rootPartition := p.config.RootPartition
 	result := p.sysExec.RunSimple("blkid", "-s", "UUID", "-o", "value", rootPartition)
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("failed to get root partition UUID: %w", result.Error)
 	}
 
@@ -199,8 +187,7 @@ func (p *BootPhase) configureLimine(progressChan chan<- ProgressUpdate) error {
 	}
 
 	// Add AMD-specific kernel parameters if configured
-	switch {
-	case p.config.AMDPState != "":
+	if p.config.AMDPState != "" {
 		// Detect CPU to get Zen generation for proper kernel params
 		cpuInfo, err := p.sysExec.DetectCPUInfo()
 		var amdParams string
@@ -224,8 +211,7 @@ func (p *BootPhase) configureLimine(progressChan chan<- ProgressUpdate) error {
 	// Read Limine config template
 	templatePath := p.getInstallPath(config.LimineConfigTemplate)
 	templateContent, err := p.fs.ReadFile(templatePath)
-	switch {
-	case err != nil:
+	if err != nil {
 		return fmt.Errorf("failed to read Limine template: %w", err)
 	}
 
@@ -240,8 +226,7 @@ func (p *BootPhase) configureLimine(progressChan chan<- ProgressUpdate) error {
 
 	// Write Limine configuration
 	limineConfigPath := filepath.Join(config.PathMntBootEFILimine, config.FileLimineConfig)
-	switch err := p.fs.WriteFile(limineConfigPath, []byte(limineConfig), 0644); {
-	case err != nil:
+	if err := p.fs.WriteFile(limineConfigPath, []byte(limineConfig), 0644); err != nil {
 		return fmt.Errorf("failed to write Limine config: %w", err)
 	}
 
@@ -256,8 +241,7 @@ func (p *BootPhase) createUEFIEntry(progressChan chan<- ProgressUpdate) error {
 
 	// Extract EFI partition number
 	efiPartNum := p.extractPartitionNumber(p.config.EFIPartition)
-	switch {
-	case efiPartNum == "":
+	if efiPartNum == "" {
 		return fmt.Errorf("failed to extract EFI partition number from %s", p.config.EFIPartition)
 	}
 
@@ -269,8 +253,7 @@ func (p *BootPhase) createUEFIEntry(progressChan chan<- ProgressUpdate) error {
 		config.UEFIBootLoader,
 	)
 
-	switch err := p.chrExec.ChrootExec(p.logger.LogPath(),config.PathMnt, efiCmd); {
-	case err != nil:
+	if err := p.chrExec.ChrootExec(p.logger.LogPath(),config.PathMnt, efiCmd); err != nil {
 		return fmt.Errorf("failed to create UEFI boot entry: %w", err)
 	}
 
@@ -299,15 +282,13 @@ func (p *BootPhase) extractPartitionNumber(partPath string) string {
 func (p *BootPhase) PostCheck() error {
 	// Verify Limine bootloader exists
 	bootloaderPath := filepath.Join(config.PathMntBootEFILimine, config.FileLimineBootloader)
-	switch _, err := p.fs.Stat(bootloaderPath); {
-	case p.fs.IsNotExist(err):
+	if _, err := p.fs.Stat(bootloaderPath); p.fs.IsNotExist(err) {
 		return fmt.Errorf("Limine bootloader was not installed")
 	}
 
 	// Verify Limine config exists
 	configPath := filepath.Join(config.PathMntBootEFILimine, config.FileLimineConfig)
-	switch _, err := p.fs.Stat(configPath); {
-	case p.fs.IsNotExist(err):
+	if _, err := p.fs.Stat(configPath); p.fs.IsNotExist(err) {
 		return fmt.Errorf("Limine config was not created")
 	}
 
@@ -317,8 +298,7 @@ func (p *BootPhase) PostCheck() error {
 // Rollback for boot phase
 func (p *BootPhase) Rollback() error {
 	// Remove Limine files if they exist
-	switch err := p.fs.RemoveAll(config.PathMntBootEFILimine); {
-	case err != nil:
+	if err := p.fs.RemoveAll(config.PathMntBootEFILimine); err != nil {
 		p.SendOutput(nil, fmt.Sprintf("[WARN] Failed to remove Limine directory: %v", err))
 	}
 

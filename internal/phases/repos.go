@@ -69,21 +69,18 @@ func NewReposPhase(cfg *config.Config, log *logger.Logger, fs interfaces.FileSys
 // PreCheck validates repos prerequisites
 func (p *ReposPhase) PreCheck() error {
 	// Validate AUR helper first (config validation before system checks)
-	switch {
-	case p.config.AURHelper != "" && !IsValidAURHelper(p.config.AURHelper):
+	if p.config.AURHelper != "" && !IsValidAURHelper(p.config.AURHelper) {
 		return fmt.Errorf("invalid AUR helper: %s (must be one of: %v)", p.config.AURHelper, ValidAURHelpers)
 	}
 
 	// Verify /mnt is mounted
 	result := p.sysExec.RunSimple("mountpoint", "-q", config.PathMnt)
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("%s is not mounted", config.PathMnt)
 	}
 
 	// Verify pacman.conf exists
-	switch _, err := p.fs.Stat(config.PathMntEtcPacmanConf); {
-	case p.fs.IsNotExist(err):
+	if _, err := p.fs.Stat(config.PathMntEtcPacmanConf); p.fs.IsNotExist(err) {
 		return fmt.Errorf("pacman.conf not found")
 	}
 
@@ -97,8 +94,7 @@ func (p *ReposPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResult {
 	// Step 1: Enable multilib (optional)
 	switch {
 	case p.config.EnableMultilib:
-		switch err := p.enableMultilib(progressChan); {
-		case err != nil:
+		if err := p.enableMultilib(progressChan); err != nil {
 			p.SendError(progressChan, err)
 			return PhaseResult{Success: false, Error: err}
 		}
@@ -108,8 +104,7 @@ func (p *ReposPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResult {
 
 	// Step 2: Sync package databases after enabling multilib
 	p.SendProgress(progressChan, "Syncing package databases...", 2, 5)
-	switch err := p.syncDatabases(progressChan); {
-	case err != nil:
+	if err := p.syncDatabases(progressChan); err != nil {
 		p.logger.Warn("Database sync failed", "error", err)
 		p.SendOutput(progressChan, fmt.Sprintf("[WARN] Database sync failed: %v", err))
 		// Don't fail the phase, just warn
@@ -118,8 +113,7 @@ func (p *ReposPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResult {
 	p.SendProgress(progressChan, "Installing extra packages...", 3, 5)
 
 	// Step 3: Install extra packages (always, from official repos)
-	switch err := p.installExtraPackages(progressChan); {
-	case err != nil:
+	if err := p.installExtraPackages(progressChan); err != nil {
 		// Don't fail the phase, just warn
 		p.logger.Warn("Extra packages installation failed", "error", err)
 		p.SendOutput(progressChan, fmt.Sprintf("[WARN] Some extra packages failed: %v", err))
@@ -130,8 +124,7 @@ func (p *ReposPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResult {
 	// Step 4: Enable Chaotic-AUR (optional)
 	switch {
 	case p.config.EnableChaotic:
-		switch err := p.enableChaoticAUR(progressChan); {
-		case err != nil:
+		if err := p.enableChaoticAUR(progressChan); err != nil {
 			p.SendError(progressChan, err)
 			return PhaseResult{Success: false, Error: err}
 		}
@@ -144,8 +137,7 @@ func (p *ReposPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResult {
 	// Step 5: Install AUR helper (optional)
 	switch {
 	case p.config.AURHelper != "":
-		switch err := p.installAURHelper(progressChan); {
-		case err != nil:
+		if err := p.installAURHelper(progressChan); err != nil {
 			p.SendError(progressChan, err)
 			return PhaseResult{Success: false, Error: err}
 		}
@@ -163,8 +155,7 @@ func (p *ReposPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResult {
 func (p *ReposPhase) syncDatabases(progressChan chan<- ProgressUpdate) error {
 	p.SendOutput(progressChan, "Syncing package databases...")
 
-	switch err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, "pacman -Sy --noconfirm"); {
-	case err != nil:
+	if err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, "pacman -Sy --noconfirm"); err != nil {
 		return fmt.Errorf("failed to sync databases: %w", err)
 	}
 
@@ -178,8 +169,7 @@ func (p *ReposPhase) enableMultilib(progressChan chan<- ProgressUpdate) error {
 
 	// Read pacman.conf
 	content, err := p.fs.ReadFile(config.PathMntEtcPacmanConf)
-	switch {
-	case err != nil:
+	if err != nil {
 		return fmt.Errorf("failed to read pacman.conf: %w", err)
 	}
 
@@ -189,8 +179,7 @@ func (p *ReposPhase) enableMultilib(progressChan chan<- ProgressUpdate) error {
 	hasMultilibSection := strings.Contains(contentStr, "[multilib]") && !strings.Contains(contentStr, "#[multilib]")
 	hasMultilibInclude := strings.Contains(contentStr, pacmanMultilibIncludeEnabled)
 
-	switch {
-	case hasMultilibSection && hasMultilibInclude:
+	if hasMultilibSection && hasMultilibInclude {
 		p.SendOutput(progressChan, "[OK] Multilib already enabled")
 		return nil
 	}
@@ -221,8 +210,7 @@ func (p *ReposPhase) enableMultilib(progressChan chan<- ProgressUpdate) error {
 	contentStr = strings.Join(lines, "\n")
 
 	// Write updated config
-	switch err := p.fs.WriteFile(config.PathMntEtcPacmanConf, []byte(contentStr), 0644); {
-	case err != nil:
+	if err := p.fs.WriteFile(config.PathMntEtcPacmanConf, []byte(contentStr), 0644); err != nil {
 		return fmt.Errorf("failed to write pacman.conf: %w", err)
 	}
 
@@ -236,8 +224,7 @@ func (p *ReposPhase) loadChaoticConfig() error {
 	configPath := p.getInstallPath(config.ChaoticConfigFile)
 
 	file, err := p.fs.Open(configPath)
-	switch {
-	case err != nil:
+	if err != nil {
 		return fmt.Errorf("failed to open chaotic config: %w", err)
 	}
 	defer file.Close()
@@ -256,14 +243,12 @@ func (p *ReposPhase) loadChaoticConfig() error {
 
 		// Parse KEY=VALUE
 		parts := strings.SplitN(line, "=", 2)
-		switch {
-		case len(parts) == 2:
+		if len(parts) == 2 {
 			p.chaoticConfig[parts[0]] = parts[1]
 		}
 	}
 
-	switch err := scanner.Err(); {
-	case err != nil:
+	if err := scanner.Err(); err != nil {
 		return fmt.Errorf("error reading chaotic config: %w", err)
 	}
 
@@ -275,8 +260,7 @@ func (p *ReposPhase) enableChaoticAUR(progressChan chan<- ProgressUpdate) error 
 	p.SendOutput(progressChan, "Adding Chaotic-AUR repository...")
 
 	// Load configuration for GPG key settings
-	switch err := p.loadChaoticConfig(); {
-	case err != nil:
+	if err := p.loadChaoticConfig(); err != nil {
 		return fmt.Errorf("failed to load Chaotic config: %w", err)
 	}
 
@@ -287,8 +271,7 @@ func (p *ReposPhase) enableChaoticAUR(progressChan chan<- ProgressUpdate) error 
 
 	// Import GPG key
 	recvKeyCmd := fmt.Sprintf("pacman-key --recv-key %s --keyserver %s", keyID, keyserver)
-	switch err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, recvKeyCmd); {
-	case err != nil:
+	if err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, recvKeyCmd); err != nil {
 		p.logger.Warn("Failed to receive Chaotic GPG key, skipping Chaotic-AUR", "error", err)
 		p.SendOutput(progressChan, "[WARN] Chaotic-AUR unavailable (GPG key fetch failed)")
 		return nil // Don't fail, just skip
@@ -296,8 +279,7 @@ func (p *ReposPhase) enableChaoticAUR(progressChan chan<- ProgressUpdate) error 
 
 	// Locally sign the key
 	lsignKeyCmd := fmt.Sprintf("pacman-key --lsign-key %s", keyID)
-	switch err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, lsignKeyCmd); {
-	case err != nil:
+	if err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, lsignKeyCmd); err != nil {
 		p.logger.Warn("Failed to sign Chaotic GPG key, skipping Chaotic-AUR", "error", err)
 		p.SendOutput(progressChan, "[WARN] Chaotic-AUR unavailable (GPG key signing failed)")
 		return nil // Don't fail, just skip
@@ -308,8 +290,7 @@ func (p *ReposPhase) enableChaoticAUR(progressChan chan<- ProgressUpdate) error 
 	// Fetch live mirrorlist from GitLab
 	p.SendOutput(progressChan, "Fetching Chaotic-AUR mirrors...")
 	mirrors, err := system.FetchChaoticMirrorlist()
-	switch {
-	case err != nil:
+	if err != nil {
 		p.logger.Warn("Failed to fetch live Chaotic mirrors from GitLab, skipping Chaotic-AUR", "error", err)
 		p.SendOutput(progressChan, "[WARN] Chaotic-AUR unavailable (mirror fetch failed), skipping")
 		return nil // Don't fail, just skip
@@ -353,8 +334,7 @@ func (p *ReposPhase) enableChaoticAUR(progressChan chan<- ProgressUpdate) error 
 	// Download and install chaotic-keyring and chaotic-mirrorlist
 	p.SendOutput(progressChan, "Downloading Chaotic-AUR packages...")
 
-	switch err := p.chrExec.DownloadAndInstallPackages(p.logger.LogPath(), config.PathMnt, urls...); {
-	case err != nil:
+	if err := p.chrExec.DownloadAndInstallPackages(p.logger.LogPath(), config.PathMnt, urls...); err != nil {
 		p.logger.Warn("Failed to download/install Chaotic packages, skipping Chaotic-AUR", "error", err)
 		p.SendOutput(progressChan, "[WARN] Chaotic-AUR unavailable (package download failed), skipping")
 		return nil // IMPORTANT: Exit early, don't add to pacman.conf
@@ -364,8 +344,7 @@ func (p *ReposPhase) enableChaoticAUR(progressChan chan<- ProgressUpdate) error 
 
 	// Add Chaotic-AUR to pacman.conf
 	content, err := p.fs.ReadFile(config.PathMntEtcPacmanConf)
-	switch {
-	case err != nil:
+	if err != nil {
 		return fmt.Errorf("failed to read pacman.conf: %w", err)
 	}
 
@@ -380,8 +359,7 @@ func (p *ReposPhase) enableChaoticAUR(progressChan chan<- ProgressUpdate) error 
 		chaoticSection := fmt.Sprintf("\n# Chaotic-AUR repository\n[%s]\nInclude = %s\n", repoName, mirrorlistPath)
 		contentStr += chaoticSection
 
-		switch err := p.fs.WriteFile(config.PathMntEtcPacmanConf, []byte(contentStr), 0644); {
-		case err != nil:
+		if err := p.fs.WriteFile(config.PathMntEtcPacmanConf, []byte(contentStr), 0644); err != nil {
 			return fmt.Errorf("failed to write pacman.conf: %w", err)
 		}
 
@@ -389,16 +367,14 @@ func (p *ReposPhase) enableChaoticAUR(progressChan chan<- ProgressUpdate) error 
 	}
 
 	// Update package databases
-	switch err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, "pacman -Sy --noconfirm"); {
-	case err != nil:
+	if err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, "pacman -Sy --noconfirm"); err != nil {
 		return fmt.Errorf("failed to update package databases: %w", err)
 	}
 
 	// Verify Chaotic-AUR is working
 	verifyCmd := fmt.Sprintf("pacman -Sl %s", repoName)
 	result := p.sysExec.RunSimple("arch-chroot", config.PathMnt, "sh", "-c", verifyCmd)
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		p.SendOutput(progressChan, "[WARN] Chaotic-AUR verification failed")
 		return fmt.Errorf("Chaotic-AUR verification failed")
 	}
@@ -447,8 +423,7 @@ func (p *ReposPhase) installExtraPackages(progressChan chan<- ProgressUpdate) er
 
 	// Try batch installation first
 	installCmd := fmt.Sprintf("pacman -S --noconfirm --needed %s", strings.Join(packages, " "))
-	switch err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, installCmd); {
-	case err == nil:
+	if err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, installCmd); err == nil {
 		p.logger.Info("Extra packages installed successfully", "count", len(packages))
 		p.SendOutput(progressChan, fmt.Sprintf("[OK] Installed %d extra packages", len(packages)))
 		return nil
@@ -461,8 +436,7 @@ func (p *ReposPhase) installExtraPackages(progressChan chan<- ProgressUpdate) er
 	successCount, failedPkgs := p.installPackagesIndividually(packages, progressChan)
 
 	// Report results
-	switch {
-	case len(failedPkgs) > 0:
+	if len(failedPkgs) > 0 {
 		p.SendOutput(progressChan, fmt.Sprintf("[WARN] Failed to install: %s", strings.Join(failedPkgs, ", ")))
 		p.logger.Warn("Some packages failed to install", "failed_count", len(failedPkgs), "packages", failedPkgs)
 	}
@@ -484,8 +458,7 @@ func (p *ReposPhase) loadExtraPackages() ([]string, error) {
 	packageFile := p.getInstallPath(config.ExtraPackagesFile)
 
 	file, err := p.fs.Open(packageFile)
-	switch {
-	case err != nil:
+	if err != nil {
 		return nil, fmt.Errorf("failed to open %s: %w", packageFile, err)
 	}
 	defer file.Close()
@@ -507,8 +480,7 @@ func (p *ReposPhase) loadExtraPackages() ([]string, error) {
 		packages = append(packages, line)
 	}
 
-	switch err := scanner.Err(); {
-	case err != nil:
+	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("error reading package file: %w", err)
 	}
 
@@ -557,8 +529,7 @@ func (p *ReposPhase) ensureBuildDeps(progressChan chan<- ProgressUpdate, helper 
 
 	// Always need base-devel and git
 	baseCmd := "pacman -S --needed --noconfirm base-devel git"
-	switch err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, baseCmd); {
-	case err != nil:
+	if err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, baseCmd); err != nil {
 		p.logger.Warn("Failed to install base-devel", "error", err)
 		return fmt.Errorf("failed to install base-devel: %w", err)
 	}
@@ -575,8 +546,7 @@ func (p *ReposPhase) ensureBuildDeps(progressChan chan<- ProgressUpdate, helper 
 	if langDeps != "" {
 		p.SendOutput(progressChan, fmt.Sprintf("Installing %s dependencies...", helper))
 		depCmd := fmt.Sprintf("pacman -S --needed --noconfirm %s", langDeps)
-		switch err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, depCmd); {
-		case err != nil:
+		if err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, depCmd); err != nil {
 			p.logger.Warn("Failed to install language dependencies", "helper", helper, "deps", langDeps, "error", err)
 			return fmt.Errorf("failed to install %s: %w", langDeps, err)
 		}
@@ -595,16 +565,14 @@ func (p *ReposPhase) buildFromAUR(progressChan chan<- ProgressUpdate, helper str
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	switch err := p.chrExec.ChrootExecWithContext(ctx, p.logger.LogPath(), config.PathMnt, buildCmd); {
-	case err != nil:
+	if err := p.chrExec.ChrootExecWithContext(ctx, p.logger.LogPath(), config.PathMnt, buildCmd); err != nil {
 		return fmt.Errorf("build failed or timed out: %w", err)
 	}
 
 	// Install built package
 	p.SendOutput(progressChan, fmt.Sprintf("Installing %s...", helper))
 	installCmd := fmt.Sprintf("pacman -U --noconfirm /tmp/%s/*.pkg.tar.zst", helper)
-	switch err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, installCmd); {
-	case err != nil:
+	if err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, installCmd); err != nil {
 		return fmt.Errorf("failed to install %s: %w", helper, err)
 	}
 
@@ -625,8 +593,7 @@ func (p *ReposPhase) getInstallPath(filename string) string {
 func (p *ReposPhase) PostCheck() error {
 	// Verify pacman.conf was modified
 	content, err := p.fs.ReadFile(config.PathMntEtcPacmanConf)
-	switch {
-	case err != nil:
+	if err != nil {
 		return fmt.Errorf("failed to read pacman.conf: %w", err)
 	}
 
@@ -645,8 +612,7 @@ func (p *ReposPhase) PostCheck() error {
 	switch {
 	case p.config.EnableChaotic:
 		repoName := p.chaoticConfig["CHAOTIC_REPO_NAME"]
-		switch {
-		case repoName == "":
+		if repoName == "" {
 			repoName = "chaotic-aur"
 		}
 

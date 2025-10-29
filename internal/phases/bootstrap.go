@@ -31,8 +31,7 @@ func NewBootstrapPhase(cfg *config.Config, log *logger.Logger, httpClient interf
 func (p *BootstrapPhase) PreCheck() error {
 	// Check internet connectivity
 	resp, err := p.httpClient.Get("https://raw.githubusercontent.com")
-	switch {
-	case err != nil:
+	if err != nil {
 		return fmt.Errorf("no internet connectivity: %w", err)
 	}
 	defer resp.Body.Close()
@@ -45,8 +44,7 @@ func (p *BootstrapPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResult
 	p.SendOutput(progressChan, "Starting bootstrap phase...")
 
 	// Create install directory
-	switch err := p.fs.MkdirAll(config.DefaultInstallDir, 0755); {
-	case err != nil:
+	if err := p.fs.MkdirAll(config.DefaultInstallDir, 0755); err != nil {
 		p.SendError(progressChan, err)
 		return PhaseResult{Success: false, Error: err}
 	}
@@ -112,8 +110,7 @@ func (p *BootstrapPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResult
 		fileName := filepath.Base(file.destPath)
 		p.SendProgress(progressChan, fmt.Sprintf("Downloading %s...", fileName), i+1, totalFiles)
 
-		switch err := p.downloadFile(file.url, file.destPath); {
-		case err != nil:
+		if err := p.downloadFile(file.url, file.destPath); err != nil {
 			errMsg := fmt.Errorf("failed to download %s: %w", fileName, err)
 			p.SendError(progressChan, errMsg)
 			return PhaseResult{Success: false, Error: errMsg}
@@ -130,35 +127,30 @@ func (p *BootstrapPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResult
 func (p *BootstrapPhase) downloadFile(url, destPath string) error {
 	// Create destination directory if needed
 	destDir := filepath.Dir(destPath)
-	switch err := p.fs.MkdirAll(destDir, 0755); {
-	case err != nil:
+	if err := p.fs.MkdirAll(destDir, 0755); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
 	// Download file
 	resp, err := p.httpClient.Get(url)
-	switch {
-	case err != nil:
+	if err != nil {
 		return fmt.Errorf("HTTP request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
-	switch {
-	case resp.StatusCode != http.StatusOK:
+	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.Status)
 	}
 
 	// Create destination file
 	destFile, err := p.fs.Create(destPath)
-	switch {
-	case err != nil:
+	if err != nil {
 		return fmt.Errorf("failed to create file: %w", err)
 	}
 	defer destFile.Close()
 
 	// Copy content
-	switch _, err := io.Copy(destFile, resp.Body); {
-	case err != nil:
+	if _, err := io.Copy(destFile, resp.Body); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 
@@ -168,8 +160,7 @@ func (p *BootstrapPhase) downloadFile(url, destPath string) error {
 // Rollback removes downloaded files
 func (p *BootstrapPhase) Rollback() error {
 	// Remove install directory
-	switch err := p.fs.RemoveAll(config.DefaultInstallDir); {
-	case err != nil:
+	if err := p.fs.RemoveAll(config.DefaultInstallDir); err != nil {
 		return fmt.Errorf("failed to remove install directory: %w", err)
 	}
 

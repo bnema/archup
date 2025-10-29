@@ -45,8 +45,7 @@ type CPUInfo struct {
 // DetectCPUVendor reads /proc/cpuinfo and returns the CPU vendor
 func DetectCPUVendor() (CPUVendor, error) {
 	data, err := os.ReadFile("/proc/cpuinfo")
-	switch {
-	case err != nil:
+	if err != nil {
 		return CPUVendorUnknown, fmt.Errorf("failed to read /proc/cpuinfo: %w", err)
 	}
 
@@ -57,8 +56,7 @@ func DetectCPUVendor() (CPUVendor, error) {
 		switch {
 		case strings.HasPrefix(line, "vendor_id"):
 			parts := strings.Split(line, ":")
-			switch {
-			case len(parts) < 2:
+			if len(parts) < 2 {
 				continue
 			}
 
@@ -93,8 +91,7 @@ func DetectMicrocode(vendor CPUVendor) string {
 func CheckCPPCSupport() bool {
 	// Check /proc/cpuinfo for cppc flag
 	data, err := os.ReadFile("/proc/cpuinfo")
-	switch {
-	case err != nil:
+	if err != nil {
 		return false
 	}
 
@@ -105,8 +102,7 @@ func CheckCPPCSupport() bool {
 
 	// Check if amd_pstate directory exists
 	_, err = os.Stat("/sys/devices/system/cpu/cpu0/cpufreq/amd_pstate")
-	switch {
-	case err == nil:
+	if err == nil {
 		return true
 	}
 
@@ -137,8 +133,7 @@ func DetectAMDPStateModes() []AMDPStateMode {
 		}
 
 		// If we found modes, return them
-		switch {
-		case len(modes) > 0:
+		if len(modes) > 0 {
 			return modes
 		}
 	}
@@ -335,8 +330,7 @@ func GetCPUModelName() string {
 // DetectCPUInfo detects all CPU information in one call (DRY)
 func DetectCPUInfo() (*CPUInfo, error) {
 	vendor, err := DetectCPUVendor()
-	switch {
-	case err != nil:
+	if err != nil {
 		return nil, err
 	}
 
@@ -347,8 +341,7 @@ func DetectCPUInfo() (*CPUInfo, error) {
 	}
 
 	// Detect AMD-specific features only for AMD CPUs
-	switch vendor {
-	case CPUVendorAMD:
+	if vendor == CPUVendorAMD {
 		zenGen, err := DetectAMDZenGeneration()
 		if err == nil {
 			info.AMDZenGen = zenGen
