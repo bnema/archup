@@ -4,83 +4,69 @@
 
 ## What Is ArchUp?
 
-ArchUp is a minimal, slightly opinionated Arch Linux installer focused on Wayland window managers. It provides a barebone base system with sane defaults and an optional CLI to build your ideal desktop environment.
+ArchUp is a minimal Arch Linux installer for Wayland. Boot the ISO, run it, and you get a working barebone system. Hardware is detected automatically and defaults are sensible. Afterward, you can optionally add a desktop environment.
 
-- **Barebone first** - Install just the essentials and stop here if you want
-- **User choice** - Every layer is optional; you decide what to install from a supported list of apps
-- **Lightweight focused** - Only Wayland compositors (Niri, Hyprland, Sway, River)
-- **Smart foundation** - Critical desktop infrastructure pre-configured (graphics, audio, Wayland, BT, printing)
-- **Hardware detection** - Auto-detects GPU and installs correct drivers
-- **Coherent UI** - One dark/light theme across all apps (customizable later)
-- **Just works** - All infrastructure configured; focus on your workflow, not setup
+**Includes:**
+- Lean system without unnecessary packages
+- Ready-to-use shell environment with modern CLI tools configured and themed
+- CPU optimization (amd_pstate/cpu governor) and automatic GPU driver detection
+- Essential libraries and packages (Qt5, GTK4, etc.) for a functional environment
+- Coherent theme applied across all supported applications
+- Full customization after installation
 
-## What ArchUp Is NOT
+**Does not include:**
+- KDE, GNOME, or other full desktop environments
+- Any attempt to be a standalone distro
+- Locked-in configurations
+- Bloated softwares
 
-- **Not a desktop environment** - We won't support KDE, GNOME, or other full-fledged DEs
-- **Not a distro** - It's an installer, not a custom Arch spin
-- **Not bloated** - We provide the minimum to get you started
-- **Not an Omarchy copy** - We respect Omarchy's architecture but keep it minimal
+## Get Started
 
-## Philosophy
+**Need:** AMD/Intel 64-bit system, UEFI
 
-ArchUp put the user in control. Every layer is optional:
-
-- Want barebone CLI but with a cool bootloader? Stop at Tier 1
-- Need a lightweight GUI? Add Tier 2+3
-- Want to customize? Manual changes are easy; we don't lock you in
-
-We learned from Omarchy's excellent modular approach but rejected the bloat. ArchUp provides smart defaults (proven to work) while staying minimal and respecting user choice.
-
-## Quick Start
-
-**Requirements**: AMD/Intel 64-bit system, UEFI mode
-
-### Go-based Installer (Recommended)
-
-Interactive TUI with configuration preview and better error handling:
+Boot the Arch ISO and run:
 
 ```bash
-# 1. Boot Arch ISO, run installer
-curl -fsSL https://archup.run/install/bin | bash
-
-# Install dev/pre-release version
-curl -fsSL https://archup.run/install/bin | bash -s -- --dev
-
-# 2. Reboot into new system
-
-# 3. Run wizard to add desktop (optional)
-archup wizard
+curl -fsSL https://archup.run/install | bash
 ```
 
-### Legacy Bash Installer
+Reboot when done.
 
-Simple script-based installer:
-
+For development versions:
 ```bash
-# 1. Boot Arch ISO, install barebone system
-curl -fsSL https://archup.run/install | sh
-
-# 2. Reboot into new system
-
-# 3. Run wizard to add desktop (optional)
-archup wizard
+curl -fsSL https://archup.run/install/dev | bash
 ```
+
+## What's Installed
+
+**Core system:**
+- btrfs filesystem, Limine bootloader, Plymouth
+- Kernel selection: linux, linux-lts, or linux-zen
+- GPU drivers and firmware (auto-detected)
+- NetworkManager, OpenSSH, systemd-resolved
+
+**CLI tools:**
+- Neovim, Git, sudo, man pages
+- Modern utilities: fzf, ripgrep, bat, eza, zoxide, starship, btop, yazi
+- Build tools: gcc, make, Go, Rust (for AUR packages)
+
+**System utilities:**
+- Snapper for snapshots and rollbacks
+- Bluetooth and audio configuration
+- Firewall (ufw) and power management (TLP)
+- Shell completion and theme system
+
+Run `archup wizard` after installation to add a Wayland compositor (Hyprland, Sway, Niri, or River) with integrated theming. Support will expand as the community contributes.
 
 ## Status
 
-The barebone installer is ready for testing, I am currently actively working on the CLI wizard for desktop setup.
+- [x] Barebone installer (functional, testing in progress)
+- [x] CLI auto-builds on first boot
+- [ ] Desktop wizard (in progress in [archup-cli](https://github.com/bnema/archup-cli))
 
-- [x] Tier 1: Barebone CLI installer
-- [x] Auto-builds `archup` CLI on first boot
-- [ ] Tier 2+3: Desktop wizard (in `archup-cli` repo)
+Active development. Report bugs with logs.
 
-**⚠️ Alpha/Testing Phase**: ArchUp is in active development. All contributions, bug reports, and error logs are welcome! Please open an issue if you encounter any problems.
+## Acknowledgments
 
-## Links
-
-- **CLI repo**: [github.com/bnema/archup-cli](https://github.com/bnema/archup-cli)
-
-## Thanks
-
-- **[Omarchy](https://github.com/omakub/omakub)** - For the excellent modular architecture inspiration (MIT License)
-- **[Charmbracelet Gum](https://github.com/charmbracelet/gum)** - For the awesome interactive shell toolkit
+- [Omarchy](https://github.com/omakub/omakub) - modular architecture approach
+- [Charmbracelet Gum](https://github.com/charmbracelet/gum) - interactive UI toolkit
