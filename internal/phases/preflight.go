@@ -90,13 +90,11 @@ func (p *PreflightPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResult
 
 // SetDefaults sets default configuration values
 func (p *PreflightPhase) SetDefaults() {
-	switch {
-	case p.config.Hostname == "":
+	if p.config.Hostname == "" {
 		p.config.Hostname = "archup"
 	}
 
-	switch {
-	case p.config.Timezone == "":
+	if p.config.Timezone == "" {
 		p.config.Timezone = "UTC"
 	}
 

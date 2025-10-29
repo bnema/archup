@@ -31,8 +31,7 @@ func NewBaseInstallPhase(cfg *config.Config, log *logger.Logger, fs interfaces.F
 func (p *BaseInstallPhase) PreCheck() error {
 	// Verify /mnt is mounted
 	result := p.sysExec.RunSimple("mountpoint", "-q", "/mnt")
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("/mnt is not mounted")
 	}
 
@@ -44,8 +43,7 @@ func (p *BaseInstallPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResu
 	p.SendProgress(progressChan, "Starting base installation...", 1, 5)
 
 	// Step 1: Configure ISO pacman
-	switch err := p.configurePacman(progressChan); {
-	case err != nil:
+	if err := p.configurePacman(progressChan); err != nil {
 		p.SendError(progressChan, err)
 		return PhaseResult{Success: false, Error: err}
 	}
@@ -53,18 +51,15 @@ func (p *BaseInstallPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResu
 	p.SendProgress(progressChan, "Detecting CPU and microcode...", 2, 5)
 
 	// Step 2: Detect CPU and select microcode
-	switch err := p.detectCPU(progressChan); {
-	case err != nil:
+	if err := p.detectCPU(progressChan); err != nil {
 		p.SendError(progressChan, err)
 		return PhaseResult{Success: false, Error: err}
 	}
 
 	// Step 2.5: Configure CachyOS repository on ISO if needed
-	switch {
-	case p.config.KernelChoice == config.KernelLinuxCachyOS:
+	if p.config.KernelChoice == config.KernelLinuxCachyOS {
 		p.SendProgress(progressChan, "Configuring CachyOS repository...", 2, 5)
-		switch err := p.configureCachyOSRepo(progressChan); {
-		case err != nil:
+		if err := p.configureCachyOSRepo(progressChan); err != nil {
 			p.SendError(progressChan, err)
 			return PhaseResult{Success: false, Error: err}
 		}
@@ -73,8 +68,7 @@ func (p *BaseInstallPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResu
 	p.SendProgress(progressChan, "Installing base system...", 3, 5)
 
 	// Step 3: Run pacstrap
-	switch err := p.runPacstrap(progressChan); {
-	case err != nil:
+	if err := p.runPacstrap(progressChan); err != nil {
 		p.SendError(progressChan, err)
 		return PhaseResult{Success: false, Error: err}
 	}
@@ -82,8 +76,7 @@ func (p *BaseInstallPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResu
 	p.SendProgress(progressChan, "Generating fstab...", 4, 5)
 
 	// Step 4: Generate fstab
-	switch err := p.generateFstab(progressChan); {
-	case err != nil:
+	if err := p.generateFstab(progressChan); err != nil {
 		p.SendError(progressChan, err)
 		return PhaseResult{Success: false, Error: err}
 	}
@@ -103,8 +96,7 @@ func (p *BaseInstallPhase) configurePacman(progressChan chan<- ProgressUpdate) e
 		"s/^#ParallelDownloads = 5$/ParallelDownloads = 10/",
 		"/etc/pacman.conf")
 
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("pacman configuration failed: %w", result.Error)
 	}
 
@@ -119,14 +111,12 @@ func (p *BaseInstallPhase) configureCachyOSRepo(progressChan chan<- ProgressUpda
 	// Import CachyOS GPG key
 	p.SendOutput(progressChan, "Importing CachyOS GPG key...")
 	result := p.logger.ExecCommand("pacman-key", "--recv-keys", "F3B607488DB35A47", "--keyserver", "keyserver.ubuntu.com")
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("failed to receive CachyOS GPG key: %w", result.Error)
 	}
 
 	result = p.logger.ExecCommand("pacman-key", "--lsign-key", "F3B607488DB35A47")
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("failed to sign CachyOS GPG key: %w", result.Error)
 	}
 
@@ -134,8 +124,7 @@ func (p *BaseInstallPhase) configureCachyOSRepo(progressChan chan<- ProgressUpda
 
 	// Check if CachyOS repo already configured
 	content, err := p.fs.ReadFile("/etc/pacman.conf")
-	switch {
-	case err != nil:
+	if err != nil {
 		return fmt.Errorf("failed to read pacman.conf: %w", err)
 	}
 
@@ -162,8 +151,7 @@ func (p *BaseInstallPhase) configureCachyOSRepo(progressChan chan<- ProgressUpda
 
 		contentStr = strings.Join(newLines, "\n")
 
-		switch err := p.fs.WriteFile("/etc/pacman.conf", []byte(contentStr), 0644); {
-		case err != nil:
+		if err := p.fs.WriteFile("/etc/pacman.conf", []byte(contentStr), 0644); err != nil {
 			return fmt.Errorf("failed to write pacman.conf: %w", err)
 		}
 	}
@@ -172,16 +160,14 @@ func (p *BaseInstallPhase) configureCachyOSRepo(progressChan chan<- ProgressUpda
 	p.SendOutput(progressChan, "Creating CachyOS mirrorlist...")
 	mirrorlist := "## CachyOS mirrorlist\nServer = https://mirror.cachyos.org/repo/$arch/$repo\n"
 
-	switch err := p.fs.WriteFile("/etc/pacman.d/cachyos-mirrorlist", []byte(mirrorlist), 0644); {
-	case err != nil:
+	if err := p.fs.WriteFile("/etc/pacman.d/cachyos-mirrorlist", []byte(mirrorlist), 0644); err != nil {
 		return fmt.Errorf("failed to create cachyos-mirrorlist: %w", err)
 	}
 
 	// Sync databases
 	p.SendOutput(progressChan, "Syncing package databases...")
 	result = p.logger.ExecCommand("pacman", "-Sy")
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("failed to sync databases: %w", result.Error)
 	}
 
@@ -193,8 +179,7 @@ func (p *BaseInstallPhase) configureCachyOSRepo(progressChan chan<- ProgressUpda
 func (p *BaseInstallPhase) copyCachyOSConfig(progressChan chan<- ProgressUpdate) error {
 	// Read ISO's pacman.conf to check if CachyOS is configured
 	content, err := p.fs.ReadFile("/etc/pacman.conf")
-	switch {
-	case err != nil:
+	if err != nil {
 		return fmt.Errorf("failed to read ISO pacman.conf: %w", err)
 	}
 
@@ -202,8 +187,7 @@ func (p *BaseInstallPhase) copyCachyOSConfig(progressChan chan<- ProgressUpdate)
 
 	// Read installed system's pacman.conf
 	mntContent, err := p.fs.ReadFile("/mnt/etc/pacman.conf")
-	switch {
-	case err != nil:
+	if err != nil {
 		return fmt.Errorf("failed to read /mnt/etc/pacman.conf: %w", err)
 	}
 
@@ -228,8 +212,7 @@ func (p *BaseInstallPhase) copyCachyOSConfig(progressChan chan<- ProgressUpdate)
 
 		mntContentStr = strings.Join(newLines, "\n")
 
-		switch err := p.fs.WriteFile("/mnt/etc/pacman.conf", []byte(mntContentStr), 0644); {
-		case err != nil:
+		if err := p.fs.WriteFile("/mnt/etc/pacman.conf", []byte(mntContentStr), 0644); err != nil {
 			return fmt.Errorf("failed to write /mnt/etc/pacman.conf: %w", err)
 		}
 
@@ -238,14 +221,12 @@ func (p *BaseInstallPhase) copyCachyOSConfig(progressChan chan<- ProgressUpdate)
 
 	// Copy mirrorlist from ISO to installed system
 	result := p.logger.ExecCommand("mkdir", "-p", "/mnt/etc/pacman.d")
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("failed to create /mnt/etc/pacman.d: %w", result.Error)
 	}
 
 	result = p.logger.ExecCommand("cp", "/etc/pacman.d/cachyos-mirrorlist", "/mnt/etc/pacman.d/cachyos-mirrorlist")
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("failed to copy cachyos-mirrorlist: %w", result.Error)
 	}
 
@@ -259,8 +240,7 @@ func (p *BaseInstallPhase) detectCPU(progressChan chan<- ProgressUpdate) error {
 
 	// Read /proc/cpuinfo to detect vendor
 	file, err := p.fs.Open("/proc/cpuinfo")
-	switch {
-	case err != nil:
+	if err != nil {
 		return fmt.Errorf("failed to read /proc/cpuinfo: %w", err)
 	}
 	defer file.Close()
@@ -298,8 +278,7 @@ func (p *BaseInstallPhase) detectCPU(progressChan chan<- ProgressUpdate) error {
 	p.config.Microcode = microcode
 	p.config.CPUVendor = cpuType
 
-	switch {
-	case microcode != "":
+	if microcode != "" {
 		p.SendOutput(progressChan, fmt.Sprintf("[OK] Detected %s CPU", cpuType))
 		p.SendOutput(progressChan, fmt.Sprintf("  Microcode: %s", microcode))
 	}
@@ -311,8 +290,7 @@ func (p *BaseInstallPhase) detectCPU(progressChan chan<- ProgressUpdate) error {
 func (p *BaseInstallPhase) runPacstrap(progressChan chan<- ProgressUpdate) error {
 	// Load base packages from embedded list
 	packages, err := p.loadBasePackages()
-	switch {
-	case err != nil:
+	if err != nil {
 		return fmt.Errorf("failed to load package list: %w", err)
 	}
 
@@ -328,8 +306,7 @@ func (p *BaseInstallPhase) runPacstrap(progressChan chan<- ProgressUpdate) error
 	}
 
 	// Add microcode
-	switch {
-	case p.config.Microcode != "":
+	if p.config.Microcode != "" {
 		packages = append(packages, p.config.Microcode)
 		p.SendOutput(progressChan, fmt.Sprintf("Adding microcode: %s", p.config.Microcode))
 	}
@@ -355,16 +332,14 @@ func (p *BaseInstallPhase) runPacstrap(progressChan chan<- ProgressUpdate) error
 	args := append([]string{"/mnt"}, packages...)
 	result := p.logger.ExecCommand("pacstrap", args...)
 
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("pacstrap failed: %w", result.Error)
 	}
 
 	p.SendOutput(progressChan, fmt.Sprintf("[OK] Installed %d packages", len(packages)))
 
 	// Copy CachyOS configuration to installed system if needed
-	switch {
-	case p.config.KernelChoice == config.KernelLinuxCachyOS:
+	if p.config.KernelChoice == config.KernelLinuxCachyOS {
 		p.SendOutput(progressChan, "Configuring CachyOS repository in installed system...")
 		if err := p.copyCachyOSConfig(progressChan); err != nil {
 			return fmt.Errorf("failed to configure CachyOS in installed system: %w", err)
@@ -381,8 +356,7 @@ func (p *BaseInstallPhase) loadBasePackages() ([]string, error) {
 	packageFile := config.DefaultInstallDir + "/" + config.BasePackagesFile
 
 	file, err := p.fs.Open(packageFile)
-	switch {
-	case err != nil:
+	if err != nil {
 		return nil, fmt.Errorf("failed to open %s: %w", packageFile, err)
 	}
 	defer file.Close()
@@ -404,8 +378,7 @@ func (p *BaseInstallPhase) loadBasePackages() ([]string, error) {
 		packages = append(packages, line)
 	}
 
-	switch err := scanner.Err(); {
-	case err != nil:
+	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("error reading package file: %w", err)
 	}
 
@@ -417,8 +390,7 @@ func (p *BaseInstallPhase) generateFstab(progressChan chan<- ProgressUpdate) err
 	p.SendOutput(progressChan, "Generating fstab with UUIDs...")
 
 	result := p.sysExec.RunSimple("sh", "-c", "genfstab -U /mnt >> /mnt/etc/fstab")
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("genfstab failed: %w", result.Error)
 	}
 
@@ -430,15 +402,13 @@ func (p *BaseInstallPhase) generateFstab(progressChan chan<- ProgressUpdate) err
 func (p *BaseInstallPhase) PostCheck() error {
 	// Check if base system exists
 	result := p.sysExec.RunSimple("test", "-d", "/mnt/usr")
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("/mnt/usr does not exist")
 	}
 
 	// Check if fstab exists
 	result = p.sysExec.RunSimple("test", "-f", "/mnt/etc/fstab")
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("/mnt/etc/fstab was not created")
 	}
 

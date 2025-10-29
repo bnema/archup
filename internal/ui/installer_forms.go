@@ -24,8 +24,7 @@ func CreatePreflightForm(cfg *config.Config, fb *components.FormBuilder, sys *sy
 	}
 
 	// Set default keymap if not already set
-	switch {
-	case cfg.Keymap == "":
+	if cfg.Keymap == "" {
 		cfg.Keymap = config.KeymapDefault
 	}
 
@@ -86,20 +85,17 @@ func CreateDiskSelectionForm(cfg *config.Config, fb *components.FormBuilder) *hu
 			label := disk.Path + " (" + disk.Size + ")"
 
 			// Add model if available
-			switch {
-			case disk.Model != "":
+			if disk.Model != "" {
 				label += " " + disk.Model
 			}
 
 			// Add serial if available
-			switch {
-			case disk.Serial != "":
+			if disk.Serial != "" {
 				label += " [" + disk.Serial + "]"
 			}
 
 			// Add vendor if available
-			switch {
-			case disk.Vendor != "" && disk.Model == "":
+			if disk.Vendor != "" && disk.Model == "" {
 				label += " " + disk.Vendor
 			}
 
@@ -120,8 +116,7 @@ func CreateOptionsForm(cfg *config.Config, fb *components.FormBuilder) *huh.Form
 
 	// Auto-detect CPU information
 	cpuInfo, err := system.DetectCPUInfo()
-	switch {
-	case err == nil:
+	if err == nil {
 		cfg.CPUVendor = string(cpuInfo.Vendor)
 		cfg.Microcode = cpuInfo.Microcode
 	}
@@ -227,18 +222,15 @@ func CreateAMDPStateForm(cfg *config.Config, cpuInfo *system.CPUInfo, fb *compon
 func FormatDiskOption(disk system.Disk) string {
 	label := fmt.Sprintf("%s (%s)", disk.Path, disk.Size)
 
-	switch {
-	case disk.Model != "":
+	if disk.Model != "" {
 		label += " " + disk.Model
 	}
 
-	switch {
-	case disk.Serial != "":
+	if disk.Serial != "" {
 		label += " [" + disk.Serial + "]"
 	}
 
-	switch {
-	case disk.Vendor != "" && disk.Model == "":
+	if disk.Vendor != "" && disk.Model == "" {
 		label += " " + disk.Vendor
 	}
 

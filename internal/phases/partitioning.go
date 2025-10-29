@@ -25,8 +25,7 @@ func NewPartitioningPhase(cfg *config.Config, log *logger.Logger, sysExec interf
 
 // PreCheck validates partitioning prerequisites
 func (p *PartitioningPhase) PreCheck() error {
-	switch {
-	case p.config.TargetDisk == "":
+	if p.config.TargetDisk == "" {
 		return fmt.Errorf("target disk not selected")
 	}
 
@@ -38,8 +37,7 @@ func (p *PartitioningPhase) Execute(progressChan chan<- ProgressUpdate) PhaseRes
 	p.SendProgress(progressChan, "Starting partitioning...", 1, 5)
 
 	// Step 1: Wipe and partition
-	switch err := p.createPartitions(progressChan); {
-	case err != nil:
+	if err := p.createPartitions(progressChan); err != nil {
 		p.SendError(progressChan, err)
 		return PhaseResult{Success: false, Error: err}
 	}
@@ -47,8 +45,7 @@ func (p *PartitioningPhase) Execute(progressChan chan<- ProgressUpdate) PhaseRes
 	p.SendProgress(progressChan, "Formatting partitions...", 2, 5)
 
 	// Step 2: Format partitions
-	switch err := p.formatPartitions(progressChan); {
-	case err != nil:
+	if err := p.formatPartitions(progressChan); err != nil {
 		p.SendError(progressChan, err)
 		return PhaseResult{Success: false, Error: err}
 	}
@@ -56,8 +53,7 @@ func (p *PartitioningPhase) Execute(progressChan chan<- ProgressUpdate) PhaseRes
 	p.SendProgress(progressChan, "Creating btrfs subvolumes...", 3, 5)
 
 	// Step 3: Create subvolumes
-	switch err := p.createSubvolumes(progressChan); {
-	case err != nil:
+	if err := p.createSubvolumes(progressChan); err != nil {
 		p.SendError(progressChan, err)
 		return PhaseResult{Success: false, Error: err}
 	}
@@ -65,8 +61,7 @@ func (p *PartitioningPhase) Execute(progressChan chan<- ProgressUpdate) PhaseRes
 	p.SendProgress(progressChan, "Mounting filesystems...", 4, 5)
 
 	// Step 4: Mount
-	switch err := p.mountFilesystems(progressChan); {
-	case err != nil:
+	if err := p.mountFilesystems(progressChan); err != nil {
 		p.SendError(progressChan, err)
 		return PhaseResult{Success: false, Error: err}
 	}
@@ -84,15 +79,13 @@ func (p *PartitioningPhase) createPartitions(progressChan chan<- ProgressUpdate)
 
 	// Wipe filesystem signatures
 	result := p.logger.ExecCommand("wipefs", "-af", disk)
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("wipefs failed: %w", result.Error)
 	}
 
 	// Zap GPT and MBR
 	result = p.logger.ExecCommand("sgdisk", "--zap-all", disk)
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("sgdisk zap failed: %w", result.Error)
 	}
 
@@ -105,15 +98,13 @@ func (p *PartitioningPhase) createPartitions(progressChan chan<- ProgressUpdate)
 		"--new=2:0:0", "--typecode=2:8300", "--change-name=2:ROOT",
 		disk)
 
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("sgdisk partition creation failed: %w", result.Error)
 	}
 
 	// Inform kernel of partition table changes
 	result = p.logger.ExecCommand("partprobe", disk)
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("partprobe failed: %w", result.Error)
 	}
 
@@ -143,14 +134,12 @@ func (p *PartitioningPhase) formatPartitions(progressChan chan<- ProgressUpdate)
 	p.SendOutput(progressChan, "Formatting EFI partition...")
 
 	result := p.logger.ExecCommand("wipefs", "-af", p.config.EFIPartition)
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("wipefs EFI failed: %w", result.Error)
 	}
 
 	result = p.logger.ExecCommand("mkfs.fat", "-F32", "-n", "EFI", p.config.EFIPartition)
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("mkfs.fat failed: %w", result.Error)
 	}
 
@@ -171,15 +160,13 @@ func (p *PartitioningPhase) formatEncryptedRoot(progressChan chan<- ProgressUpda
 
 	// Use user password for encryption (as per preflight)
 	password := p.config.UserPassword
-	switch {
-	case password == "":
+	if password == "" {
 		return fmt.Errorf("password required for encryption")
 	}
 
 	// Wipe root partition
 	result := p.logger.ExecCommand("wipefs", "-af", p.config.RootPartition)
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("wipefs root failed: %w", result.Error)
 	}
 
@@ -192,8 +179,7 @@ func (p *PartitioningPhase) formatEncryptedRoot(progressChan chan<- ProgressUpda
 		fmt.Sprintf("printf '%%s' '%s' | cryptsetup luksFormat --type luks2 --batch-mode --pbkdf argon2id --iter-time 2000 --label ARCHUP_LUKS --key-file - %s",
 			password, p.config.RootPartition))
 
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("luksFormat failed: %w", result.Error)
 	}
 
@@ -202,8 +188,7 @@ func (p *PartitioningPhase) formatEncryptedRoot(progressChan chan<- ProgressUpda
 		fmt.Sprintf("printf '%%s' '%s' | cryptsetup open --key-file=- %s cryptroot",
 			password, p.config.RootPartition))
 
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("cryptsetup open failed: %w", result.Error)
 	}
 
@@ -212,8 +197,7 @@ func (p *PartitioningPhase) formatEncryptedRoot(progressChan chan<- ProgressUpda
 
 	// Format encrypted device with btrfs
 	result = p.logger.ExecCommand("mkfs.btrfs", "-f", "-L", "ROOT", p.config.CryptDevice)
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("mkfs.btrfs on encrypted device failed: %w", result.Error)
 	}
 
@@ -226,8 +210,7 @@ func (p *PartitioningPhase) formatPlainRoot(progressChan chan<- ProgressUpdate) 
 	p.SendOutput(progressChan, "Formatting root partition...")
 
 	result := p.logger.ExecCommand("mkfs.btrfs", "-f", "-L", "ROOT", p.config.RootPartition)
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("mkfs.btrfs failed: %w", result.Error)
 	}
 
@@ -248,31 +231,27 @@ func (p *PartitioningPhase) createSubvolumes(progressChan chan<- ProgressUpdate)
 
 	// Mount temporarily
 	result := p.logger.ExecCommand("mount", device, "/mnt")
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("temporary mount failed: %w", result.Error)
 	}
 
 	// Create @ subvolume
 	result = p.logger.ExecCommand("btrfs", "subvolume", "create", "/mnt/@")
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		p.sysExec.RunSimple("umount", "/mnt") // Cleanup
 		return fmt.Errorf("@ subvolume creation failed: %w", result.Error)
 	}
 
 	// Create @home subvolume
 	result = p.logger.ExecCommand("btrfs", "subvolume", "create", "/mnt/@home")
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		p.sysExec.RunSimple("umount", "/mnt") // Cleanup
 		return fmt.Errorf("@home subvolume creation failed: %w", result.Error)
 	}
 
 	// Unmount
 	result = p.logger.ExecCommand("umount", "/mnt")
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("unmount after subvolume creation failed: %w", result.Error)
 	}
 
@@ -293,8 +272,7 @@ func (p *PartitioningPhase) mountFilesystems(progressChan chan<- ProgressUpdate)
 
 	// Mount @ subvolume as root
 	result := p.logger.ExecCommand("mount", "-o", "noatime,compress=zstd,subvol=@", device, "/mnt")
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("mount @ failed: %w", result.Error)
 	}
 
@@ -302,15 +280,13 @@ func (p *PartitioningPhase) mountFilesystems(progressChan chan<- ProgressUpdate)
 
 	// Create home directory
 	result = p.logger.ExecCommand("mkdir", "-p", "/mnt/home")
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("mkdir /mnt/home failed: %w", result.Error)
 	}
 
 	// Mount @home subvolume
 	result = p.logger.ExecCommand("mount", "-o", "noatime,compress=zstd,subvol=@home", device, "/mnt/home")
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("mount @home failed: %w", result.Error)
 	}
 
@@ -318,14 +294,12 @@ func (p *PartitioningPhase) mountFilesystems(progressChan chan<- ProgressUpdate)
 
 	// Create and mount EFI
 	result = p.logger.ExecCommand("mkdir", "-p", "/mnt/boot")
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("mkdir /mnt/boot failed: %w", result.Error)
 	}
 
 	result = p.logger.ExecCommand("mount", p.config.EFIPartition, "/mnt/boot")
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("mount EFI failed: %w", result.Error)
 	}
 
@@ -337,8 +311,7 @@ func (p *PartitioningPhase) mountFilesystems(progressChan chan<- ProgressUpdate)
 func (p *PartitioningPhase) PostCheck() error {
 	// Verify /mnt is mounted
 	result := p.sysExec.RunSimple("mountpoint", "-q", "/mnt")
-	switch {
-	case result.ExitCode != 0:
+	if result.ExitCode != 0 {
 		return fmt.Errorf("/mnt is not mounted")
 	}
 
@@ -355,8 +328,7 @@ func (p *PartitioningPhase) Rollback() error {
 	// Close LUKS if encrypted
 	switch p.config.EncryptionType {
 	case config.EncryptionLUKS, config.EncryptionLUKSLVM:
-		switch {
-		case p.config.CryptDevice != "":
+		if p.config.CryptDevice != "" {
 			p.sysExec.RunSimple("cryptsetup", "close", "cryptroot")
 		}
 	}
