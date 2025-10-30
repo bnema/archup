@@ -23,6 +23,21 @@ func ChrootExec(logPath, mountPoint, command string, args ...string) error {
 	return nil
 }
 
+// ChrootExecWithOutput executes a command inside a chroot environment and captures output
+func ChrootExecWithOutput(logPath, mountPoint, command string, args ...string) (string, error) {
+	// Construct the command to run in chroot
+	fullCommand := command
+	if len(args) > 0 {
+		fullCommand = command + " " + strings.Join(args, " ")
+	}
+
+	result := RunLogged(logPath, "arch-chroot", mountPoint, "bash", "-c", fullCommand)
+	if result.Error != nil {
+		return "", fmt.Errorf("failed to execute in chroot: %w", result.Error)
+	}
+	return result.Output, nil
+}
+
 // ChrootExecWithContext executes a command inside chroot with timeout support via context
 // The context deadline will terminate the command if it takes too long
 func ChrootExecWithContext(ctx context.Context, logPath, mountPoint, command string) error {

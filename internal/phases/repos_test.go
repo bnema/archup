@@ -628,3 +628,85 @@ Server = http://mirror.example.com/arch/$repo/os/$arch
 		t.Error("Expected custom-servers Include to remain commented")
 	}
 }
+
+// TestPackageFiltering tests the package filtering logic for AUR helper installation
+func TestPackageFiltering(t *testing.T) {
+	tests := []struct {
+		name        string
+		output      string
+		wantPackage string
+		wantError   bool
+	}{
+		{
+			name: "yay with debug package",
+			output: `/tmp/yay/yay-12.5.2-2-x86_64.pkg.tar.zst
+/tmp/yay/yay-debug-12.5.2-2-x86_64.pkg.tar.zst`,
+			wantPackage: "/tmp/yay/yay-12.5.2-2-x86_64.pkg.tar.zst",
+			wantError:   false,
+		},
+		{
+			name: "paru with debug package",
+			output: `/tmp/paru/paru-2.1.0-1-x86_64.pkg.tar.zst
+/tmp/paru/paru-debug-2.1.0-1-x86_64.pkg.tar.zst`,
+			wantPackage: "/tmp/paru/paru-2.1.0-1-x86_64.pkg.tar.zst",
+			wantError:   false,
+		},
+		{
+			name: "only debug package (should filter all)",
+			output: `/tmp/yay/yay-debug-12.5.2-2-x86_64.pkg.tar.zst`,
+			wantPackage: "",
+			wantError:   true,
+		},
+		{
+			name:        "empty output",
+			output:      "",
+			wantPackage: "",
+			wantError:   true,
+		},
+		{
+			name: "single main package without debug",
+			output: `/tmp/yay/yay-12.5.2-2-x86_64.pkg.tar.zst`,
+			wantPackage: "/tmp/yay/yay-12.5.2-2-x86_64.pkg.tar.zst",
+			wantError:   false,
+		},
+		{
+			name: "with whitespace and empty lines",
+			output: `
+/tmp/yay/yay-12.5.2-2-x86_64.pkg.tar.zst
+
+/tmp/yay/yay-debug-12.5.2-2-x86_64.pkg.tar.zst
+`,
+			wantPackage: "/tmp/yay/yay-12.5.2-2-x86_64.pkg.tar.zst",
+			wantError:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Simulate the filtering logic from buildFromAUR
+			lines := strings.Split(strings.TrimSpace(tt.output), "\n")
+			var mainPackage string
+			for _, line := range lines {
+				line = strings.TrimSpace(line)
+				// Skip debug packages (contain "-debug-" in the filename)
+				if line != "" && !strings.Contains(line, "-debug-") {
+					mainPackage = line
+					break
+				}
+			}
+
+			if tt.wantError && mainPackage != "" {
+				t.Errorf("Expected no package but got: %s", mainPackage)
+			}
+
+			if !tt.wantError && mainPackage != tt.wantPackage {
+				t.Errorf("Expected package %q, got %q", tt.wantPackage, mainPackage)
+			}
+
+			if tt.wantError && mainPackage == "" {
+				// This is expected
+				return
+			}
+		})
+	}
+}

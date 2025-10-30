@@ -21,12 +21,12 @@ func RenderNetworkCheck(m model.UI) string {
 	} else if m.NetworkErr() != nil {
 		// Network check failed
 		errorMsg := fmt.Sprintf("Network error: %v", m.NetworkErr())
-		content = CenterText(styles.ErrorStyle.Render("[KO] Network Check Failed"), m.Width()) + "\n\n" +
+		content = CenterText(styles.ErrorStyle.Render("✗ Network Check Failed"), m.Width()) + "\n\n" +
 			CenterText(errorMsg, m.Width()) + "\n\n" +
 			CenterText(styles.HelpStyle.Render("Press ENTER to retry or CTRL+C to exit"), m.Width())
 	} else {
 		// Network check passed
-		content = CenterText(styles.SuccessStyle.Render("[OK] Network Check Passed"), m.Width()) + "\n\n" +
+		content = CenterText(styles.SuccessStyle.Render("✓ Network Check Passed"), m.Width()) + "\n\n" +
 			CenterText(styles.HelpStyle.Render("Press ENTER to continue"), m.Width())
 	}
 

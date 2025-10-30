@@ -12,10 +12,7 @@ import (
 	"github.com/bnema/archup/internal/config"
 	"github.com/bnema/archup/internal/interfaces"
 	"github.com/bnema/archup/internal/logger"
-	"github.com/bnema/archup/internal/postboot"
-	"github.com/bnema/archup/internal/shell"
 	"github.com/bnema/archup/internal/system"
-	"github.com/bnema/archup/internal/verify"
 )
 
 // PostInstallPhase handles post-installation tasks
@@ -42,12 +39,14 @@ func NewPostInstallPhase(cfg *config.Config, log *logger.Logger, fs interfaces.F
 func (p *PostInstallPhase) PreCheck() error {
 	// Verify /mnt is mounted
 	result := p.sysExec.RunSimple("mountpoint", "-q", config.PathMnt)
-	if result.ExitCode != 0 {
+	switch {
+	case result.ExitCode != 0:
 		return fmt.Errorf("%s is not mounted", config.PathMnt)
 	}
 
 	// Verify boot directory exists
-	if _, err := p.fs.Stat(config.PathMntBoot); p.fs.IsNotExist(err) {
+	switch _, err := p.fs.Stat(config.PathMntBoot); {
+	case p.fs.IsNotExist(err):
 		return fmt.Errorf("boot directory not found")
 	}
 
@@ -56,13 +55,14 @@ func (p *PostInstallPhase) PreCheck() error {
 
 // Execute runs the post-install phase
 func (p *PostInstallPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResult {
-	totalSteps := 10
+	totalSteps := 9
 	currentStep := 0
 
 	// Step 1: Boot logo
 	currentStep++
 	p.SendProgress(progressChan, "Installing boot logo...", currentStep, totalSteps)
-	if err := p.installBootLogo(progressChan); err != nil {
+	switch err := p.installBootLogo(progressChan); {
+	case err != nil:
 		// Non-fatal, continue
 		p.SendOutput(progressChan, fmt.Sprintf("[WARN] Boot logo failed: %v", err))
 	}
@@ -70,7 +70,8 @@ func (p *PostInstallPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResu
 	// Step 2: Plymouth
 	currentStep++
 	p.SendProgress(progressChan, "Configuring Plymouth splash screen...", currentStep, totalSteps)
-	if err := p.configurePlymouth(progressChan); err != nil {
+	switch err := p.configurePlymouth(progressChan); {
+	case err != nil:
 		// Non-fatal, continue
 		p.SendOutput(progressChan, fmt.Sprintf("[WARN] Plymouth failed: %v", err))
 	}
@@ -78,7 +79,8 @@ func (p *PostInstallPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResu
 	// Step 3: Snapper
 	currentStep++
 	p.SendProgress(progressChan, "Configuring btrfs snapshots...", currentStep, totalSteps)
-	if err := p.configureSnapper(progressChan); err != nil {
+	switch err := p.configureSnapper(progressChan); {
+	case err != nil:
 		// Non-fatal, continue
 		p.SendOutput(progressChan, fmt.Sprintf("[WARN] Snapper failed: %v", err))
 	}
@@ -86,7 +88,8 @@ func (p *PostInstallPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResu
 	// Step 4: Pacman configuration
 	currentStep++
 	p.SendProgress(progressChan, "Configuring pacman...", currentStep, totalSteps)
-	if err := p.configurePacman(progressChan); err != nil {
+	switch err := p.configurePacman(progressChan); {
+	case err != nil:
 		p.SendError(progressChan, err)
 		return PhaseResult{Success: false, Error: err}
 	}
@@ -94,23 +97,17 @@ func (p *PostInstallPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResu
 	// Step 5: Post-boot setup
 	currentStep++
 	p.SendProgress(progressChan, "Setting up post-boot scripts...", currentStep, totalSteps)
-	postbootSetup := postboot.NewSetup(p.fs, p.http, p.chrExec, p.config, p.logger)
-	pbResult, err := postbootSetup.Configure()
-	if err != nil {
+	switch err := p.setupPostBoot(progressChan); {
+	case err != nil:
 		p.SendError(progressChan, err)
 		return PhaseResult{Success: false, Error: err}
-	}
-	if pbResult.ScriptsDownloaded > 0 {
-		p.SendOutput(progressChan, fmt.Sprintf("[OK] Post-boot scripts downloaded (%d files)", pbResult.ScriptsDownloaded))
-	}
-	if pbResult.ServiceEnabled {
-		p.SendOutput(progressChan, "[OK] First-boot service enabled")
 	}
 
 	// Step 6: Pacman hooks
 	currentStep++
 	p.SendProgress(progressChan, "Installing pacman hooks...", currentStep, totalSteps)
-	if err := p.installPacmanHooks(progressChan); err != nil {
+	switch err := p.installPacmanHooks(progressChan); {
+	case err != nil:
 		p.SendError(progressChan, err)
 		return PhaseResult{Success: false, Error: err}
 	}
@@ -118,59 +115,25 @@ func (p *PostInstallPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResu
 	// Step 7: Shell configuration
 	currentStep++
 	p.SendProgress(progressChan, "Configuring shell environment...", currentStep, totalSteps)
-	shellConfig := shell.NewConfigurator(p.fs, p.http, p.chrExec, p.config, p.logger)
-
-	// Get username from /mnt/home
-	homeDir := filepath.Join(config.PathMnt, "home")
-	entries, err := os.ReadDir(homeDir)
-	switch {
+	switch err := p.configureShell(progressChan); {
 	case err != nil:
-		p.SendError(progressChan, err)
-		return PhaseResult{Success: false, Error: fmt.Errorf("failed to read home directory: %w", err)}
-	case len(entries) == 0:
-		p.SendError(progressChan, err)
-		return PhaseResult{Success: false, Error: fmt.Errorf("no user found in /home")}
-	}
-
-	username := entries[0].Name()
-	userHome := filepath.Join(config.PathMnt, "home", username)
-
-	shellResult, err := shellConfig.Configure(username, userHome)
-	if err != nil {
 		p.SendError(progressChan, err)
 		return PhaseResult{Success: false, Error: err}
 	}
-	p.SendOutput(progressChan, fmt.Sprintf("[OK] Shell environment configured (%d themes applied)", shellResult.ThemesApplied))
-	if len(shellResult.ThemesFailed) > 0 {
-		p.SendOutput(progressChan, fmt.Sprintf("[WARN] Failed to apply themes: %v", shellResult.ThemesFailed))
-	}
-	for _, w := range shellResult.Warnings {
-		p.SendOutput(progressChan, fmt.Sprintf("[WARN] %s", w))
-	}
 
-	// Step 7a: Shell configuration verification (non-fatal)
-	currentStep++
-	p.SendProgress(progressChan, "Verifying shell configuration...", currentStep, totalSteps)
-	shellVerification := verify.ValidateShellConfigs(p.fs, p.chrExec, p.logger.LogPath(), userHome)
-	if warnings := verify.GetShellConfigWarnings(shellVerification); warnings != "" {
-		p.SendOutput(progressChan, warnings)
-	}
-
-	// Step 7b: Theme verification (non-fatal)
-	themeFiles := verify.ValidateThemeFiles(p.fs, userHome)
-	p.SendOutput(progressChan, verify.GetThemeVerificationSummary(themeFiles))
-
-	// Step 8: Installation verification
+	// Step 8: Verification
 	currentStep++
 	p.SendProgress(progressChan, "Verifying installation...", currentStep, totalSteps)
-	if err := p.verifyInstallation(progressChan); err != nil {
+	switch err := p.verifyInstallation(progressChan); {
+	case err != nil:
 		p.SendOutput(progressChan, fmt.Sprintf("[WARN] Verification warnings: %v", err))
 	}
 
 	// Step 9: Unmount
 	currentStep++
 	p.SendProgress(progressChan, "Unmounting filesystems...", currentStep, totalSteps)
-	if err := p.unmountAll(progressChan); err != nil {
+	switch err := p.unmountAll(progressChan); {
+	case err != nil:
 		p.SendError(progressChan, err)
 		return PhaseResult{Success: false, Error: err}
 	}
@@ -187,24 +150,28 @@ func (p *PostInstallPhase) installBootLogo(progressChan chan<- ProgressUpdate) e
 	logoURL := fmt.Sprintf("%s/%s", p.config.RawURL, config.ArchLogoURL)
 
 	resp, err := p.http.Get(logoURL)
-	if err != nil {
+	switch {
+	case err != nil:
 		return fmt.Errorf("failed to download logo: %w", err)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	switch {
+	case resp.StatusCode != http.StatusOK:
 		return fmt.Errorf("failed to download logo: HTTP %d", resp.StatusCode)
 	}
 
 	// Save to boot partition
 	logoFile, err := p.fs.Create(config.PathMntBootLogo)
-	if err != nil {
+	switch {
+	case err != nil:
 		return fmt.Errorf("failed to create logo file: %w", err)
 	}
 	defer logoFile.Close()
 
 	_, err = io.Copy(logoFile, resp.Body)
-	if err != nil {
+	switch {
+	case err != nil:
 		return fmt.Errorf("failed to save logo: %w", err)
 	}
 
@@ -213,7 +180,8 @@ func (p *PostInstallPhase) installBootLogo(progressChan chan<- ProgressUpdate) e
 	// Update Limine config
 	limineConf := filepath.Join(config.PathMntBootEFILimine, config.FileLimineConfig)
 	content, err := p.fs.ReadFile(limineConf)
-	if err != nil {
+	switch {
+	case err != nil:
 		return fmt.Errorf("failed to read limine.conf: %w", err)
 	}
 
@@ -226,7 +194,8 @@ func (p *PostInstallPhase) installBootLogo(progressChan chan<- ProgressUpdate) e
 		wallpaperSettings := "\nwallpaper: boot():/arch-logo.png\nwallpaper_style: centered\nbackdrop: 000000"
 		contentStr = graphicsRegex.ReplaceAllString(contentStr, "graphics: yes"+wallpaperSettings)
 
-		if err := p.fs.WriteFile(limineConf, []byte(contentStr), 0644); err != nil {
+		switch err := p.fs.WriteFile(limineConf, []byte(contentStr), 0644); {
+		case err != nil:
 			return fmt.Errorf("failed to update limine.conf: %w", err)
 		}
 
@@ -244,7 +213,8 @@ func (p *PostInstallPhase) configurePlymouth(progressChan chan<- ProgressUpdate)
 
 	// Create theme directory
 	themeDir := filepath.Join(config.PathMntPlymouthThemes, config.PlymouthThemeName)
-	if err := p.fs.MkdirAll(themeDir, 0755); err != nil {
+	switch err := p.fs.MkdirAll(themeDir, 0755); {
+	case err != nil:
 		return fmt.Errorf("failed to create theme directory: %w", err)
 	}
 
@@ -254,11 +224,13 @@ func (p *PostInstallPhase) configurePlymouth(progressChan chan<- ProgressUpdate)
 
 		fileURL := fmt.Sprintf("%s/assets/plymouth/%s", p.config.RawURL, filename)
 		resp, err := p.http.Get(fileURL)
-		if err != nil {
+		switch {
+		case err != nil:
 			return fmt.Errorf("failed to download %s: %w", filename, err)
 		}
 
-		if resp.StatusCode != http.StatusOK {
+		switch {
+		case resp.StatusCode != http.StatusOK:
 			resp.Body.Close()
 			return fmt.Errorf("failed to download %s: HTTP %d", filename, resp.StatusCode)
 		}
@@ -266,7 +238,8 @@ func (p *PostInstallPhase) configurePlymouth(progressChan chan<- ProgressUpdate)
 		// Save file
 		destPath := filepath.Join(themeDir, filename)
 		destFile, err := p.fs.Create(destPath)
-		if err != nil {
+		switch {
+		case err != nil:
 			resp.Body.Close()
 			return fmt.Errorf("failed to create %s: %w", filename, err)
 		}
@@ -275,12 +248,14 @@ func (p *PostInstallPhase) configurePlymouth(progressChan chan<- ProgressUpdate)
 		destFile.Close()
 		resp.Body.Close()
 
-		if err != nil {
+		switch {
+		case err != nil:
 			return fmt.Errorf("failed to save %s: %w", filename, err)
 		}
 
 		// Set permissions
-		if err := p.fs.Chmod(destPath, 0644); err != nil {
+		switch err := p.fs.Chmod(destPath, 0644); {
+		case err != nil:
 			return fmt.Errorf("failed to set permissions on %s: %w", filename, err)
 		}
 	}
@@ -289,7 +264,8 @@ func (p *PostInstallPhase) configurePlymouth(progressChan chan<- ProgressUpdate)
 
 	// Set as default theme
 	setThemeCmd := fmt.Sprintf("plymouth-set-default-theme %s", config.PlymouthThemeName)
-	if err := p.chrExec.ChrootExec(p.logger.LogPath(),config.PathMnt, setThemeCmd); err != nil {
+	switch err := p.chrExec.ChrootExec(p.logger.LogPath(),config.PathMnt, setThemeCmd); {
+	case err != nil:
 		return fmt.Errorf("failed to set Plymouth theme: %w", err)
 	}
 
@@ -297,7 +273,8 @@ func (p *PostInstallPhase) configurePlymouth(progressChan chan<- ProgressUpdate)
 
 	// Regenerate initramfs
 	p.SendOutput(progressChan, "Regenerating initramfs with Plymouth...")
-	if err := p.chrExec.ChrootExec(p.logger.LogPath(),config.PathMnt, "mkinitcpio -P"); err != nil {
+	switch err := p.chrExec.ChrootExec(p.logger.LogPath(),config.PathMnt, "mkinitcpio -P"); {
+	case err != nil:
 		return fmt.Errorf("failed to regenerate initramfs: %w", err)
 	}
 
@@ -310,7 +287,8 @@ func (p *PostInstallPhase) configureSnapper(progressChan chan<- ProgressUpdate) 
 	p.SendOutput(progressChan, "Installing limine-snapper-sync...")
 
 	// Install limine-snapper-sync
-	if err := p.chrExec.ChrootPacman(p.logger.LogPath(),config.PathMnt, "-S", "--needed", "limine-snapper-sync"); err != nil {
+	switch err := p.chrExec.ChrootPacman(p.logger.LogPath(),config.PathMnt, "-S", "--needed", "limine-snapper-sync"); {
+	case err != nil:
 		return fmt.Errorf("failed to install limine-snapper-sync: %w", err)
 	}
 
@@ -319,7 +297,8 @@ func (p *PostInstallPhase) configureSnapper(progressChan chan<- ProgressUpdate) 
 	// Get kernel cmdline from existing Limine config
 	limineConf := filepath.Join(config.PathMntBootEFILimine, config.FileLimineConfig)
 	content, err := p.fs.ReadFile(limineConf)
-	if err != nil {
+	switch {
+	case err != nil:
 		return fmt.Errorf("failed to read limine.conf: %w", err)
 	}
 
@@ -327,7 +306,8 @@ func (p *PostInstallPhase) configureSnapper(progressChan chan<- ProgressUpdate) 
 	cmdlineRegex := regexp.MustCompile(`(?m)^\s*cmdline:\s*(.+)$`)
 	matches := cmdlineRegex.FindStringSubmatch(string(content))
 	cmdline := ""
-	if len(matches) > 1 {
+	switch {
+	case len(matches) > 1:
 		cmdline = strings.TrimSpace(matches[1])
 	}
 
@@ -350,14 +330,16 @@ MAX_SNAPSHOT_ENTRIES=5
 SNAPSHOT_FORMAT_CHOICE=5
 `, cmdline)
 
-	if err := p.fs.WriteFile(config.PathMntEtcDefaultLimine, []byte(limineDefaultConfig), 0644); err != nil {
+	switch err := p.fs.WriteFile(config.PathMntEtcDefaultLimine, []byte(limineDefaultConfig), 0644); {
+	case err != nil:
 		return fmt.Errorf("failed to write limine config: %w", err)
 	}
 
 	p.SendOutput(progressChan, "[OK] Limine snapper config created")
 
 	// Enable service
-	if err := p.chrExec.ChrootSystemctl(p.logger.LogPath(), config.PathMnt, "enable", "limine-snapper-sync.service"); err != nil {
+	switch err := p.chrExec.ChrootSystemctl(p.logger.LogPath(), config.PathMnt, "enable", "limine-snapper-sync.service"); {
+	case err != nil:
 		return fmt.Errorf("failed to enable limine-snapper-sync: %w", err)
 	}
 
@@ -370,7 +352,8 @@ func (p *PostInstallPhase) configurePacman(progressChan chan<- ProgressUpdate) e
 	p.SendOutput(progressChan, "Configuring pacman UX...")
 
 	content, err := p.fs.ReadFile(config.PathMntEtcPacmanConf)
-	if err != nil {
+	switch {
+	case err != nil:
 		return fmt.Errorf("failed to read pacman.conf: %w", err)
 	}
 
@@ -391,7 +374,8 @@ func (p *PostInstallPhase) configurePacman(progressChan chan<- ProgressUpdate) e
 		contentStr = colorLineRegex.ReplaceAllString(contentStr, "Color\nILoveCandy")
 	}
 
-	if err := p.fs.WriteFile(config.PathMntEtcPacmanConf, []byte(contentStr), 0644); err != nil {
+	switch err := p.fs.WriteFile(config.PathMntEtcPacmanConf, []byte(contentStr), 0644); {
+	case err != nil:
 		return fmt.Errorf("failed to write pacman.conf: %w", err)
 	}
 
@@ -404,7 +388,8 @@ func (p *PostInstallPhase) installPacmanHooks(progressChan chan<- ProgressUpdate
 	p.SendOutput(progressChan, "Installing pacman hooks...")
 
 	// Create hooks directory
-	if err := p.fs.MkdirAll(config.PathMntEtcPacmanDHooks, 0755); err != nil {
+	switch err := p.fs.MkdirAll(config.PathMntEtcPacmanDHooks, 0755); {
+	case err != nil:
 		return fmt.Errorf("failed to create hooks directory: %w", err)
 	}
 
@@ -422,11 +407,222 @@ Exec = /usr/bin/cp /usr/share/limine/BOOTX64.EFI /boot/EFI/limine/
 `
 
 	hookPath := filepath.Join(config.PathMntEtcPacmanDHooks, "99-limine.hook")
-	if err := p.fs.WriteFile(hookPath, []byte(limineHook), 0644); err != nil {
+	switch err := p.fs.WriteFile(hookPath, []byte(limineHook), 0644); {
+	case err != nil:
 		return fmt.Errorf("failed to write limine hook: %w", err)
 	}
 
 	p.SendOutput(progressChan, "[OK] Limine update hook installed")
+	return nil
+}
+
+// configureShell sets up bash shell with ArchUp defaults
+func (p *PostInstallPhase) configureShell(progressChan chan<- ProgressUpdate) error {
+	p.SendOutput(progressChan, "Configuring shell environment...")
+
+	// Get username from /mnt/home
+	homeDir := filepath.Join(config.PathMnt, "home")
+	entries, err := os.ReadDir(homeDir)
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to read home directory: %w", err)
+	case len(entries) == 0:
+		return fmt.Errorf("no user found in /home")
+	}
+
+	username := entries[0].Name()
+	userHome := filepath.Join(config.PathMnt, "home", username)
+	archupDefault := filepath.Join(userHome, ".local", "share", "archup", "default")
+	archupDefaultBash := filepath.Join(archupDefault, "bash")
+
+	p.SendOutput(progressChan, fmt.Sprintf("Configuring shell for user: %s", username))
+
+	// Create directory structure
+	switch err := p.fs.MkdirAll(archupDefaultBash, 0755); {
+	case err != nil:
+		return fmt.Errorf("failed to create shell config directory: %w", err)
+	}
+
+	// Copy shell configuration files from templates
+	switch err := p.copyShellTemplates(archupDefault, archupDefaultBash); {
+	case err != nil:
+		return fmt.Errorf("failed to copy shell templates: %w", err)
+	}
+
+	// Create .bashrc
+	bashrcContent, err := p.readTemplate(config.BashrcTemplate)
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to read bashrc template: %w", err)
+	}
+
+	bashrcPath := filepath.Join(userHome, ".bashrc")
+	switch err := p.fs.WriteFile(bashrcPath, bashrcContent, 0644); {
+	case err != nil:
+		return fmt.Errorf("failed to write .bashrc: %w", err)
+	}
+
+	// Set ownership to user
+	switch err := p.setShellOwnership(userHome, username); {
+	case err != nil:
+		return fmt.Errorf("failed to set ownership: %w", err)
+	}
+
+	// Clone bleu-theme repository
+	p.SendOutput(progressChan, "Cloning bleu-theme repository...")
+	themesDir := filepath.Join(userHome, ".local", "share", "archup", "themes")
+	bleuThemeDir := filepath.Join(themesDir, "bleu")
+	currentDir := filepath.Join(userHome, ".local", "share", "archup", "current")
+
+	cloneCmd := fmt.Sprintf("su - %s -c 'mkdir -p %s && git clone https://github.com/bnema/bleu-theme.git %s'",
+		username, themesDir, bleuThemeDir)
+	switch err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, cloneCmd); {
+	case err != nil:
+		p.SendOutput(progressChan, "[WARN] Failed to clone bleu-theme repository")
+	default:
+		p.SendOutput(progressChan, "[OK] Bleu-theme repository cloned")
+	}
+
+	// Create current theme symlink
+	symlinkCmd := fmt.Sprintf("su - %s -c 'mkdir -p %s && ln -snf %s %s/theme'",
+		username, currentDir, bleuThemeDir, currentDir)
+	switch err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, symlinkCmd); {
+	case err != nil:
+		p.SendOutput(progressChan, "[WARN] Failed to create theme symlink")
+	}
+
+	// Apply themes to CLI tools
+	p.SendOutput(progressChan, "Applying themes to CLI tools...")
+	switch err := p.applyThemes(progressChan, username, userHome); {
+	case err != nil:
+		// Non-fatal, log and continue
+		p.SendOutput(progressChan, "[WARN] Some themes failed to apply")
+	}
+
+	// Configure git delta
+	gitCommands := []string{
+		fmt.Sprintf("su - %s -c 'git config --global core.pager delta'", username),
+		fmt.Sprintf("su - %s -c 'git config --global interactive.diffFilter \"delta --color-only\"'", username),
+		fmt.Sprintf("su - %s -c 'git config --global delta.navigate true'", username),
+		fmt.Sprintf("su - %s -c 'git config --global delta.light false'", username),
+		fmt.Sprintf("su - %s -c 'git config --global delta.side-by-side true'", username),
+		fmt.Sprintf("su - %s -c 'git config --global merge.conflictstyle diff3'", username),
+		fmt.Sprintf("su - %s -c 'git config --global diff.colorMoved default'", username),
+	}
+
+	for _, gitCmd := range gitCommands {
+		switch err := p.chrExec.ChrootExec(p.logger.LogPath(),config.PathMnt, gitCmd); {
+		case err != nil:
+			// Non-fatal
+			p.SendOutput(progressChan, "[WARN] Failed to configure git delta")
+			break
+		}
+	}
+
+	p.SendOutput(progressChan, "[OK] Shell environment configured")
+	return nil
+}
+
+// copyShellTemplates copies shell config templates to user directory
+func (p *PostInstallPhase) copyShellTemplates(archupDefault, archupDefaultBash string) error {
+	templates := map[string]string{
+		config.ShellConfigTemplate:  filepath.Join(archupDefaultBash, "shell"),
+		config.ShellInitTemplate:    filepath.Join(archupDefaultBash, "init"),
+		config.ShellAliasesTemplate: filepath.Join(archupDefaultBash, "aliases"),
+		config.ShellEnvsTemplate:    filepath.Join(archupDefaultBash, "envs"),
+		config.ShellRcTemplate:      filepath.Join(archupDefaultBash, "rc"),
+		// Note: starship.toml is now copied from bleu-theme in applyThemes()
+	}
+
+	for template, dest := range templates {
+		content, err := p.readTemplate(template)
+		switch {
+		case err != nil:
+			return fmt.Errorf("failed to read template %s: %w", template, err)
+		}
+
+		switch err := p.fs.WriteFile(dest, content, 0644); {
+		case err != nil:
+			return fmt.Errorf("failed to write %s: %w", dest, err)
+		}
+	}
+
+	return nil
+}
+
+// readTemplate reads a template file from install path
+func (p *PostInstallPhase) readTemplate(filename string) ([]byte, error) {
+	// Use DefaultInstallDir directly to match where bootstrap downloads files
+	templatePath := filepath.Join(config.DefaultInstallDir, filename)
+	return p.fs.ReadFile(templatePath)
+}
+
+// setShellOwnership sets ownership of shell config files to user
+func (p *PostInstallPhase) setShellOwnership(userHome, username string) error {
+	// Use chroot to run chown
+	relativeHome := strings.TrimPrefix(userHome, config.PathMnt)
+	chownCmd := fmt.Sprintf("chown -R %s:%s %s/.local %s/.bashrc",
+		username, username, relativeHome, relativeHome)
+	return p.chrExec.ChrootExec(p.logger.LogPath(),config.PathMnt, chownCmd)
+}
+
+// applyThemes applies bleu-theme to CLI tools
+func (p *PostInstallPhase) applyThemes(progressChan chan<- ProgressUpdate, username, userHome string) error {
+	themeDir := filepath.Join(userHome, ".local", "share", "archup", "current", "theme")
+	archupDefault := filepath.Join(userHome, ".local", "share", "archup", "default")
+
+	// Starship theme - copy to archup default location
+	p.SendOutput(progressChan, "Configuring starship theme...")
+	starshipCmd := fmt.Sprintf("su - %s -c 'cp %s/starship/bleu.toml %s/starship.toml'",
+		username, themeDir, archupDefault)
+	p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, starshipCmd)
+
+	// Eza theme
+	p.SendOutput(progressChan, "Configuring eza theme...")
+	ezaConfigDir := fmt.Sprintf("%s/.config/eza", userHome)
+	ezaCommands := []string{
+		fmt.Sprintf("su - %s -c 'mkdir -p %s'", username, ezaConfigDir),
+		fmt.Sprintf("su - %s -c 'cp %s/eza/theme.yml %s/'", username, themeDir, ezaConfigDir),
+	}
+	for _, cmd := range ezaCommands {
+		p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, cmd)
+	}
+
+	// Bat theme
+	p.SendOutput(progressChan, "Configuring bat theme...")
+	batThemeDir := fmt.Sprintf("%s/.config/bat/themes", userHome)
+	batCommands := []string{
+		fmt.Sprintf("su - %s -c 'mkdir -p %s'", username, batThemeDir),
+		fmt.Sprintf("su - %s -c 'cp %s/bat/bleu.tmTheme %s/'", username, themeDir, batThemeDir),
+		fmt.Sprintf("su - %s -c 'bat cache --build'", username),
+	}
+	for _, cmd := range batCommands {
+		p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, cmd)
+	}
+
+	// Btop theme
+	p.SendOutput(progressChan, "Configuring btop theme...")
+	btopThemeDir := fmt.Sprintf("%s/.config/btop/themes", userHome)
+	btopCommands := []string{
+		fmt.Sprintf("su - %s -c 'mkdir -p %s'", username, btopThemeDir),
+		fmt.Sprintf("su - %s -c 'cp %s/btop/bleu.theme %s/'", username, themeDir, btopThemeDir),
+	}
+	for _, cmd := range btopCommands {
+		p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, cmd)
+	}
+
+	// Yazi theme
+	p.SendOutput(progressChan, "Configuring yazi theme...")
+	yaziFlavorDir := fmt.Sprintf("%s/.config/yazi/flavors/bleu", userHome)
+	yaziCommands := []string{
+		fmt.Sprintf("su - %s -c 'mkdir -p %s'", username, yaziFlavorDir),
+		fmt.Sprintf("su - %s -c 'cp %s/yazi/bleu.toml %s/flavor.toml'", username, themeDir, yaziFlavorDir),
+	}
+	for _, cmd := range yaziCommands {
+		p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, cmd)
+	}
+
+	p.SendOutput(progressChan, "[OK] CLI themes configured")
 	return nil
 }
 
@@ -509,7 +705,8 @@ func (p *PostInstallPhase) unmountAll(progressChan chan<- ProgressUpdate) error 
 	p.SendOutput(progressChan, "Unmounting all partitions...")
 
 	// Unmount /mnt recursively
-	if err := system.Unmount(p.logger.LogPath(), config.PathMnt); err != nil {
+	switch err := system.Unmount(p.logger.LogPath(), config.PathMnt); {
+	case err != nil:
 		p.SendOutput(progressChan, "[WARN] Some partitions may still be mounted")
 		return fmt.Errorf("failed to unmount cleanly: %w", err)
 	}
@@ -550,3 +747,119 @@ func (p *PostInstallPhase) CanSkip() bool {
 	return false
 }
 
+// setupPostBoot downloads and configures first-boot service
+func (p *PostInstallPhase) setupPostBoot(progressChan chan<- ProgressUpdate) error {
+	p.SendOutput(progressChan, "Configuring first-boot service...")
+
+	switch err := p.fs.MkdirAll(config.PathMntPostBoot, 0755); {
+	case err != nil:
+		return fmt.Errorf("failed to create post-boot directory: %w", err)
+	}
+
+	// Download logo.txt
+	p.SendOutput(progressChan, "Downloading logo.txt...")
+	logoURL := fmt.Sprintf("%s/logo.txt", p.config.RawURL)
+	resp, err := p.http.Get(logoURL)
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to download logo.txt: %w", err)
+	case resp.StatusCode != http.StatusOK:
+		resp.Body.Close()
+		return fmt.Errorf("failed to download logo.txt: HTTP %d", resp.StatusCode)
+	}
+
+	logoPath := filepath.Join(config.PathMntPostBoot, "logo.txt")
+	logoFile, err := p.fs.Create(logoPath)
+	switch {
+	case err != nil:
+		resp.Body.Close()
+		return fmt.Errorf("failed to create logo.txt: %w", err)
+	}
+
+	_, err = io.Copy(logoFile, resp.Body)
+	logoFile.Close()
+	resp.Body.Close()
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to save logo.txt: %w", err)
+	}
+
+	// Download all post-boot scripts
+	for _, script := range config.PostBootScripts {
+		p.SendOutput(progressChan, fmt.Sprintf("Downloading %s...", script))
+
+		scriptURL := fmt.Sprintf("%s/install/post-boot/%s", p.config.RawURL, script)
+		resp, err := p.http.Get(scriptURL)
+		switch {
+		case err != nil:
+			return fmt.Errorf("failed to download %s: %w", script, err)
+		case resp.StatusCode != http.StatusOK:
+			resp.Body.Close()
+			return fmt.Errorf("failed to download %s: HTTP %d", script, resp.StatusCode)
+		}
+
+		scriptPath := filepath.Join(config.PathMntPostBoot, script)
+		scriptFile, err := p.fs.Create(scriptPath)
+		switch {
+		case err != nil:
+			resp.Body.Close()
+			return fmt.Errorf("failed to create %s: %w", script, err)
+		}
+
+		_, err = io.Copy(scriptFile, resp.Body)
+		scriptFile.Close()
+		resp.Body.Close()
+
+		switch {
+		case err != nil:
+			return fmt.Errorf("failed to save %s: %w", script, err)
+		}
+
+		switch err := p.fs.Chmod(scriptPath, 0755); {
+		case err != nil:
+			return fmt.Errorf("failed to set permissions on %s: %w", script, err)
+		}
+	}
+
+	p.SendOutput(progressChan, "[OK] Post-boot scripts downloaded")
+
+	// Download service template
+	p.SendOutput(progressChan, "Creating systemd service...")
+	serviceURL := fmt.Sprintf("%s/%s", p.config.RawURL, config.PostBootServiceTemplate)
+	resp, err = p.http.Get(serviceURL)
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to download service template: %w", err)
+	case resp.StatusCode != http.StatusOK:
+		resp.Body.Close()
+		return fmt.Errorf("failed to download service template: HTTP %d", resp.StatusCode)
+	}
+
+	templateBytes, err := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to read service template: %w", err)
+	}
+
+	serviceContent := string(templateBytes)
+	serviceContent = strings.ReplaceAll(serviceContent, "__ARCHUP_EMAIL__", p.config.Email)
+	serviceContent = strings.ReplaceAll(serviceContent, "__ARCHUP_USERNAME__", p.config.Username)
+
+	servicePath := filepath.Join(config.PathMntSystemdSystem, config.PostBootServiceName)
+	switch err := p.fs.WriteFile(servicePath, []byte(serviceContent), 0644); {
+	case err != nil:
+		return fmt.Errorf("failed to write service file: %w", err)
+	}
+
+	p.SendOutput(progressChan, "[OK] Service file created")
+
+	p.SendOutput(progressChan, "Enabling first-boot service...")
+	switch err := p.chrExec.ChrootSystemctl(p.logger.LogPath(), config.PathMnt, "enable", config.PostBootServiceName); {
+	case err != nil:
+		return fmt.Errorf("failed to enable service: %w", err)
+	}
+
+	p.SendOutput(progressChan, "[OK] First-boot service enabled")
+	return nil
+}

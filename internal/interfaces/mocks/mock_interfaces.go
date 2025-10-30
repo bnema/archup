@@ -333,6 +333,26 @@ func (mr *MockChrootExecutorMockRecorder) ChrootExecWithContext(ctx, logPath, mo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChrootExecWithContext", reflect.TypeOf((*MockChrootExecutor)(nil).ChrootExecWithContext), ctx, logPath, mountPoint, command)
 }
 
+// ChrootExecWithOutput mocks base method.
+func (m *MockChrootExecutor) ChrootExecWithOutput(logPath, mountPoint, command string, args ...string) (string, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{logPath, mountPoint, command}
+	for _, a := range args {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ChrootExecWithOutput", varargs...)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ChrootExecWithOutput indicates an expected call of ChrootExecWithOutput.
+func (mr *MockChrootExecutorMockRecorder) ChrootExecWithOutput(logPath, mountPoint, command any, args ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{logPath, mountPoint, command}, args...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChrootExecWithOutput", reflect.TypeOf((*MockChrootExecutor)(nil).ChrootExecWithOutput), varargs...)
+}
+
 // ChrootExecWithStdin mocks base method.
 func (m *MockChrootExecutor) ChrootExecWithStdin(logPath, mountPoint, command, stdin string) error {
 	m.ctrl.T.Helper()
