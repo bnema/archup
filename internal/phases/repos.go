@@ -600,9 +600,38 @@ func (p *ReposPhase) buildFromAUR(progressChan chan<- ProgressUpdate, helper str
 		return fmt.Errorf("build failed or timed out: %w", err)
 	}
 
-	// Install built package
+	// Get exact package filename using makepkg --packagelist
+	p.SendOutput(progressChan, fmt.Sprintf("Locating %s package...", helper))
+	listCmd := fmt.Sprintf("su - %s -c 'cd /tmp/%s && makepkg --packagelist'", p.config.Username, helper)
+
+	output, err := p.chrExec.ChrootExecWithOutput(p.logger.LogPath(), config.PathMnt, listCmd)
+	switch {
+	case err != nil:
+		return fmt.Errorf("failed to get package list: %w", err)
+	}
+
+	// Parse output and filter out debug packages
+	lines := strings.Split(strings.TrimSpace(output), "\n")
+	var mainPackage string
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		// Skip debug packages (contain "-debug-" in the filename)
+		if line != "" && !strings.Contains(line, "-debug-") {
+			mainPackage = line
+			break
+		}
+	}
+
+	switch {
+	case mainPackage == "":
+		return fmt.Errorf("no package found for %s", helper)
+	}
+
+	p.logger.Info("Found package", "helper", helper, "package", mainPackage)
 	p.SendOutput(progressChan, fmt.Sprintf("Installing %s...", helper))
-	installCmd := fmt.Sprintf("pacman -U --noconfirm /tmp/%s/*.pkg.tar.zst", helper)
+
+	// Install using exact package path
+	installCmd := fmt.Sprintf("pacman -U --noconfirm %s", mainPackage)
 	switch err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, installCmd); {
 	case err != nil:
 		return fmt.Errorf("failed to install %s: %w", helper, err)

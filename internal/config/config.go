@@ -253,7 +253,7 @@ type Config struct {
 // version parameter determines which branch to use for downloads (dev builds use dev branch)
 func NewConfig(version string) *Config {
 	// Determine which branch to use based on version
-	branch := "main"
+	var branch string
 	switch {
 	case version == "dev" || version == "":
 		branch = "dev"
@@ -333,7 +333,6 @@ func (c *Config) Save() error {
 		return fmt.Errorf("failed to create config: %w", err)
 	}
 	defer file.Close()
-
 	// Set restrictive permissions (600) since config contains passwords
 	if err := os.Chmod(c.ConfigPath, 0600); err != nil {
 		return fmt.Errorf("failed to set config permissions: %w", err)

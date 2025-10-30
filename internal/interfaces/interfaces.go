@@ -37,6 +37,7 @@ type SystemExecutor interface {
 // ChrootExecutor abstracts chroot operations
 type ChrootExecutor interface {
 	ChrootExec(logPath, mountPoint, command string, args ...string) error
+	ChrootExecWithOutput(logPath, mountPoint, command string, args ...string) (string, error)
 	ChrootSystemctl(logPath, mountPoint, action, service string) error
 	ChrootExecWithStdin(logPath, mountPoint, command, stdin string) error
 	ChrootExecWithContext(ctx context.Context, logPath, mountPoint, command string) error
@@ -123,6 +124,10 @@ type DefaultChrootExecutor struct{}
 
 func (d *DefaultChrootExecutor) ChrootExec(logPath, mountPoint, command string, args ...string) error {
 	return system.ChrootExec(logPath, mountPoint, command, args...)
+}
+
+func (d *DefaultChrootExecutor) ChrootExecWithOutput(logPath, mountPoint, command string, args ...string) (string, error) {
+	return system.ChrootExecWithOutput(logPath, mountPoint, command, args...)
 }
 
 func (d *DefaultChrootExecutor) ChrootSystemctl(logPath, mountPoint, action, service string) error {
