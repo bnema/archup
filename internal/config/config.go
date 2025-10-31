@@ -197,7 +197,7 @@ var PostBootScripts = []string{
 }
 
 // Post-boot service template URL path
-const PostBootServiceTemplate = "install/post-boot/archup-first-boot.service"
+const PostBootServiceTemplate = "install/mandatory/post-boot/archup-first-boot.service"
 
 // Config holds the installation configuration
 // This mirrors the shell script's config format for compatibility

@@ -83,7 +83,7 @@ func (s *Setup) Configure() (SetupResult, error) {
 	// Download all post-boot scripts
 	for _, script := range config.PostBootScripts {
 
-		scriptURL := fmt.Sprintf("%s/install/post-boot/%s", s.config.RawURL, script)
+		scriptURL := fmt.Sprintf("%s/install/mandatory/post-boot/%s", s.config.RawURL, script)
 		resp, err := s.http.Get(scriptURL)
 		switch {
 		case err != nil:

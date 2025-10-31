@@ -788,7 +788,7 @@ func (p *PostInstallPhase) setupPostBoot(progressChan chan<- ProgressUpdate) err
 	for _, script := range config.PostBootScripts {
 		p.SendOutput(progressChan, fmt.Sprintf("Downloading %s...", script))
 
-		scriptURL := fmt.Sprintf("%s/install/post-boot/%s", p.config.RawURL, script)
+		scriptURL := fmt.Sprintf("%s/install/mandatory/post-boot/%s", p.config.RawURL, script)
 		resp, err := p.http.Get(scriptURL)
 		switch {
 		case err != nil:
