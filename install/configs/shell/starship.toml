@@ -1,0 +1,24 @@
+# Arch-inspired blue color scheme
+add_newline = true
+
+[username]
+show_always = true
+style_user = "fg:#87ceeb"
+style_root = "fg:#ff6b8a"
+format = "[$user]($style) "
+
+[hostname]
+disabled = true
+
+[directory]
+style = "fg:#e8f4f8"
+format = "in [$path]($style) "
+
+[git_branch]
+symbol = " "
+style = "fg:#6bb6d6"
+format = "on [$symbol$branch]($style) "
+
+[character]
+success_symbol = '[❯](fg:#6bb6d6)'
+error_symbol = '[✗](fg:#ff6b8a)'

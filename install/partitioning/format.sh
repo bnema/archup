@@ -14,21 +14,67 @@ echo "Formatted $ARCHUP_EFI_PART as FAT32" >> "$ARCHUP_INSTALL_LOG_FILE"
 if [ "$ARCHUP_ENCRYPTION" = "enabled" ]; then
   gum style --foreground 6 --padding "1 0 0 $PADDING_LEFT" "Setting up LUKS encryption..."
 
-  # Read password from config file (NOTE: Never log the actual password!)
-  ARCHUP_PASSWORD=$(config_get "ARCHUP_PASSWORD")
+  # Check if user wants to use same password or separate password
+  ARCHUP_ENCRYPTION_USE_SAME_PASSWORD=$(config_get "ARCHUP_ENCRYPTION_USE_SAME_PASSWORD")
 
-  if [ -z "$ARCHUP_PASSWORD" ]; then
-    gum style --foreground 1 --padding "1 0 1 $PADDING_LEFT" "ERROR: Encryption password not set!"
-    echo "ERROR: Encryption password is empty during LUKS setup" >> "$ARCHUP_INSTALL_LOG_FILE"
-    exit 1
+  if [ "$ARCHUP_ENCRYPTION_USE_SAME_PASSWORD" = "true" ]; then
+    # Use account password for encryption
+    LUKS_PASSWORD=$(config_get "ARCHUP_PASSWORD")
+
+    if [ -z "$LUKS_PASSWORD" ]; then
+      gum style --foreground 1 --padding "1 0 1 $PADDING_LEFT" "ERROR: Account password not set!"
+      echo "ERROR: Account password is empty during LUKS setup" >> "$ARCHUP_INSTALL_LOG_FILE"
+      exit 1
+    fi
+  else
+    # Prompt for separate encryption password
+    echo
+    gum style --foreground 6 --padding "0 0 0 $PADDING_LEFT" "Disk Encryption Password"
+    gum style --padding "0 0 0 $PADDING_LEFT" "Enter a password to encrypt your disk (different from your account password)"
+    gum style --foreground 8 --padding "0 0 0 $PADDING_LEFT" "Press Ctrl+C to cancel or leave empty to abort"
+
+    while true; do
+      LUKS_PASSWORD=$(gum input --password --placeholder "Enter encryption password" \
+        --prompt "Password: " \
+        --padding "0 0 0 $PADDING_LEFT")
+
+      # Check if gum was cancelled (Ctrl+C returns exit code 130)
+      if [ $? -ne 0 ]; then
+        echo "Installation cancelled by user" >> "$ARCHUP_INSTALL_LOG_FILE"
+        exit 130
+      fi
+
+      # Allow empty password to abort
+      if [ -z "$LUKS_PASSWORD" ]; then
+        gum style --foreground 3 --padding "1 0 1 $PADDING_LEFT" "Installation aborted by user"
+        echo "Installation aborted: empty encryption password" >> "$ARCHUP_INSTALL_LOG_FILE"
+        exit 1
+      fi
+
+      LUKS_PASSWORD_CONFIRM=$(gum input --password --placeholder "Confirm encryption password" \
+        --prompt "Confirm: " \
+        --padding "0 0 0 $PADDING_LEFT")
+
+      # Check if confirmation was cancelled
+      if [ $? -ne 0 ]; then
+        echo "Installation cancelled by user" >> "$ARCHUP_INSTALL_LOG_FILE"
+        exit 130
+      fi
+
+      if [ "$LUKS_PASSWORD" = "$LUKS_PASSWORD_CONFIRM" ]; then
+        break
+      else
+        gum style --foreground 1 --padding "1 0 1 $PADDING_LEFT" "Passwords do not match. Try again."
+      fi
+    done
   fi
 
   # Wipe any existing signatures on root partition to avoid conflicts
   wipefs -af "$ARCHUP_ROOT_PART" >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 
-  # Setup LUKS with Argon2id and 2000ms iteration time (using user password)
+  # Setup LUKS with Argon2id and 2000ms iteration time
   # Use printf to avoid trailing newline that <<< adds
-  printf '%s' "$ARCHUP_PASSWORD" | cryptsetup luksFormat \
+  printf '%s' "$LUKS_PASSWORD" | cryptsetup luksFormat \
     --type luks2 \
     --batch-mode \
     --pbkdf argon2id \
@@ -40,9 +86,13 @@ if [ "$ARCHUP_ENCRYPTION" = "enabled" ]; then
   echo "LUKS container created" >> "$ARCHUP_INSTALL_LOG_FILE"
 
   # Open the encrypted container
-  printf '%s' "$ARCHUP_PASSWORD" | cryptsetup open --key-file=- "$ARCHUP_ROOT_PART" cryptroot >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
+  printf '%s' "$LUKS_PASSWORD" | cryptsetup open --key-file=- "$ARCHUP_ROOT_PART" cryptroot >> "$ARCHUP_INSTALL_LOG_FILE" 2>&1
 
   echo "LUKS container opened" >> "$ARCHUP_INSTALL_LOG_FILE"
+
+  # Clear password variables from memory
+  unset LUKS_PASSWORD
+  unset LUKS_PASSWORD_CONFIRM
 
   # Export the mapped device path
   export ARCHUP_CRYPT_ROOT="/dev/mapper/cryptroot"

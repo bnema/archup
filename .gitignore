@@ -12,7 +12,18 @@
 
 pkg/
 src/
-CLAUDE.md
+build/
+dist/
+
+# Test coverage
+coverage.out
+
+# Markdown files at root (except README and CHANGELOG)
+/*.md
+!README.md
+!CHANGELOG.md
+!LICENSE.md
+!RELEASING.md
 
 
 *.qcow2

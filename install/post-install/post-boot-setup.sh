@@ -15,6 +15,7 @@ cp "$ARCHUP_INSTALL/post-boot/snapper.sh" /mnt/usr/local/share/archup/post-boot/
 cp "$ARCHUP_INSTALL/post-boot/ufw.sh" /mnt/usr/local/share/archup/post-boot/
 cp "$ARCHUP_INSTALL/post-boot/ssh-keygen.sh" /mnt/usr/local/share/archup/post-boot/
 cp "$ARCHUP_INSTALL/post-boot/archup-cli.sh" /mnt/usr/local/share/archup/post-boot/
+cp "$ARCHUP_INSTALL/post-boot/blesh.sh" /mnt/usr/local/share/archup/post-boot/
 
 # Make all scripts executable
 chmod +x /mnt/usr/local/share/archup/post-boot/*.sh
@@ -30,5 +31,6 @@ echo "First-boot service will run on first reboot to:" >> "$ARCHUP_INSTALL_LOG_F
 echo "  - Configure snapper snapshots" >> "$ARCHUP_INSTALL_LOG_FILE"
 echo "  - Generate SSH keys" >> "$ARCHUP_INSTALL_LOG_FILE"
 echo "  - Build and install archup-cli from GitHub" >> "$ARCHUP_INSTALL_LOG_FILE"
+echo "  - Install and configure ble.sh (Bash Line Editor)" >> "$ARCHUP_INSTALL_LOG_FILE"
 
 gum style --foreground 2 --padding "0 0 1 $PADDING_LEFT" "[OK] First-boot service configured"

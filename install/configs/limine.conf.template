@@ -1,0 +1,18 @@
+timeout: {{TIMEOUT}}
+default_entry: {{DEFAULT_ENTRY}}
+interface_branding: {{BRANDING}}
+interface_branding_colour: {{COLOR}}
+graphics: yes
+quiet: yes
+
+/Arch Linux
+    protocol: linux
+    path: boot():/vmlinuz-{{KERNEL}}
+    cmdline: {{KERNEL_PARAMS}}
+    module_path: boot():/initramfs-{{KERNEL}}.img
+
+/Arch Linux (fallback)
+    protocol: linux
+    path: boot():/vmlinuz-{{KERNEL}}
+    cmdline: {{KERNEL_PARAMS}}
+    module_path: boot():/initramfs-{{KERNEL}}-fallback.img

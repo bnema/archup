@@ -25,25 +25,25 @@ passwd  # Set password to: test
 ssh-copy-id -p 2222 root@localhost  # Use password: test
 ```
 
-## Testing Workflow
+## Quick Test Cycle
 
 ```bash
-# Sync local changes to VM
-./sync-scripts-to-vm.sh
+# One-time: after install, create snapshot
+./snapshot-create.sh clean-install
 
-# SSH into VM
-ssh -p 2222 root@localhost
-
-# Run installer
-cd ~/.local/share/archup && ./install.sh
+# Iterate: reset → test → poweroff → repeat
+./snapshot-restore.sh clean-install
+./start-qemu-installed.sh
 ```
 
 ## Scripts
 
-- `create-vm-img.sh` - Create disk image
-- `start-qemu-arch-iso.sh` - Boot ISO (auto-downloads)
-- `start-qemu-installed.sh` - Boot installed system
-- `sync-scripts-to-vm.sh` - Upload changes to VM
+- `snapshot-create.sh [name]` - Create snapshot
+- `snapshot-restore.sh [name]` - Restore snapshot
+- `snapshot-list.sh` - List snapshots
+- `snapshot-delete.sh <name>` - Delete snapshot
+- `quick-test.sh [name]` - Restore + boot
+- `backup-golden.sh` - Full backup for safety
 
 ## Notes
 

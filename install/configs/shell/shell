@@ -1,0 +1,19 @@
+# History control
+shopt -s histappend
+HISTCONTROL=ignoreboth
+HISTSIZE=32768
+HISTFILESIZE="${HISTSIZE}"
+
+# Bash completion (official recommendation from bash-completion project)
+[[ $PS1 && ! ${BASH_COMPLETION_VERSINFO:-} && -f /usr/share/bash-completion/bash_completion ]] && \
+    . /usr/share/bash-completion/bash_completion
+
+# Enable colored completion output
+if [[ -n "$LS_COLORS" ]]; then
+  bind 'set colored-completion-prefix on'
+  bind 'set colored-stats on'
+fi
+
+# Set complete path
+export PATH="$HOME/.local/bin:$PATH"
+set +h

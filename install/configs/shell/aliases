@@ -1,0 +1,38 @@
+# Eza aliases (modern ls replacement)
+if command -v eza &> /dev/null; then
+  alias ls='eza -lh --group-directories-first --icons=auto'
+  alias lsa='ls -a'
+  alias lt='eza --tree --level=2 --long --icons --git'
+  alias lta='lt -a'
+  alias ll='eza -l --icons=auto'
+  alias la='eza -la --icons=auto'
+fi
+
+# Bat + FZF integration
+if command -v bat &> /dev/null && command -v fzf &> /dev/null; then
+  alias ff="fzf --preview 'bat -n --color=always {}' --preview-window right:60%:wrap"
+fi
+
+# Bat aliases
+if command -v bat &> /dev/null; then
+  alias cat='bat -pp'
+  alias less='bat'
+fi
+
+# Fd alias (modern find replacement)
+if command -v fd &> /dev/null; then
+  alias find='fd'
+fi
+
+# Directories
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+
+# Git shortcuts
+alias g='git'
+alias gs='git status'
+alias ga='git add'
+alias gc='git commit'
+alias gp='git push'
+alias gl='git log --oneline --graph --decorate'
