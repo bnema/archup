@@ -1,3 +1,5 @@
+//go:generate mockgen -destination=mocks/mock_ports.go -package=mocks . FileSystem,File,CommandExecutor,ChrootExecutor,ScriptExecutor,HTTPClient,Response,Logger,InstallationRepository
+
 package ports
 
 import (
@@ -106,4 +108,16 @@ type Logger interface {
 
 	// LogPath returns the path to the log file
 	LogPath() string
+}
+
+// InstallationRepository is the port for installation persistence
+type InstallationRepository interface {
+	// Save persists the installation state
+	Save(ctx context.Context, installationID string, state string) error
+
+	// Load retrieves the installation state
+	Load(ctx context.Context, installationID string) (string, error)
+
+	// Exists checks if an installation exists
+	Exists(ctx context.Context, installationID string) (bool, error)
 }
