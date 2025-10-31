@@ -2,11 +2,9 @@ package phases
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/bnema/archup/internal/config"
 	"github.com/bnema/archup/internal/interfaces"
@@ -487,125 +485,27 @@ func (p *ReposPhase) loadExtraPackages() ([]string, error) {
 	return packages, nil
 }
 
-// installAURHelper installs the selected AUR helper
-// Uses Chaotic-AUR if available, falls back to building from source
+// installAURHelper installs the selected AUR helper from Chaotic-AUR
+// Requires Chaotic-AUR to be enabled (no build-from-source fallback)
 func (p *ReposPhase) installAURHelper(progressChan chan<- ProgressUpdate) error {
 	helper := p.config.AURHelper
 
-	// Strategy 1: Try Chaotic-AUR if available
-	if p.chaoticAUREnabled {
-		p.SendOutput(progressChan, fmt.Sprintf("Attempting to install %s from Chaotic-AUR...", helper))
-		tryCmd := fmt.Sprintf("pacman -S --noconfirm --needed %s", helper)
-		switch err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, tryCmd); {
-		case err == nil:
-			p.SendOutput(progressChan, fmt.Sprintf("[OK] %s installed from Chaotic-AUR", helper))
-			p.logger.Info("AUR helper installed from Chaotic-AUR", "helper", helper)
-			return nil
-		default:
-			p.logger.Warn("Failed to install from Chaotic-AUR, building from source", "error", err)
-			p.SendOutput(progressChan, "[WARN] Chaotic-AUR installation failed, building from source...")
-		}
+	// Only install if Chaotic-AUR is enabled
+	if !p.chaoticAUREnabled {
+		p.SendOutput(progressChan, "[SKIP] AUR helper installation (Chaotic-AUR required)")
+		p.logger.Info("Skipping AUR helper installation - Chaotic-AUR not enabled", "helper", helper)
+		return nil
 	}
 
-	// Strategy 2: Build from source with proper dependency verification
-	p.SendOutput(progressChan, fmt.Sprintf("Building %s from AUR...", helper))
-	if err := p.ensureBuildDeps(progressChan, helper); err != nil {
-		return fmt.Errorf("failed to ensure build dependencies: %w", err)
-	}
-
-	if err := p.buildFromAUR(progressChan, helper); err != nil {
-		return fmt.Errorf("failed to build %s: %w", helper, err)
-	}
-
-	p.SendOutput(progressChan, fmt.Sprintf("[OK] %s built and installed successfully", helper))
-	p.logger.Info("AUR helper built from source", "helper", helper)
-
-	return nil
-}
-
-// ensureBuildDeps verifies and installs build dependencies
-func (p *ReposPhase) ensureBuildDeps(progressChan chan<- ProgressUpdate, helper string) error {
-	p.SendOutput(progressChan, "Verifying build dependencies...")
-
-	// Always need base-devel and git
-	baseCmd := "pacman -S --needed --noconfirm base-devel git"
-	if err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, baseCmd); err != nil {
-		p.logger.Warn("Failed to install base-devel", "error", err)
-		return fmt.Errorf("failed to install base-devel: %w", err)
-	}
-
-	// Install language-specific dependencies
-	var langDeps string
-	switch helper {
-	case "yay":
-		langDeps = "go"
-	case "paru":
-		langDeps = "rust cargo"
-	}
-
-	if langDeps != "" {
-		p.SendOutput(progressChan, fmt.Sprintf("Installing %s dependencies...", helper))
-		depCmd := fmt.Sprintf("pacman -S --needed --noconfirm %s", langDeps)
-		if err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, depCmd); err != nil {
-			p.logger.Warn("Failed to install language dependencies", "helper", helper, "deps", langDeps, "error", err)
-			return fmt.Errorf("failed to install %s: %w", langDeps, err)
-		}
-	}
-
-	p.SendOutput(progressChan, "[OK] Build dependencies verified")
-	return nil
-}
-
-// buildFromAUR builds an AUR package from source with timeout
-func (p *ReposPhase) buildFromAUR(progressChan chan<- ProgressUpdate, helper string) error {
-	// Build as user with timeout (10 minutes max)
-	p.SendOutput(progressChan, fmt.Sprintf("Compiling %s (this may take a few minutes)...", helper))
-	buildCmd := fmt.Sprintf("su - %s -c 'cd /tmp && rm -rf %s && git clone https://aur.archlinux.org/%s.git && cd %s && makepkg -s --noconfirm'", p.config.Username, helper, helper, helper)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-	defer cancel()
-
-	if err := p.chrExec.ChrootExecWithContext(ctx, p.logger.LogPath(), config.PathMnt, buildCmd); err != nil {
-		return fmt.Errorf("build failed or timed out: %w", err)
-	}
-
-	// Get exact package filename using makepkg --packagelist
-	p.SendOutput(progressChan, fmt.Sprintf("Locating %s package...", helper))
-	listCmd := fmt.Sprintf("su - %s -c 'cd /tmp/%s && makepkg --packagelist'", p.config.Username, helper)
-
-	output, err := p.chrExec.ChrootExecWithOutput(p.logger.LogPath(), config.PathMnt, listCmd)
-	if err != nil {
-		return fmt.Errorf("failed to get package list: %w", err)
-	}
-
-	// Parse output and filter out debug packages
-	lines := strings.Split(strings.TrimSpace(output), "\n")
-	var mainPackage string
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		// Skip debug packages (contain "-debug-" in the filename)
-		if line != "" && !strings.Contains(line, "-debug-") {
-			mainPackage = line
-			break
-		}
-	}
-
-	if mainPackage == "" {
-		return fmt.Errorf("no package found for %s", helper)
-	}
-
-	p.logger.Info("Found package", "helper", helper, "package", mainPackage)
-	p.SendOutput(progressChan, fmt.Sprintf("Installing %s...", helper))
-
-	// Install using exact package path
-	installCmd := fmt.Sprintf("pacman -U --noconfirm %s", mainPackage)
+	// Install from Chaotic-AUR
+	p.SendOutput(progressChan, fmt.Sprintf("Installing %s from Chaotic-AUR...", helper))
+	installCmd := fmt.Sprintf("pacman -S --noconfirm --needed %s", helper)
 	if err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, installCmd); err != nil {
-		return fmt.Errorf("failed to install %s: %w", helper, err)
+		return fmt.Errorf("failed to install %s from Chaotic-AUR: %w", helper, err)
 	}
 
-	// Cleanup
-	cleanCmd := fmt.Sprintf("rm -rf /tmp/%s", helper)
-	_ = p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, cleanCmd)
+	p.SendOutput(progressChan, fmt.Sprintf("[OK] %s installed from Chaotic-AUR", helper))
+	p.logger.Info("AUR helper installed from Chaotic-AUR", "helper", helper)
 
 	return nil
 }
