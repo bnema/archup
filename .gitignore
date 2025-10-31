@@ -18,6 +18,11 @@ dist/
 # Test coverage
 coverage.out
 
+# Compiled Go binaries
+/archup-installer
+/cmd/archup-installer/archup-installer
+cmd/*/[a-z]*
+
 # Markdown files at root (except README and CHANGELOG)
 /*.md
 !README.md
