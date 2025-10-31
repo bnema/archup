@@ -34,15 +34,42 @@ type SystemExecutor interface {
 	DetectCPUInfo() (*system.CPUInfo, error)
 }
 
+// ChrootSession represents a persistent chroot session that can execute
+// multiple commands while maintaining state (e.g., /tmp directory contents).
+// Sessions must be explicitly closed when done to clean up resources.
+type ChrootSession interface {
+	// Exec executes a command in the chroot session
+	Exec(command string) error
+
+	// ExecWithOutput executes a command and returns its output
+	ExecWithOutput(command string) (string, error)
+
+	// ExecWithContext executes a command with context support for cancellation
+	ExecWithContext(ctx context.Context, command string) error
+
+	// ExecWithOutputAndContext executes a command with context and returns output
+	ExecWithOutputAndContext(ctx context.Context, command string) (string, error)
+
+	// Close terminates the session and cleans up resources
+	Close() error
+}
+
 // ChrootExecutor abstracts chroot operations
 type ChrootExecutor interface {
 	ChrootExec(logPath, mountPoint, command string, args ...string) error
 	ChrootExecWithOutput(logPath, mountPoint, command string, args ...string) (string, error)
+	ChrootExecWithOutputAndContext(ctx context.Context, logPath, mountPoint, command string, args ...string) (string, error)
 	ChrootSystemctl(logPath, mountPoint, action, service string) error
 	ChrootExecWithStdin(logPath, mountPoint, command, stdin string) error
 	ChrootExecWithContext(ctx context.Context, logPath, mountPoint, command string) error
 	ChrootPacman(logPath, mountPoint, operation string, packages ...string) error
 	DownloadAndInstallPackages(logPath, chrootPath string, urls ...string) error
+
+	// BeginSession starts a persistent chroot session
+	BeginSession(logPath, mountPoint string) (ChrootSession, error)
+
+	// BeginSessionWithContext starts a persistent chroot session with context support
+	BeginSessionWithContext(ctx context.Context, logPath, mountPoint string) (ChrootSession, error)
 }
 
 // HTTPClient abstracts HTTP operations
@@ -130,6 +157,10 @@ func (d *DefaultChrootExecutor) ChrootExecWithOutput(logPath, mountPoint, comman
 	return system.ChrootExecWithOutput(logPath, mountPoint, command, args...)
 }
 
+func (d *DefaultChrootExecutor) ChrootExecWithOutputAndContext(ctx context.Context, logPath, mountPoint, command string, args ...string) (string, error) {
+	return system.ChrootExecWithOutputAndContext(ctx, logPath, mountPoint, command, args...)
+}
+
 func (d *DefaultChrootExecutor) ChrootSystemctl(logPath, mountPoint, action, service string) error {
 	return system.ChrootSystemctl(logPath, mountPoint, action, service)
 }
@@ -148,4 +179,12 @@ func (d *DefaultChrootExecutor) ChrootPacman(logPath, mountPoint, operation stri
 
 func (d *DefaultChrootExecutor) DownloadAndInstallPackages(logPath, chrootPath string, urls ...string) error {
 	return system.DownloadAndInstallPackages(logPath, chrootPath, urls...)
+}
+
+func (d *DefaultChrootExecutor) BeginSession(logPath, mountPoint string) (ChrootSession, error) {
+	return system.BeginSession(logPath, mountPoint)
+}
+
+func (d *DefaultChrootExecutor) BeginSessionWithContext(ctx context.Context, logPath, mountPoint string) (ChrootSession, error) {
+	return system.BeginSessionWithContext(ctx, logPath, mountPoint)
 }

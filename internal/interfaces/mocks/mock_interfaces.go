@@ -16,6 +16,7 @@ import (
 	os "os"
 	reflect "reflect"
 
+	interfaces "github.com/bnema/archup/internal/interfaces"
 	system "github.com/bnema/archup/internal/system"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -276,6 +277,102 @@ func (mr *MockSystemExecutorMockRecorder) RunSimple(command any, args ...any) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RunSimple", reflect.TypeOf((*MockSystemExecutor)(nil).RunSimple), varargs...)
 }
 
+// MockChrootSession is a mock of ChrootSession interface.
+type MockChrootSession struct {
+	ctrl     *gomock.Controller
+	recorder *MockChrootSessionMockRecorder
+	isgomock struct{}
+}
+
+// MockChrootSessionMockRecorder is the mock recorder for MockChrootSession.
+type MockChrootSessionMockRecorder struct {
+	mock *MockChrootSession
+}
+
+// NewMockChrootSession creates a new mock instance.
+func NewMockChrootSession(ctrl *gomock.Controller) *MockChrootSession {
+	mock := &MockChrootSession{ctrl: ctrl}
+	mock.recorder = &MockChrootSessionMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockChrootSession) EXPECT() *MockChrootSessionMockRecorder {
+	return m.recorder
+}
+
+// Close mocks base method.
+func (m *MockChrootSession) Close() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Close")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Close indicates an expected call of Close.
+func (mr *MockChrootSessionMockRecorder) Close() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockChrootSession)(nil).Close))
+}
+
+// Exec mocks base method.
+func (m *MockChrootSession) Exec(command string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Exec", command)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Exec indicates an expected call of Exec.
+func (mr *MockChrootSessionMockRecorder) Exec(command any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exec", reflect.TypeOf((*MockChrootSession)(nil).Exec), command)
+}
+
+// ExecWithContext mocks base method.
+func (m *MockChrootSession) ExecWithContext(ctx context.Context, command string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExecWithContext", ctx, command)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ExecWithContext indicates an expected call of ExecWithContext.
+func (mr *MockChrootSessionMockRecorder) ExecWithContext(ctx, command any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecWithContext", reflect.TypeOf((*MockChrootSession)(nil).ExecWithContext), ctx, command)
+}
+
+// ExecWithOutput mocks base method.
+func (m *MockChrootSession) ExecWithOutput(command string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExecWithOutput", command)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ExecWithOutput indicates an expected call of ExecWithOutput.
+func (mr *MockChrootSessionMockRecorder) ExecWithOutput(command any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecWithOutput", reflect.TypeOf((*MockChrootSession)(nil).ExecWithOutput), command)
+}
+
+// ExecWithOutputAndContext mocks base method.
+func (m *MockChrootSession) ExecWithOutputAndContext(ctx context.Context, command string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExecWithOutputAndContext", ctx, command)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ExecWithOutputAndContext indicates an expected call of ExecWithOutputAndContext.
+func (mr *MockChrootSessionMockRecorder) ExecWithOutputAndContext(ctx, command any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecWithOutputAndContext", reflect.TypeOf((*MockChrootSession)(nil).ExecWithOutputAndContext), ctx, command)
+}
+
 // MockChrootExecutor is a mock of ChrootExecutor interface.
 type MockChrootExecutor struct {
 	ctrl     *gomock.Controller
@@ -298,6 +395,36 @@ func NewMockChrootExecutor(ctrl *gomock.Controller) *MockChrootExecutor {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockChrootExecutor) EXPECT() *MockChrootExecutorMockRecorder {
 	return m.recorder
+}
+
+// BeginSession mocks base method.
+func (m *MockChrootExecutor) BeginSession(logPath, mountPoint string) (interfaces.ChrootSession, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BeginSession", logPath, mountPoint)
+	ret0, _ := ret[0].(interfaces.ChrootSession)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// BeginSession indicates an expected call of BeginSession.
+func (mr *MockChrootExecutorMockRecorder) BeginSession(logPath, mountPoint any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BeginSession", reflect.TypeOf((*MockChrootExecutor)(nil).BeginSession), logPath, mountPoint)
+}
+
+// BeginSessionWithContext mocks base method.
+func (m *MockChrootExecutor) BeginSessionWithContext(ctx context.Context, logPath, mountPoint string) (interfaces.ChrootSession, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BeginSessionWithContext", ctx, logPath, mountPoint)
+	ret0, _ := ret[0].(interfaces.ChrootSession)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// BeginSessionWithContext indicates an expected call of BeginSessionWithContext.
+func (mr *MockChrootExecutorMockRecorder) BeginSessionWithContext(ctx, logPath, mountPoint any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BeginSessionWithContext", reflect.TypeOf((*MockChrootExecutor)(nil).BeginSessionWithContext), ctx, logPath, mountPoint)
 }
 
 // ChrootExec mocks base method.
@@ -351,6 +478,26 @@ func (mr *MockChrootExecutorMockRecorder) ChrootExecWithOutput(logPath, mountPoi
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{logPath, mountPoint, command}, args...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChrootExecWithOutput", reflect.TypeOf((*MockChrootExecutor)(nil).ChrootExecWithOutput), varargs...)
+}
+
+// ChrootExecWithOutputAndContext mocks base method.
+func (m *MockChrootExecutor) ChrootExecWithOutputAndContext(ctx context.Context, logPath, mountPoint, command string, args ...string) (string, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, logPath, mountPoint, command}
+	for _, a := range args {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ChrootExecWithOutputAndContext", varargs...)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ChrootExecWithOutputAndContext indicates an expected call of ChrootExecWithOutputAndContext.
+func (mr *MockChrootExecutorMockRecorder) ChrootExecWithOutputAndContext(ctx, logPath, mountPoint, command any, args ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, logPath, mountPoint, command}, args...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChrootExecWithOutputAndContext", reflect.TypeOf((*MockChrootExecutor)(nil).ChrootExecWithOutputAndContext), varargs...)
 }
 
 // ChrootExecWithStdin mocks base method.
