@@ -56,15 +56,15 @@ if [ -f /usr/local/share/archup/post-boot/blesh.sh ]; then
   echo "Installing ble.sh (Bash Line Editor)..." | tee -a "$LOG_FILE"
   BLESH_OUTPUT=$(bash /usr/local/share/archup/post-boot/blesh.sh 2>&1 | tee -a "$LOG_FILE")
   if [ $? -eq 0 ]; then
-    echo "✓ ble.sh installed successfully" | tee -a "$LOG_FILE"
+    echo "[OK] ble.sh installed successfully" | tee -a "$LOG_FILE"
     # Check if it was added to bashrc
     if echo "$BLESH_OUTPUT" | grep -q "ble.sh added to .bashrc"; then
-      echo "  → ble.sh configured in ~/.bashrc" | tee -a "$LOG_FILE"
+      echo "[OK] ble.sh configured in ~/.bashrc" | tee -a "$LOG_FILE"
     elif echo "$BLESH_OUTPUT" | grep -q "ble.sh already configured"; then
-      echo "  → ble.sh already present in ~/.bashrc" | tee -a "$LOG_FILE"
+      echo "[OK] ble.sh already present in ~/.bashrc" | tee -a "$LOG_FILE"
     fi
   else
-    echo "✗ ble.sh installation failed (non-critical)" | tee -a "$LOG_FILE"
+    echo "[KO] ble.sh installation failed (non-critical)" | tee -a "$LOG_FILE"
   fi
 fi
 
