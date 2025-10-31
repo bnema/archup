@@ -145,14 +145,21 @@ func CreateOptionsForm(cfg *config.Config, fb *components.FormBuilder) *huh.Form
 			Description(DescMultilib),
 		fb.Confirm("Enable Chaotic-AUR?", "Yes", "No", &cfg.EnableChaotic).
 			Description(DescChaoticAUR),
+	)
+
+	// AUR Helper group (only shown when Chaotic-AUR is enabled)
+	aurHelperGroup := huh.NewGroup(
 		fb.SelectWithOptions("AUR Helper", aurOptions, &cfg.AURHelper).
 			Description(DescAURHelper),
-	)
+	).WithHideFunc(func() bool {
+		return !cfg.EnableChaotic
+	})
 
 	// Build form groups list
 	groups := []*huh.Group{
 		systemBaseGroup,
 		packageManagementGroup,
+		aurHelperGroup,
 	}
 
 	// Add AMD P-State tuning group (conditional - only for AMD CPUs)
