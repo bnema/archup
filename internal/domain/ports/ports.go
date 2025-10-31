@@ -1,4 +1,4 @@
-//go:generate mockgen -destination=mocks/mock_ports.go -package=mocks . FileSystem,File,CommandExecutor,ChrootExecutor,ScriptExecutor,HTTPClient,Response,Logger,InstallationRepository
+//go:generate go run go.uber.org/mock/mockgen@latest -destination=mocks/mock_ports.go -package=mocks . FileSystem,File,CommandExecutor,ChrootExecutor,ScriptExecutor,HTTPClient,Response,Logger,InstallationRepository
 
 package ports
 

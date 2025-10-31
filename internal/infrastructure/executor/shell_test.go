@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/bnema/archup/internal/domain/ports/mocks"
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 )
 
 func TestShellExecutor_Execute_Success(t *testing.T) {

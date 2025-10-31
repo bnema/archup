@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/bnema/archup/internal/domain/ports/mocks"
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 )
 
 func TestChrootExecutor_NewChrootExecutor(t *testing.T) {
