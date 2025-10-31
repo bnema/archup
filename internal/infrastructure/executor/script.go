@@ -6,14 +6,24 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+
+	"github.com/bnema/archup/internal/domain/ports"
 )
 
 // ScriptExecutor implements the ScriptExecutor port for shell scripts
-type ScriptExecutor struct{}
+type ScriptExecutor struct {
+	fs       ports.FileSystem
+	cmdExec  ports.CommandExecutor
+	scriptDir string
+}
 
-// NewScriptExecutor creates a new script executor
-func NewScriptExecutor() *ScriptExecutor {
-	return &ScriptExecutor{}
+// NewScriptExecutor creates a new script executor with dependencies
+func NewScriptExecutor(fs ports.FileSystem, cmdExec ports.CommandExecutor, scriptDir string) *ScriptExecutor {
+	return &ScriptExecutor{
+		fs:        fs,
+		cmdExec:   cmdExec,
+		scriptDir: scriptDir,
+	}
 }
 
 // ExecuteScript runs a shell script with environment variables

@@ -2,25 +2,47 @@ package handlers
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/bnema/archup/internal/interfaces/tui"
+	"github.com/bnema/archup/internal/application/dto"
 	"github.com/bnema/archup/internal/interfaces/tui/models"
 )
 
+// NOTE: This package uses AppContext interface to avoid importing parent tui package
+// This breaks the circular dependency: tui → tui/handlers → tui
+// Messages are typed by the caller (app.go), not here
+
 // HandleProgressUpdate processes progress update messages
-func HandleProgressUpdate(app *tui.App, msg tui.ProgressUpdateMsg, progressModel *models.ProgressModelImpl) (*models.ProgressModelImpl, tea.Cmd) {
-	progressModel.UpdateProgress(msg.Update)
+// msg should be ProgressUpdateMsg with an Update field (*dto.ProgressUpdate)
+func HandleProgressUpdate(app AppContext, msg interface{}, progressModel *models.ProgressModelImpl) (*models.ProgressModelImpl, tea.Cmd) {
+	// Cast to a type with Update field
+	// This avoids importing the tui package which would create a cycle
+	type updateMsg struct {
+		Update interface{}
+	}
+
+	if m, ok := msg.(updateMsg); ok {
+		// Cast Update to *dto.ProgressUpdate
+		if update, ok := m.Update.(*dto.ProgressUpdate); ok {
+			progressModel.UpdateProgress(update)
+		}
+	}
 	return progressModel, nil
 }
 
 // HandleInstallationError processes installation error messages
-func HandleInstallationError(app *tui.App, msg tui.InstallationErrorMsg, installModel *models.InstallationModelImpl) (*models.InstallationModelImpl, tea.Cmd) {
-	app.GetLogger().Error("Installation error", "error", msg.Err)
-	installModel.SetError(msg.Err.Error())
+// Signature matches what app.go calls with InstallationErrorMsg types
+func HandleInstallationError(app AppContext, msg interface{}, installModel *models.InstallationModelImpl) (*models.InstallationModelImpl, tea.Cmd) {
+	// Cast msg to InstallationErrorMsg type (from app.go caller context)
+	if errMsg, ok := msg.(interface{ GetErr() error }); ok {
+		err := errMsg.GetErr()
+		app.GetLogger().Error("Installation error", "error", err)
+		installModel.SetError(err.Error())
+	}
 	return installModel, nil
 }
 
 // HandleInstallationComplete processes installation completion messages
-func HandleInstallationComplete(app *tui.App, msg tui.InstallationCompleteMsg, installModel *models.InstallationModelImpl) (*models.InstallationModelImpl, tea.Cmd) {
+// Signature matches what app.go calls with InstallationCompleteMsg types
+func HandleInstallationComplete(app AppContext, msg interface{}, installModel *models.InstallationModelImpl) (*models.InstallationModelImpl, tea.Cmd) {
 	app.GetLogger().Info("Installation completed successfully")
 	installModel.SetComplete()
 	return installModel, nil
@@ -28,7 +50,8 @@ func HandleInstallationComplete(app *tui.App, msg tui.InstallationCompleteMsg, i
 
 // CreateInstallationCommand creates an installation command from form data
 // This delegates to the service layer instead of handling directly
-func CreateInstallationCommand(app *tui.App, formData models.FormData) tea.Cmd {
+// Accepts AppContext interface to avoid circular imports
+func CreateInstallationCommand(app AppContext, formData models.FormData) tea.Cmd {
 	return func() tea.Msg {
 		// Start installation via service
 		if err := app.GetInstallService().Start(
@@ -38,19 +61,26 @@ func CreateInstallationCommand(app *tui.App, formData models.FormData) tea.Cmd {
 			formData.TargetDisk,
 			formData.EncryptionType,
 		); err != nil {
-			return tui.InstallationErrorMsg{Err: err}
+			app.GetLogger().Error("Failed to start installation", "error", err)
+			// Return error directly - app.go will handle it
+			return err
 		}
 
-		// Subscribe to progress updates and forward them as messages
+		// Subscribe to progress updates
 		progressChan := app.GetProgressTracker().Subscribe()
-		for {
-			select {
-			case update := <-progressChan:
-				// Forward progress update to TUI
-				return tui.ProgressUpdateMsg{Update: update}
-			case <-app.GetContext().Done():
-				return tui.InstallationErrorMsg{Err: app.GetContext().Err()}
+		go func() {
+			for {
+				select {
+				case <-progressChan:
+					// Progress updates are broadcast to all subscribers
+					// App will receive them through its own subscription
+				case <-app.GetContext().Done():
+					app.GetLogger().Info("Installation context cancelled")
+					return
+				}
 			}
-		}
+		}()
+
+		return nil
 	}
 }

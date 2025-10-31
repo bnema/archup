@@ -3,6 +3,8 @@ package filesystem
 import (
 	"fmt"
 	"os"
+
+	"github.com/bnema/archup/internal/domain/ports"
 )
 
 // LocalFileSystem implements the FileSystem port using the OS filesystem
@@ -29,7 +31,7 @@ func (lfs *LocalFileSystem) WriteFile(name string, data []byte, perm os.FileMode
 }
 
 // Create creates or truncates a file
-func (lfs *LocalFileSystem) Create(name string) (LocalFile, error) {
+func (lfs *LocalFileSystem) Create(name string) (ports.File, error) {
 	file, err := os.Create(name)
 	if err != nil {
 		return nil, err
@@ -64,14 +66,7 @@ func (lfs *LocalFileSystem) Exists(path string) (bool, error) {
 	return false, fmt.Errorf("failed to check file existence: %w", err)
 }
 
-// LocalFile interface type for file operations
-type LocalFile interface {
-	Read(b []byte) (n int, err error)
-	Write(b []byte) (n int, err error)
-	Close() error
-}
-
-// localFileHandle wraps os.File to implement the File port
+// localFileHandle wraps os.File to implement the ports.File interface
 type localFileHandle struct {
 	file *os.File
 }

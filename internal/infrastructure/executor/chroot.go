@@ -7,17 +7,19 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/bnema/archup/internal/domain/ports"
 )
 
 // ChrootExecutor implements the ChrootExecutor port using chroot commands
 type ChrootExecutor struct {
-	cmdExecutor *ShellExecutor
+	logger ports.Logger
 }
 
-// NewChrootExecutor creates a new chroot executor
-func NewChrootExecutor() *ChrootExecutor {
+// NewChrootExecutor creates a new chroot executor with a logger
+func NewChrootExecutor(logger ports.Logger) *ChrootExecutor {
 	return &ChrootExecutor{
-		cmdExecutor: NewShellExecutor(),
+		logger: logger,
 	}
 }
 

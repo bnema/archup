@@ -6,14 +6,20 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+
+	"github.com/bnema/archup/internal/domain/ports"
 )
 
 // ShellExecutor implements the CommandExecutor port using system shell commands
-type ShellExecutor struct{}
+type ShellExecutor struct {
+	logger ports.Logger
+}
 
-// NewShellExecutor creates a new shell executor
-func NewShellExecutor() *ShellExecutor {
-	return &ShellExecutor{}
+// NewShellExecutor creates a new shell executor with a logger
+func NewShellExecutor(logger ports.Logger) *ShellExecutor {
+	return &ShellExecutor{
+		logger: logger,
+	}
 }
 
 // Execute runs a command and returns output

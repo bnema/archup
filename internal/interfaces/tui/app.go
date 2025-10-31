@@ -7,6 +7,7 @@ import (
 	"github.com/bnema/archup/internal/application/services"
 	"github.com/bnema/archup/internal/domain/ports"
 	"github.com/bnema/archup/internal/interfaces/tui/handlers"
+	"github.com/bnema/archup/internal/interfaces/tui/models"
 	"github.com/bnema/archup/internal/interfaces/tui/views"
 )
 
@@ -15,16 +16,16 @@ import (
 // with the application layer services
 type App struct {
 	// Core services
-	installService *services.InstallationService
+	installService  *services.InstallationService
 	progressTracker *services.ProgressTracker
 
 	// Infrastructure ports
 	logger ports.Logger
 
-	// UI models
-	formModel         FormModel
-	installationModel InstallationModel
-	progressModel     ProgressModel
+	// UI models (using concrete types for compatibility with views/handlers)
+	formModel         *models.FormModelImpl
+	installationModel *models.InstallationModelImpl
+	progressModel     *models.ProgressModelImpl
 
 	// Application state
 	currentScreen Screen
@@ -55,9 +56,9 @@ func NewApp(
 		installService:    installService,
 		progressTracker:   progressTracker,
 		logger:            logger,
-		formModel:         NewFormModel(),
-		installationModel: NewInstallationModel(),
-		progressModel:     NewProgressModel(),
+		formModel:         models.NewFormModel(),
+		installationModel: models.NewInstallationModel(),
+		progressModel:     models.NewProgressModel(),
 		currentScreen:     ScreenForm,
 		ctx:               ctx,
 		cancel:            cancel,

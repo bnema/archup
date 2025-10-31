@@ -95,16 +95,16 @@ type Response interface {
 // Logger is the port for logging
 type Logger interface {
 	// Info logs an informational message
-	Info(msg string, keysAndValues ...interface{})
+	Info(msg string, keysAndValues ...any)
 
 	// Warn logs a warning message
-	Warn(msg string, keysAndValues ...interface{})
+	Warn(msg string, keysAndValues ...any)
 
 	// Error logs an error message
-	Error(msg string, keysAndValues ...interface{})
+	Error(msg string, keysAndValues ...any)
 
 	// Debug logs a debug message
-	Debug(msg string, keysAndValues ...interface{})
+	Debug(msg string, keysAndValues ...any)
 
 	// LogPath returns the path to the log file
 	LogPath() string

@@ -5,17 +5,30 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/bnema/archup/internal/domain/ports/mocks"
+	"github.com/golang/mock/gomock"
 )
 
 func TestScriptExecutor_NewScriptExecutor(t *testing.T) {
-	executor := NewScriptExecutor()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockFS := mocks.NewMockFileSystem(ctrl)
+	mockCmdExec := mocks.NewMockCommandExecutor(ctrl)
+
+	executor := NewScriptExecutor(mockFS, mockCmdExec, "/test/scripts")
 	if executor == nil {
 		t.Fatal("expected non-nil executor")
 	}
 }
 
 func TestScriptExecutor_ExecuteScript_Success(t *testing.T) {
-	executor := NewScriptExecutor()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockFS := mocks.NewMockFileSystem(ctrl)
+	mockCmdExec := mocks.NewMockCommandExecutor(ctrl)
+
+	executor := NewScriptExecutor(mockFS, mockCmdExec, "/test/scripts")
 	tmpDir := t.TempDir()
 
 	// Create a simple test script
@@ -33,7 +46,12 @@ func TestScriptExecutor_ExecuteScript_Success(t *testing.T) {
 }
 
 func TestScriptExecutor_ExecuteScript_NotFound(t *testing.T) {
-	executor := NewScriptExecutor()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockFS := mocks.NewMockFileSystem(ctrl)
+	mockCmdExec := mocks.NewMockCommandExecutor(ctrl)
+
+	executor := NewScriptExecutor(mockFS, mockCmdExec, "/test/scripts")
 	ctx := context.Background()
 
 	err := executor.ExecuteScript(ctx, "/nonexistent/script.sh", nil)
@@ -43,7 +61,12 @@ func TestScriptExecutor_ExecuteScript_NotFound(t *testing.T) {
 }
 
 func TestScriptExecutor_ExecuteScript_Failure(t *testing.T) {
-	executor := NewScriptExecutor()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockFS := mocks.NewMockFileSystem(ctrl)
+	mockCmdExec := mocks.NewMockCommandExecutor(ctrl)
+
+	executor := NewScriptExecutor(mockFS, mockCmdExec, "/test/scripts")
 	tmpDir := t.TempDir()
 
 	// Create a script that fails
@@ -61,7 +84,12 @@ func TestScriptExecutor_ExecuteScript_Failure(t *testing.T) {
 }
 
 func TestScriptExecutor_ExecuteScript_WithEnv(t *testing.T) {
-	executor := NewScriptExecutor()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockFS := mocks.NewMockFileSystem(ctrl)
+	mockCmdExec := mocks.NewMockCommandExecutor(ctrl)
+
+	executor := NewScriptExecutor(mockFS, mockCmdExec, "/test/scripts")
 	tmpDir := t.TempDir()
 
 	// Create a script that uses environment variables
@@ -83,7 +111,12 @@ func TestScriptExecutor_ExecuteScript_WithEnv(t *testing.T) {
 }
 
 func TestScriptExecutor_ExecuteScript_WithMultipleEnv(t *testing.T) {
-	executor := NewScriptExecutor()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockFS := mocks.NewMockFileSystem(ctrl)
+	mockCmdExec := mocks.NewMockCommandExecutor(ctrl)
+
+	executor := NewScriptExecutor(mockFS, mockCmdExec, "/test/scripts")
 	tmpDir := t.TempDir()
 
 	// Create a script that checks multiple environment variables
@@ -106,7 +139,12 @@ func TestScriptExecutor_ExecuteScript_WithMultipleEnv(t *testing.T) {
 }
 
 func TestScriptExecutor_ExecuteScript_Stderr(t *testing.T) {
-	executor := NewScriptExecutor()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockFS := mocks.NewMockFileSystem(ctrl)
+	mockCmdExec := mocks.NewMockCommandExecutor(ctrl)
+
+	executor := NewScriptExecutor(mockFS, mockCmdExec, "/test/scripts")
 	tmpDir := t.TempDir()
 
 	// Create a script that writes to stderr
@@ -129,7 +167,12 @@ func TestScriptExecutor_ExecuteScript_Stderr(t *testing.T) {
 }
 
 func TestScriptExecutor_ExecuteScript_ContextCancellation(t *testing.T) {
-	executor := NewScriptExecutor()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockFS := mocks.NewMockFileSystem(ctrl)
+	mockCmdExec := mocks.NewMockCommandExecutor(ctrl)
+
+	executor := NewScriptExecutor(mockFS, mockCmdExec, "/test/scripts")
 	tmpDir := t.TempDir()
 
 	// Create a script that sleeps

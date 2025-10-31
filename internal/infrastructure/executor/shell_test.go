@@ -5,10 +5,21 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/bnema/archup/internal/domain/ports/mocks"
+	"github.com/golang/mock/gomock"
 )
 
 func TestShellExecutor_Execute_Success(t *testing.T) {
-	executor := NewShellExecutor()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockLogger := mocks.NewMockLogger(ctrl)
+	mockLogger.EXPECT().Debug(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
+
+	executor := NewShellExecutor(mockLogger)
 	ctx := context.Background()
 
 	output, err := executor.Execute(ctx, "echo", "hello world")
@@ -23,7 +34,15 @@ func TestShellExecutor_Execute_Success(t *testing.T) {
 }
 
 func TestShellExecutor_Execute_WithArgs(t *testing.T) {
-	executor := NewShellExecutor()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockLogger := mocks.NewMockLogger(ctrl)
+	mockLogger.EXPECT().Debug(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
+
+	executor := NewShellExecutor(mockLogger)
 	ctx := context.Background()
 
 	// Test with multiple arguments
@@ -37,8 +56,26 @@ func TestShellExecutor_Execute_WithArgs(t *testing.T) {
 	}
 }
 
+func newMockLogger() *mocks.MockLogger {
+	ctrl := gomock.NewController(&testing.T{})
+	mockLogger := mocks.NewMockLogger(ctrl)
+	mockLogger.EXPECT().Debug(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
+	return mockLogger
+}
+
 func TestShellExecutor_Execute_CommandNotFound(t *testing.T) {
-	executor := NewShellExecutor()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockLogger := mocks.NewMockLogger(ctrl)
+	mockLogger.EXPECT().Debug(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
+
+	executor := NewShellExecutor(mockLogger)
 	ctx := context.Background()
 
 	_, err := executor.Execute(ctx, "nonexistentcommand12345", "arg")
@@ -48,7 +85,15 @@ func TestShellExecutor_Execute_CommandNotFound(t *testing.T) {
 }
 
 func TestShellExecutor_Execute_CommandFailure(t *testing.T) {
-	executor := NewShellExecutor()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockLogger := mocks.NewMockLogger(ctrl)
+	mockLogger.EXPECT().Debug(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
+
+	executor := NewShellExecutor(mockLogger)
 	ctx := context.Background()
 
 	// false command always exits with code 1
@@ -59,7 +104,15 @@ func TestShellExecutor_Execute_CommandFailure(t *testing.T) {
 }
 
 func TestShellExecutor_ExecuteWithEnv_Success(t *testing.T) {
-	executor := NewShellExecutor()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockLogger := mocks.NewMockLogger(ctrl)
+	mockLogger.EXPECT().Debug(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
+
+	executor := NewShellExecutor(mockLogger)
 	ctx := context.Background()
 
 	env := map[string]string{
@@ -78,7 +131,15 @@ func TestShellExecutor_ExecuteWithEnv_Success(t *testing.T) {
 }
 
 func TestShellExecutor_ExecuteWithEnv_MultipleVars(t *testing.T) {
-	executor := NewShellExecutor()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockLogger := mocks.NewMockLogger(ctrl)
+	mockLogger.EXPECT().Debug(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
+
+	executor := NewShellExecutor(mockLogger)
 	ctx := context.Background()
 
 	env := map[string]string{
@@ -98,7 +159,15 @@ func TestShellExecutor_ExecuteWithEnv_MultipleVars(t *testing.T) {
 }
 
 func TestShellExecutor_Execute_ContextCancellation(t *testing.T) {
-	executor := NewShellExecutor()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockLogger := mocks.NewMockLogger(ctrl)
+	mockLogger.EXPECT().Debug(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
+
+	executor := NewShellExecutor(mockLogger)
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 
@@ -110,7 +179,15 @@ func TestShellExecutor_Execute_ContextCancellation(t *testing.T) {
 }
 
 func TestShellExecutor_Execute_EmptyOutput(t *testing.T) {
-	executor := NewShellExecutor()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockLogger := mocks.NewMockLogger(ctrl)
+	mockLogger.EXPECT().Debug(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
+
+	executor := NewShellExecutor(mockLogger)
 	ctx := context.Background()
 
 	// true command produces no output
@@ -125,7 +202,15 @@ func TestShellExecutor_Execute_EmptyOutput(t *testing.T) {
 }
 
 func TestShellExecutor_Execute_StderrCapture(t *testing.T) {
-	executor := NewShellExecutor()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockLogger := mocks.NewMockLogger(ctrl)
+	mockLogger.EXPECT().Debug(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
+
+	executor := NewShellExecutor(mockLogger)
 	ctx := context.Background()
 
 	// sh command that writes to stderr

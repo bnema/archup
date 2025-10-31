@@ -5,21 +5,36 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/bnema/archup/internal/domain/ports/mocks"
+	"github.com/golang/mock/gomock"
 )
 
 func TestChrootExecutor_NewChrootExecutor(t *testing.T) {
-	executor := NewChrootExecutor()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockLogger := mocks.NewMockLogger(ctrl)
+	mockLogger.EXPECT().Debug(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
+
+	executor := NewChrootExecutor(mockLogger)
 	if executor == nil {
 		t.Fatal("expected non-nil executor")
-	}
-
-	if executor.cmdExecutor == nil {
-		t.Fatal("expected non-nil cmdExecutor")
 	}
 }
 
 func TestChrootExecutor_ExecuteInChroot_PathNotExists(t *testing.T) {
-	executor := NewChrootExecutor()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockLogger := mocks.NewMockLogger(ctrl)
+	mockLogger.EXPECT().Debug(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
+
+	executor := NewChrootExecutor(mockLogger)
 	ctx := context.Background()
 
 	_, err := executor.ExecuteInChroot(ctx, "/nonexistent/path", "echo", "test")
@@ -29,7 +44,15 @@ func TestChrootExecutor_ExecuteInChroot_PathNotExists(t *testing.T) {
 }
 
 func TestChrootExecutor_ExecuteInChroot_CommandNotFound(t *testing.T) {
-	executor := NewChrootExecutor()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockLogger := mocks.NewMockLogger(ctrl)
+	mockLogger.EXPECT().Debug(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
+
+	executor := NewChrootExecutor(mockLogger)
 	ctx := context.Background()
 
 	// Create temporary directory to use as chroot
@@ -44,7 +67,15 @@ func TestChrootExecutor_ExecuteInChroot_CommandNotFound(t *testing.T) {
 }
 
 func TestChrootExecutor_ChrootSystemctl_PathNotExists(t *testing.T) {
-	executor := NewChrootExecutor()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockLogger := mocks.NewMockLogger(ctrl)
+	mockLogger.EXPECT().Debug(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
+
+	executor := NewChrootExecutor(mockLogger)
 
 	err := executor.ChrootSystemctl("", "/nonexistent/path", "enable", "service")
 	if err == nil {
@@ -53,7 +84,15 @@ func TestChrootExecutor_ChrootSystemctl_PathNotExists(t *testing.T) {
 }
 
 func TestChrootExecutor_ChrootSystemctl_CreatesLogDirectory(t *testing.T) {
-	executor := NewChrootExecutor()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockLogger := mocks.NewMockLogger(ctrl)
+	mockLogger.EXPECT().Debug(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
+
+	executor := NewChrootExecutor(mockLogger)
 	tmpDir := t.TempDir()
 	logPath := filepath.Join(tmpDir, "subdir", "log.txt")
 
@@ -69,7 +108,15 @@ func TestChrootExecutor_ChrootSystemctl_CreatesLogDirectory(t *testing.T) {
 }
 
 func TestChrootExecutor_ChrootSystemctl_LogsErrors(t *testing.T) {
-	executor := NewChrootExecutor()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockLogger := mocks.NewMockLogger(ctrl)
+	mockLogger.EXPECT().Debug(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
+
+	executor := NewChrootExecutor(mockLogger)
 	tmpDir := t.TempDir()
 	logPath := filepath.Join(tmpDir, "log.txt")
 
@@ -83,7 +130,15 @@ func TestChrootExecutor_ChrootSystemctl_LogsErrors(t *testing.T) {
 }
 
 func TestChrootExecutor_ChrootSystemctl_EmptyLogPath(t *testing.T) {
-	executor := NewChrootExecutor()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockLogger := mocks.NewMockLogger(ctrl)
+	mockLogger.EXPECT().Debug(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
+
+	executor := NewChrootExecutor(mockLogger)
 	tmpDir := t.TempDir()
 
 	// This should not panic even with empty log path

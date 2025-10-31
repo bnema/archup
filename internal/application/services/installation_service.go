@@ -302,6 +302,11 @@ func (s *InstallationService) SubscribeProgress() <-chan *dto.ProgressUpdate {
 	return s.tracker.Subscribe()
 }
 
+// Tracker returns the progress tracker (for TUI initialization)
+func (s *InstallationService) Tracker() *ProgressTracker {
+	return s.tracker
+}
+
 // Close closes the service
 func (s *InstallationService) Close() error {
 	s.tracker.Close()

@@ -6,12 +6,16 @@ import (
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
+	apphandlers "github.com/bnema/archup/internal/application/handlers"
+	"github.com/bnema/archup/internal/application/services"
 	"github.com/bnema/archup/internal/cleanup"
 	"github.com/bnema/archup/internal/config"
-	"github.com/bnema/archup/internal/interfaces"
+	"github.com/bnema/archup/internal/infrastructure/executor"
+	"github.com/bnema/archup/internal/infrastructure/filesystem"
+	infralogger "github.com/bnema/archup/internal/infrastructure/logger"
+	"github.com/bnema/archup/internal/infrastructure/persistence"
+	"github.com/bnema/archup/internal/interfaces/tui"
 	"github.com/bnema/archup/internal/logger"
-	"github.com/bnema/archup/internal/phases"
-	"github.com/bnema/archup/internal/ui"
 )
 
 // version is set via ldflags at build time
@@ -34,17 +38,17 @@ func main() {
 	}
 
 	// Create logger with dry-run mode
-	log, err := logger.New(config.DefaultLogPath, *dryRun)
+	oldLog, err := logger.New(config.DefaultLogPath, *dryRun)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to create logger: %v\n", err)
 		os.Exit(1)
 	}
-	defer log.Close()
+	defer oldLog.Close()
 
 	// Handle --cleanup flag
 	if *doCleanup {
-		if err := cleanup.Run(log); err != nil {
-			log.Error("Cleanup failed", "error", err)
+		if err := cleanup.Run(oldLog); err != nil {
+			oldLog.Error("Cleanup failed", "error", err)
 			os.Exit(1)
 		}
 		os.Exit(0)
@@ -52,49 +56,65 @@ func main() {
 
 	// Log dry-run mode if enabled
 	if *dryRun {
-		log.Info("Running in DRY-RUN mode - commands will be logged but not executed")
+		oldLog.Info("Running in DRY-RUN mode - commands will be logged but not executed")
 	}
 
 	// Load or create config (pass version to determine correct branch for downloads)
 	cfg := config.NewConfig(version)
-	log.Info("Config initialized", "version", version, "raw_url", cfg.RawURL)
+	oldLog.Info("Config initialized", "version", version, "raw_url", cfg.RawURL)
 
-	// Initialize orchestrator
-	orchestrator := phases.NewOrchestrator(cfg, config.DefaultLogPath)
+	// ==================== DEPENDENCY INJECTION ====================
+	oldLog.Info("Initializing DDD architecture components")
 
-	// Create concrete implementations of interfaces for dependency injection
-	fs := &interfaces.DefaultFileSystem{}
-	httpClient := &interfaces.DefaultHTTPClient{}
-	sysExec := &interfaces.DefaultSystemExecutor{}
-	chrExec := &interfaces.DefaultChrootExecutor{}
-	cmdExec := &interfaces.DefaultCommandExecutor{}
+	// Adapt old logger to ports.Logger interface
+	slogAdapter := infralogger.NewSlogAdapter(oldLog.Slog())
 
-	// Register all phases with logger
-	phasesToRegister := []phases.Phase{
-		phases.NewBootstrapPhase(cfg, log, httpClient, fs),
-		phases.NewPreflightPhase(cfg, log, fs, cmdExec),
-		phases.NewPartitioningPhase(cfg, log, sysExec),
-		phases.NewBaseInstallPhase(cfg, log, fs, sysExec),
-		phases.NewConfigPhase(cfg, log, fs, sysExec, chrExec),
-		phases.NewBootPhase(cfg, log, fs, sysExec, chrExec),
-		phases.NewReposPhase(cfg, log, fs, sysExec, chrExec),
-		phases.NewPostInstallPhase(cfg, log, fs, httpClient, sysExec, chrExec),
-	}
-
-	for _, phase := range phasesToRegister {
-		if err := orchestrator.RegisterPhase(phase); err != nil {
-			log.Error("Failed to register phase", "error", err)
-			os.Exit(1)
-		}
-	}
-
-	// Create UI model
-	model := ui.NewModel(orchestrator, cfg, log, version)
-
-	// Run Bubbletea app
-	p := tea.NewProgram(model, tea.WithAltScreen())
-	if _, err := p.Run(); err != nil {
-		log.Error("Error running installer", "error", err)
+	// 1. Create infrastructure adapters
+	fsAdapter := &filesystem.LocalFileSystem{}
+	shellExec := executor.NewShellExecutor(slogAdapter)
+	chrootExec := executor.NewChrootExecutor(slogAdapter)
+	scriptExec := executor.NewScriptExecutor(fsAdapter, shellExec, config.DefaultInstallDir)
+	repoAdapter, err := persistence.NewFileRepository(config.DefaultConfigPath)
+	if err != nil {
+		oldLog.Error("Failed to create repository adapter", "error", err)
 		os.Exit(1)
+	}
+
+	// 2. Create command handlers (inject ports)
+	preflightHandler := apphandlers.NewPreflightHandler(fsAdapter, shellExec, slogAdapter)
+	partitionHandler := apphandlers.NewPartitionHandler(shellExec, slogAdapter)
+	baseHandler := apphandlers.NewInstallBaseHandler(fsAdapter, shellExec, chrootExec, slogAdapter)
+	configHandler := apphandlers.NewConfigureSystemHandler(chrootExec, slogAdapter)
+	bootloaderHandler := apphandlers.NewBootloaderHandler(chrootExec, slogAdapter)
+	reposHandler := apphandlers.NewReposHandler(chrootExec, slogAdapter)
+	postInstallHandler := apphandlers.NewPostInstallHandler(chrootExec, scriptExec, slogAdapter)
+
+	// 3. Create application services
+	installService := services.NewInstallationService(
+		repoAdapter,
+		slogAdapter,
+		preflightHandler,
+		partitionHandler,
+		baseHandler,
+		configHandler,
+		bootloaderHandler,
+		reposHandler,
+		postInstallHandler,
+	)
+
+	// 4. Create TUI app with services
+	tuiApp := tui.NewApp(installService, installService.Tracker(), slogAdapter)
+
+	// ==================== RUN BUBBLETEA ====================
+	oldLog.Info("Starting TUI application", "version", version)
+	p := tea.NewProgram(tuiApp, tea.WithAltScreen())
+	if _, err := p.Run(); err != nil {
+		oldLog.Error("Error running installer", "error", err)
+		os.Exit(1)
+	}
+
+	// Cleanup
+	if err := tuiApp.Close(); err != nil {
+		oldLog.Error("Error closing TUI app", "error", err)
 	}
 }
