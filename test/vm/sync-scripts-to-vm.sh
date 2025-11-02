@@ -30,4 +30,4 @@ sshpass -p "$VM_PASS" rsync -az --progress \
   "$VM_USER@$VM_HOST:$REMOTE_PATH/" 2>&1 | grep -v "Warning: Permanently added" || true
 
 echo
-echo "✓ Sync complete!"
+echo "[OK] Sync complete!"

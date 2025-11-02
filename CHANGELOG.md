@@ -7,6 +7,11 @@ All notable changes to this project will be documented in this file.
 ## [0.3.0] - 2025-10-22
 
 ### Added
+- **Separate encryption password**: Allow users to choose between using their account password or a separate password for disk encryption during setup
+
+## [0.3.0] - 2025-10-22
+
+### Added
 - **UFW firewall**: Added ufw with default deny incoming policy (configured on first boot)
 - **First-boot branding**: Display ArchUp logo and completion message during first-boot setup
 - **Pacman configuration**: Enable color output, parallel downloads, and ILoveCandy progress bar on installed system

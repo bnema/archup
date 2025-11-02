@@ -1,0 +1,4 @@
+source ~/.local/share/archup/default/bash/shell
+source ~/.local/share/archup/default/bash/init
+source ~/.local/share/archup/default/bash/aliases
+source ~/.local/share/archup/default/bash/envs

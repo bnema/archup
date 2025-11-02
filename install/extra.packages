@@ -1,19 +1,23 @@
-# ArchUp Extra Packages - Installed after Chaotic-AUR is configured
-# Modern CLI tools and enhancements from Chaotic-AUR
+# ArchUp Extra Packages - Installed from official repos
+# All packages available in core/extra/multilib
 
 # Snapper integration
 snapper
 snap-pac
 
-# Go toolchain (for AUR helper)
+# Build tools (for AUR helpers)
+base-devel
 go
+cargo
 
 # System utilities
 dosfstools
 which
 wget
 unzip
-p7zip
+
+# Power management
+tlp
 
 # Security
 ufw
@@ -25,13 +29,17 @@ bluez-utils
 # Alternative WiFi
 iwd
 
-# Modern CLI Tools (from Chaotic-AUR)
+# Shell enhancements
+bash-completion
+
+# Modern CLI Tools
 eza
 zoxide
 fzf
 ripgrep
 bat
 fd
+tree
 btop
 git-delta
 dust

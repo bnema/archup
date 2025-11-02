@@ -1,14 +1,21 @@
-.PHONY: check check-syntax check-shellcheck clean help
+.PHONY: check check-syntax check-shellcheck clean help build
 
 # Default target
 help:
 	@echo "archup - Makefile targets:"
 	@echo ""
+	@echo "  make build          - Build archup-installer binary"
 	@echo "  make check          - Run all checks (syntax + shellcheck)"
 	@echo "  make check-syntax   - Check shell script syntax with bash -n"
 	@echo "  make check-shellcheck - Run shellcheck linting"
 	@echo "  make clean          - Remove generated files"
 	@echo ""
+
+# Build archup-installer binary
+build:
+	@echo "Building archup-installer..."
+	goreleaser build --snapshot --clean --single-target
+	@echo "✓ Build complete: ./dist/archup-installer_linux_amd64_v1/archup-installer"
 
 # Run all checks
 check: check-syntax check-shellcheck

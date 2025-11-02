@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 240" width="1000" height="240">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 240" width="750" height="180">
   <defs>
     <style>
       text {
@@ -9,12 +9,7 @@
         white-space: pre;
         text-anchor: middle;
       }
+      .shade { fill: #2d4a6b; }
     </style>
   </defs>
-  <text x="500" y="40">░█████╗░██████╗░░█████╗░██╗░░██╗██╗░░░██╗██████╗░</text>
-  <text x="500" y="80">██╔══██╗██╔══██╗██╔══██╗██║░░██║██║░░░██║██╔══██╗</text>
-  <text x="500" y="120">███████║██████╔╝██║░░╚═╝███████║██║░░░██║██████╔╝</text>
-  <text x="500" y="160">██╔══██║██╔══██╗██║░░██╗██╔══██║██║░░░██║██╔═══╝░</text>
-  <text x="500" y="200">██║░░██║██║░░██║╚█████╔╝██║░░██║╚██████╔╝██║░░░░░</text>
-  <text x="500" y="240">╚═╝░░╚═╝╚═╝░░╚═╝░╚════╝░╚═╝░░╚═╝░╚═════╝░╚═╝░░░░░</text>
-</svg>
+  <text x="500" y="40"><tspan class="shade">░</tspan>█████╗<tspan class="shade">░</tspan>██████╗<tspan class="shade">░░</tspan>█████╗<tspan class="shade">░</tspan>██╗<tspan class="shade">░░</tspan>██╗██╗<tspan class="shade">░░░</tspan>██╗██████╗<tspan class="shade">░</tspan></text>  <text x="500" y="80">██╔══██╗██╔══██╗██╔══██╗██║<tspan class="shade">░░</tspan>██║██║<tspan class="shade">░░░</tspan>██║██╔══██╗</text>  <text x="500" y="120">███████║██████╔╝██║<tspan class="shade">░░</tspan>╚═╝███████║██║<tspan class="shade">░░░</tspan>██║██████╔╝</text>  <text x="500" y="160">██╔══██║██╔══██╗██║<tspan class="shade">░░</tspan>██╗██╔══██║██║<tspan class="shade">░░░</tspan>██║██╔═══╝<tspan class="shade">░</tspan></text>  <text x="500" y="200">██║<tspan class="shade">░░</tspan>██║██║<tspan class="shade">░░</tspan>██║╚█████╔╝██║<tspan class="shade">░░</tspan>██║╚██████╔╝██║<tspan class="shade">░░░░░</tspan></text>  <text x="500" y="240">╚═╝<tspan class="shade">░░</tspan>╚═╝╚═╝<tspan class="shade">░░</tspan>╚═╝<tspan class="shade">░</tspan>╚════╝<tspan class="shade">░</tspan>╚═╝<tspan class="shade">░░</tspan>╚═╝<tspan class="shade">░</tspan>╚═════╝<tspan class="shade">░</tspan>╚═╝<tspan class="shade">░░░░░</tspan></text></svg>

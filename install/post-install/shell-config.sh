@@ -97,12 +97,12 @@ fi
 
 # Bat + FZF integration
 if command -v bat &> /dev/null && command -v fzf &> /dev/null; then
-  alias ff="fzf --preview 'bat --style=numbers --color=always {}'"
+  alias ff="fzf --preview 'bat -n --color=always {}' --preview-window right:60%:wrap"
 fi
 
 # Bat aliases
 if command -v bat &> /dev/null; then
-  alias cat='bat --paging=never'
+  alias cat='bat -pp'
   alias less='bat'
 fi
 
@@ -132,9 +132,18 @@ if command -v bat &> /dev/null; then
   export BAT_THEME="TwoDark"
 fi
 
-# FZF default options
-if command -v fzf &> /dev/null && command -v bat &> /dev/null; then
-  export FZF_DEFAULT_OPTS="--preview 'bat --color=always --style=numbers --line-range=:500 {}' --preview-window right:60%:wrap"
+# FZF configuration
+# Note: Do NOT add --preview to FZF_DEFAULT_OPTS as it breaks non-file operations
+if command -v fzf &> /dev/null; then
+  # CTRL-T file/directory picker options
+  if command -v bat &> /dev/null; then
+    export FZF_CTRL_T_OPTS="--preview 'bat -n --color=always {}' --preview-window right:60%:wrap"
+  fi
+
+  # ALT-C directory navigation options
+  if command -v tree &> /dev/null; then
+    export FZF_ALT_C_OPTS="--preview 'tree -C {} | head -200' --preview-window right:60%:wrap"
+  fi
 fi
 ENVS_END
 

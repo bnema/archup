@@ -29,7 +29,6 @@ sudo
 neovim
 man-db
 git
-bash-completion
 
 # Memory Management
 zram-generator
