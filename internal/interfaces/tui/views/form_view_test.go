@@ -1,10 +1,10 @@
 package views
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
-	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/bnema/archup/internal/interfaces/tui/models"
 )
 
@@ -41,7 +41,7 @@ func TestRenderFormWithError(t *testing.T) {
 	// Create a test form model with error
 	fm := models.NewFormModel()
 	testErr := "Test error message"
-	fm.SetError(testErr)
+	fm.SetError(errors.New(testErr))
 
 	// Render the form
 	output := RenderForm(fm)
