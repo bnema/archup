@@ -1,8 +1,11 @@
 package system
 
 import (
+	"context"
 	"errors"
 	"strings"
+
+	"github.com/bnema/archup/internal/domain/ports"
 )
 
 // SystemValidationRules contains business rules for system configuration
@@ -164,4 +167,97 @@ func (r *SystemValidationRules) LocaleRequirements() string {
 // KeymapRequirements returns a description of keymap requirements
 func (r *SystemValidationRules) KeymapRequirements() string {
 	return "Keymap must be a valid keyboard layout code like us, de, fr, or dvorak. Can include variants like de-nodeadkeys"
+}
+
+// ValidateArchLinux checks if the system is running Arch Linux
+// Returns an error if not running on Arch Linux or Arch ISO
+func (r *SystemValidationRules) ValidateArchLinux(ctx context.Context, fs ports.FileSystem) error {
+	exists, err := fs.Exists("/etc/arch-release")
+	if err != nil {
+		return errors.New("failed to check for Arch Linux: " + err.Error())
+	}
+	if !exists {
+		return errors.New("must be running on Arch Linux or Arch ISO")
+	}
+	return nil
+}
+
+// ValidateNotDerivative checks if the system is vanilla Arch (not a derivative)
+// Returns an error if a derivative is detected (CachyOS, EndeavourOS, Garuda, Manjaro)
+func (r *SystemValidationRules) ValidateNotDerivative(ctx context.Context, fs ports.FileSystem) error {
+	derivatives := map[string]string{
+		"/etc/cachyos-release": "CachyOS",
+		"/etc/eos-release":     "EndeavourOS",
+		"/etc/garuda-release":  "Garuda",
+		"/etc/manjaro-release": "Manjaro",
+	}
+
+	for marker, name := range derivatives {
+		exists, err := fs.Exists(marker)
+		if err != nil {
+			// Continue checking other markers even if one fails
+			continue
+		}
+		if exists {
+			return errors.New("must be vanilla Arch (detected " + name + ")")
+		}
+	}
+
+	return nil
+}
+
+// ValidateArchitecture checks if the system architecture is x86_64
+// Returns an error if not running on x86_64 architecture
+func (r *SystemValidationRules) ValidateArchitecture(arch string) error {
+	if arch == "" {
+		return errors.New("architecture cannot be empty")
+	}
+	if arch != "x86_64" {
+		return errors.New("must be x86_64 architecture (detected: " + arch + ")")
+	}
+	return nil
+}
+
+// ValidateUEFIBoot checks if the system is booted in UEFI mode
+// Returns an error if not booted in UEFI mode (legacy BIOS is not supported)
+func (r *SystemValidationRules) ValidateUEFIBoot(ctx context.Context, fs ports.FileSystem) error {
+	exists, err := fs.Exists("/sys/firmware/efi/efivars")
+	if err != nil {
+		return errors.New("failed to check UEFI boot mode: " + err.Error())
+	}
+	if !exists {
+		return errors.New("must be UEFI boot mode (legacy BIOS not supported)")
+	}
+	return nil
+}
+
+// DetectSecureBoot checks if Secure Boot is enabled
+// Returns true if enabled, false if disabled, and an error if detection fails
+func (r *SystemValidationRules) DetectSecureBoot(ctx context.Context, exec ports.CommandExecutor) (bool, error) {
+	output, err := exec.Execute(ctx, "bootctl", "status")
+	if err != nil {
+		// If bootctl fails, we can't determine Secure Boot status
+		// This is not necessarily an error - might not be available
+		return false, nil
+	}
+
+	// Check if output contains "Secure Boot: enabled"
+	if strings.Contains(string(output), "Secure Boot: enabled") {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+// ValidateSecureBootDisabled checks that Secure Boot is disabled
+// Returns an error if Secure Boot is enabled
+func (r *SystemValidationRules) ValidateSecureBootDisabled(ctx context.Context, exec ports.CommandExecutor) error {
+	enabled, err := r.DetectSecureBoot(ctx, exec)
+	if err != nil {
+		return errors.New("failed to detect Secure Boot status: " + err.Error())
+	}
+	if enabled {
+		return errors.New("Secure Boot must be disabled")
+	}
+	return nil
 }

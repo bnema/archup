@@ -1,9 +1,79 @@
 package system
 
 import (
+	"context"
 	"errors"
 	"strings"
+
+	"github.com/bnema/archup/internal/domain/ports"
 )
+
+// DistributionType represents the type of Arch-based distribution
+type DistributionType int
+
+const (
+	// DistributionArch represents vanilla Arch Linux
+	DistributionArch DistributionType = iota
+	// DistributionCachyOS represents CachyOS
+	DistributionCachyOS
+	// DistributionEndeavourOS represents EndeavourOS
+	DistributionEndeavourOS
+	// DistributionGaruda represents Garuda Linux
+	DistributionGaruda
+	// DistributionManjaro represents Manjaro Linux
+	DistributionManjaro
+	// DistributionUnknown represents an unknown or unsupported distribution
+	DistributionUnknown
+)
+
+// String returns the string representation of the distribution type
+func (d DistributionType) String() string {
+	switch d {
+	case DistributionArch:
+		return "Arch Linux"
+	case DistributionCachyOS:
+		return "CachyOS"
+	case DistributionEndeavourOS:
+		return "EndeavourOS"
+	case DistributionGaruda:
+		return "Garuda Linux"
+	case DistributionManjaro:
+		return "Manjaro Linux"
+	case DistributionUnknown:
+		return "Unknown"
+	default:
+		return "Unknown"
+	}
+}
+
+// DetectDistribution detects which Arch-based distribution is running
+func DetectDistribution(ctx context.Context, fs ports.FileSystem) (DistributionType, error) {
+	// Check for vanilla Arch first
+	exists, err := fs.Exists("/etc/arch-release")
+	if err != nil {
+		return DistributionUnknown, errors.New("failed to detect distribution: " + err.Error())
+	}
+	if !exists {
+		return DistributionUnknown, errors.New("not running on Arch Linux or Arch ISO")
+	}
+
+	// Check for derivatives
+	if exists, _ := fs.Exists("/etc/cachyos-release"); exists {
+		return DistributionCachyOS, nil
+	}
+	if exists, _ := fs.Exists("/etc/eos-release"); exists {
+		return DistributionEndeavourOS, nil
+	}
+	if exists, _ := fs.Exists("/etc/garuda-release"); exists {
+		return DistributionGaruda, nil
+	}
+	if exists, _ := fs.Exists("/etc/manjaro-release"); exists {
+		return DistributionManjaro, nil
+	}
+
+	// If no derivative markers found, it's vanilla Arch
+	return DistributionArch, nil
+}
 
 // SystemConfig is an immutable value object representing system configuration
 // It encapsulates hostname, locale, timezone, and keymap settings

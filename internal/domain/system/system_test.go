@@ -1,8 +1,13 @@
 package system
 
 import (
+	"context"
+	"errors"
 	"strings"
 	"testing"
+
+	"github.com/bnema/archup/internal/domain/ports/mocks"
+	"go.uber.org/mock/gomock"
 )
 
 // SystemConfig Tests
@@ -433,6 +438,370 @@ func TestSuggestedKeymapForLocale(t *testing.T) {
 			got := rules.SuggestedKeymapForLocale(tt.locale)
 			if got != tt.expected {
 				t.Errorf("expected '%s', got '%s'", tt.expected, got)
+			}
+		})
+	}
+}
+
+// New validation function tests
+
+func TestValidateArchLinux(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	rules := NewSystemValidationRules()
+	ctx := context.Background()
+
+	tests := []struct {
+		name      string
+		fileExists bool
+		shouldErr bool
+	}{
+		{"arch-release exists", true, false},
+		{"arch-release missing", false, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockFS := mocks.NewMockFileSystem(ctrl)
+			mockFS.EXPECT().Exists("/etc/arch-release").Return(tt.fileExists, nil)
+
+			err := rules.ValidateArchLinux(ctx, mockFS)
+			if (err != nil) != tt.shouldErr {
+				t.Errorf("got error %v, expected error=%v", err, tt.shouldErr)
+			}
+		})
+	}
+}
+
+func TestValidateNotDerivative(t *testing.T) {
+	rules := NewSystemValidationRules()
+	ctx := context.Background()
+
+	tests := []struct {
+		name      string
+		setupMock func(*mocks.MockFileSystem)
+		shouldErr bool
+		errMsg    string
+	}{
+		{
+			name: "vanilla arch",
+			setupMock: func(mockFS *mocks.MockFileSystem) {
+				mockFS.EXPECT().Exists("/etc/cachyos-release").Return(false, nil)
+				mockFS.EXPECT().Exists("/etc/eos-release").Return(false, nil)
+				mockFS.EXPECT().Exists("/etc/garuda-release").Return(false, nil)
+				mockFS.EXPECT().Exists("/etc/manjaro-release").Return(false, nil)
+			},
+			shouldErr: false,
+		},
+		{
+			name: "cachyos detected",
+			setupMock: func(mockFS *mocks.MockFileSystem) {
+				// Map iteration order is undefined, so any may be checked first
+				mockFS.EXPECT().Exists("/etc/cachyos-release").Return(true, nil).AnyTimes()
+				mockFS.EXPECT().Exists("/etc/eos-release").Return(false, nil).AnyTimes()
+				mockFS.EXPECT().Exists("/etc/garuda-release").Return(false, nil).AnyTimes()
+				mockFS.EXPECT().Exists("/etc/manjaro-release").Return(false, nil).AnyTimes()
+			},
+			shouldErr: true,
+			errMsg:    "CachyOS",
+		},
+		{
+			name: "endeavouros detected",
+			setupMock: func(mockFS *mocks.MockFileSystem) {
+				mockFS.EXPECT().Exists("/etc/cachyos-release").Return(false, nil).AnyTimes()
+				mockFS.EXPECT().Exists("/etc/eos-release").Return(true, nil).AnyTimes()
+				mockFS.EXPECT().Exists("/etc/garuda-release").Return(false, nil).AnyTimes()
+				mockFS.EXPECT().Exists("/etc/manjaro-release").Return(false, nil).AnyTimes()
+			},
+			shouldErr: true,
+			errMsg:    "EndeavourOS",
+		},
+		{
+			name: "garuda detected",
+			setupMock: func(mockFS *mocks.MockFileSystem) {
+				mockFS.EXPECT().Exists("/etc/cachyos-release").Return(false, nil).AnyTimes()
+				mockFS.EXPECT().Exists("/etc/eos-release").Return(false, nil).AnyTimes()
+				mockFS.EXPECT().Exists("/etc/garuda-release").Return(true, nil).AnyTimes()
+				mockFS.EXPECT().Exists("/etc/manjaro-release").Return(false, nil).AnyTimes()
+			},
+			shouldErr: true,
+			errMsg:    "Garuda",
+		},
+		{
+			name: "manjaro detected",
+			setupMock: func(mockFS *mocks.MockFileSystem) {
+				mockFS.EXPECT().Exists("/etc/cachyos-release").Return(false, nil).AnyTimes()
+				mockFS.EXPECT().Exists("/etc/eos-release").Return(false, nil).AnyTimes()
+				mockFS.EXPECT().Exists("/etc/garuda-release").Return(false, nil).AnyTimes()
+				mockFS.EXPECT().Exists("/etc/manjaro-release").Return(true, nil).AnyTimes()
+			},
+			shouldErr: true,
+			errMsg:    "Manjaro",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockFS := mocks.NewMockFileSystem(ctrl)
+			tt.setupMock(mockFS)
+
+			err := rules.ValidateNotDerivative(ctx, mockFS)
+			if (err != nil) != tt.shouldErr {
+				t.Errorf("got error %v, expected error=%v", err, tt.shouldErr)
+			}
+			if tt.shouldErr && err != nil && !strings.Contains(err.Error(), tt.errMsg) {
+				t.Errorf("expected error to contain '%s', got '%s'", tt.errMsg, err.Error())
+			}
+		})
+	}
+}
+
+func TestValidateArchitecture(t *testing.T) {
+	rules := NewSystemValidationRules()
+
+	tests := []struct {
+		name      string
+		arch      string
+		shouldErr bool
+	}{
+		{"x86_64", "x86_64", false},
+		{"empty", "", true},
+		{"aarch64", "aarch64", true},
+		{"i686", "i686", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := rules.ValidateArchitecture(tt.arch)
+			if (err != nil) != tt.shouldErr {
+				t.Errorf("got error %v, expected error=%v", err, tt.shouldErr)
+			}
+		})
+	}
+}
+
+func TestValidateUEFIBoot(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	rules := NewSystemValidationRules()
+	ctx := context.Background()
+
+	tests := []struct {
+		name      string
+		efivarsExists bool
+		shouldErr bool
+	}{
+		{"efivars exists", true, false},
+		{"efivars missing", false, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockFS := mocks.NewMockFileSystem(ctrl)
+			mockFS.EXPECT().Exists("/sys/firmware/efi/efivars").Return(tt.efivarsExists, nil)
+
+			err := rules.ValidateUEFIBoot(ctx, mockFS)
+			if (err != nil) != tt.shouldErr {
+				t.Errorf("got error %v, expected error=%v", err, tt.shouldErr)
+			}
+		})
+	}
+}
+
+func TestDetectSecureBoot(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	rules := NewSystemValidationRules()
+	ctx := context.Background()
+
+	tests := []struct {
+		name     string
+		output   []byte
+		cmdErr   error
+		expected bool
+	}{
+		{
+			name:     "secure boot enabled",
+			output:   []byte("System:\n  Secure Boot: enabled\n"),
+			expected: true,
+		},
+		{
+			name:     "secure boot disabled",
+			output:   []byte("System:\n  Secure Boot: disabled\n"),
+			expected: false,
+		},
+		{
+			name:     "bootctl fails",
+			cmdErr:   errors.New("bootctl not found"),
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockExec := mocks.NewMockCommandExecutor(ctrl)
+			if tt.cmdErr != nil {
+				mockExec.EXPECT().Execute(ctx, "bootctl", "status").Return(nil, tt.cmdErr)
+			} else {
+				mockExec.EXPECT().Execute(ctx, "bootctl", "status").Return(tt.output, nil)
+			}
+
+			enabled, err := rules.DetectSecureBoot(ctx, mockExec)
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+			if enabled != tt.expected {
+				t.Errorf("expected %v, got %v", tt.expected, enabled)
+			}
+		})
+	}
+}
+
+func TestValidateSecureBootDisabled(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	rules := NewSystemValidationRules()
+	ctx := context.Background()
+
+	tests := []struct {
+		name      string
+		output    []byte
+		shouldErr bool
+	}{
+		{
+			name:      "secure boot disabled",
+			output:    []byte("System:\n  Secure Boot: disabled\n"),
+			shouldErr: false,
+		},
+		{
+			name:      "secure boot enabled",
+			output:    []byte("System:\n  Secure Boot: enabled\n"),
+			shouldErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockExec := mocks.NewMockCommandExecutor(ctrl)
+			mockExec.EXPECT().Execute(ctx, "bootctl", "status").Return(tt.output, nil)
+
+			err := rules.ValidateSecureBootDisabled(ctx, mockExec)
+			if (err != nil) != tt.shouldErr {
+				t.Errorf("got error %v, expected error=%v", err, tt.shouldErr)
+			}
+		})
+	}
+}
+
+func TestDistributionType_String(t *testing.T) {
+	tests := []struct {
+		distro DistributionType
+		want   string
+	}{
+		{DistributionArch, "Arch Linux"},
+		{DistributionCachyOS, "CachyOS"},
+		{DistributionEndeavourOS, "EndeavourOS"},
+		{DistributionGaruda, "Garuda Linux"},
+		{DistributionManjaro, "Manjaro Linux"},
+		{DistributionUnknown, "Unknown"},
+	}
+
+	for _, tt := range tests {
+		if got := tt.distro.String(); got != tt.want {
+			t.Errorf("expected %s, got %s", tt.want, got)
+		}
+	}
+}
+
+func TestDetectDistribution(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	ctx := context.Background()
+
+	tests := []struct {
+		name      string
+		setupMock func(*mocks.MockFileSystem)
+		expected  DistributionType
+		shouldErr bool
+	}{
+		{
+			name: "vanilla arch",
+			setupMock: func(mockFS *mocks.MockFileSystem) {
+				mockFS.EXPECT().Exists("/etc/arch-release").Return(true, nil)
+				mockFS.EXPECT().Exists("/etc/cachyos-release").Return(false, nil)
+				mockFS.EXPECT().Exists("/etc/eos-release").Return(false, nil)
+				mockFS.EXPECT().Exists("/etc/garuda-release").Return(false, nil)
+				mockFS.EXPECT().Exists("/etc/manjaro-release").Return(false, nil)
+			},
+			expected: DistributionArch,
+		},
+		{
+			name: "cachyos",
+			setupMock: func(mockFS *mocks.MockFileSystem) {
+				mockFS.EXPECT().Exists("/etc/arch-release").Return(true, nil)
+				mockFS.EXPECT().Exists("/etc/cachyos-release").Return(true, nil)
+			},
+			expected: DistributionCachyOS,
+		},
+		{
+			name: "endeavouros",
+			setupMock: func(mockFS *mocks.MockFileSystem) {
+				mockFS.EXPECT().Exists("/etc/arch-release").Return(true, nil)
+				mockFS.EXPECT().Exists("/etc/cachyos-release").Return(false, nil)
+				mockFS.EXPECT().Exists("/etc/eos-release").Return(true, nil)
+			},
+			expected: DistributionEndeavourOS,
+		},
+		{
+			name: "garuda",
+			setupMock: func(mockFS *mocks.MockFileSystem) {
+				mockFS.EXPECT().Exists("/etc/arch-release").Return(true, nil)
+				mockFS.EXPECT().Exists("/etc/cachyos-release").Return(false, nil)
+				mockFS.EXPECT().Exists("/etc/eos-release").Return(false, nil)
+				mockFS.EXPECT().Exists("/etc/garuda-release").Return(true, nil)
+			},
+			expected: DistributionGaruda,
+		},
+		{
+			name: "manjaro",
+			setupMock: func(mockFS *mocks.MockFileSystem) {
+				mockFS.EXPECT().Exists("/etc/arch-release").Return(true, nil)
+				mockFS.EXPECT().Exists("/etc/cachyos-release").Return(false, nil)
+				mockFS.EXPECT().Exists("/etc/eos-release").Return(false, nil)
+				mockFS.EXPECT().Exists("/etc/garuda-release").Return(false, nil)
+				mockFS.EXPECT().Exists("/etc/manjaro-release").Return(true, nil)
+			},
+			expected: DistributionManjaro,
+		},
+		{
+			name: "not arch",
+			setupMock: func(mockFS *mocks.MockFileSystem) {
+				mockFS.EXPECT().Exists("/etc/arch-release").Return(false, nil)
+			},
+			expected:  DistributionUnknown,
+			shouldErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockFS := mocks.NewMockFileSystem(ctrl)
+			tt.setupMock(mockFS)
+
+			distro, err := DetectDistribution(ctx, mockFS)
+			if (err != nil) != tt.shouldErr {
+				t.Errorf("got error %v, expected error=%v", err, tt.shouldErr)
+			}
+			if distro != tt.expected {
+				t.Errorf("expected %v, got %v", tt.expected, distro)
 			}
 		})
 	}
