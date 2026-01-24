@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
 	"github.com/bnema/archup/internal/interfaces/tui/models"
+	"github.com/charmbracelet/lipgloss"
 )
 
 // RenderProgress renders the progress model to a styled string

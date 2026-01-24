@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/bnema/archup/internal/application/dto"
 	"github.com/bnema/archup/internal/interfaces/tui/models"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 // NOTE: This package uses AppContext interface to avoid importing parent tui package

@@ -15,10 +15,10 @@ import (
 // TestBootPhasePreCheck tests boot prerequisites
 func TestBootPhasePreCheck(t *testing.T) {
 	tests := []struct {
-		name                string
-		setupMocks          func(*mocks.MockSystemExecutor)
-		wantErr             bool
-		errContains         string
+		name        string
+		setupMocks  func(*mocks.MockSystemExecutor)
+		wantErr     bool
+		errContains string
 	}{
 		{
 			name: "Both /mnt and /mnt/boot mounted",
@@ -86,9 +86,9 @@ func TestBootPhasePreCheck(t *testing.T) {
 // TestBootPhaseExtractPartitionNumber tests partition number extraction
 func TestBootPhaseExtractPartitionNumber(t *testing.T) {
 	tests := []struct {
-		name          string
-		devicePath    string
-		expectedNum   string
+		name        string
+		devicePath  string
+		expectedNum string
 	}{
 		{
 			name:        "SATA partition /dev/sda1",
@@ -167,7 +167,7 @@ func TestBootPhasePostCheck(t *testing.T) {
 			name: "Both bootloader and config exist",
 			setupMocks: func(mockFS *mocks.MockFileSystem) {
 				bootloaderPath := filepath.Join(config.PathMntBootEFILimine, config.FileLimineBootloader)
-				configPath := filepath.Join(config.PathMntBootEFILimine, config.FileLimineConfig)
+				configPath := config.PathMntBootLimineConf
 
 				mockFS.EXPECT().Stat(bootloaderPath).Return(mockFileInfo{}, nil).Times(1)
 				mockFS.EXPECT().IsNotExist(gomock.Any()).Return(false).Times(1)
@@ -191,7 +191,7 @@ func TestBootPhasePostCheck(t *testing.T) {
 			name: "Config missing",
 			setupMocks: func(mockFS *mocks.MockFileSystem) {
 				bootloaderPath := filepath.Join(config.PathMntBootEFILimine, config.FileLimineBootloader)
-				configPath := filepath.Join(config.PathMntBootEFILimine, config.FileLimineConfig)
+				configPath := config.PathMntBootLimineConf
 
 				mockFS.EXPECT().Stat(bootloaderPath).Return(mockFileInfo{}, nil).Times(1)
 				mockFS.EXPECT().IsNotExist(gomock.Any()).Return(false).Times(1)
@@ -244,9 +244,9 @@ func TestBootPhasePostCheck(t *testing.T) {
 // TestBootPhaseRollback tests boot phase rollback
 func TestBootPhaseRollback(t *testing.T) {
 	tests := []struct {
-		name        string
-		setupMocks  func(*mocks.MockFileSystem)
-		wantErr     bool
+		name       string
+		setupMocks func(*mocks.MockFileSystem)
+		wantErr    bool
 	}{
 		{
 			name: "Rollback success",
@@ -423,9 +423,9 @@ func TestBootPhaseKernelParameterConstruction(t *testing.T) {
 // TestBootPhaseInstallPathConstruction tests install path building
 func TestBootPhaseInstallPathConstruction(t *testing.T) {
 	tests := []struct {
-		name       string
-		filename   string
-		expected   string
+		name     string
+		filename string
+		expected string
 	}{
 		{
 			name:     "Limine config template",
@@ -470,8 +470,8 @@ func TestBootPhaseInstallPathConstruction(t *testing.T) {
 // TestBootPhaseFileSystemOperations tests file system interaction patterns
 func TestBootPhaseFileSystemOperations(t *testing.T) {
 	tests := []struct {
-		name       string
-		operation  string // "read", "write", "mkdir"
+		name      string
+		operation string // "read", "write", "mkdir"
 	}{
 		{
 			name:      "Mkinitcpio config read",

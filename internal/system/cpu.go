@@ -34,11 +34,11 @@ type AMDZenGen struct {
 
 // CPUInfo holds detected CPU information
 type CPUInfo struct {
-	Vendor         CPUVendor
-	ModelName      string        // Full CPU model name
-	Microcode      string
-	AMDZenGen      *AMDZenGen    // AMD Zen generation (nil for non-AMD)
-	AMDPStateModes []AMDPStateMode
+	Vendor                CPUVendor
+	ModelName             string // Full CPU model name
+	Microcode             string
+	AMDZenGen             *AMDZenGen // AMD Zen generation (nil for non-AMD)
+	AMDPStateModes        []AMDPStateMode
 	RecommendedPStateMode AMDPStateMode // Recommended mode for this CPU
 }
 

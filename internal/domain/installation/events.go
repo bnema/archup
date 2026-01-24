@@ -105,9 +105,9 @@ func (e *PhaseCompletedEvent) EventType() string {
 // PhaseFailedEvent represents failure of a phase
 type PhaseFailedEvent struct {
 	BaseDomainEvent
-	Phase       State
+	Phase        State
 	ErrorMessage string
-	Recoverable bool
+	Recoverable  bool
 }
 
 func NewPhaseFailedEvent(aggregateID string, phase State, errorMessage string, recoverable bool) *PhaseFailedEvent {

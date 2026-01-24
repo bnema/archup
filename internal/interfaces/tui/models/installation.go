@@ -5,17 +5,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bnema/archup/internal/application/dto"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/bnema/archup/internal/application/dto"
 )
 
 // InstallationModelImpl implements InstallationModel interface
 type InstallationModelImpl struct {
 	BaseModel
 
-	status *dto.InstallationStatus
-	err    string
+	status   *dto.InstallationStatus
+	err      string
 	complete bool
 }
 

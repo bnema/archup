@@ -82,17 +82,17 @@ func (r *SystemValidationRules) SanitizeHostname(hostname string) string {
 func (r *SystemValidationRules) SuggestedLocaleForTimezone(timezone string) string {
 	// Common timezone -> locale pairings (not enforced, just suggestions)
 	suggestions := map[string]string{
-		"America/New_York":      "en_US.UTF-8",
-		"America/Chicago":       "en_US.UTF-8",
-		"America/Denver":        "en_US.UTF-8",
-		"America/Los_Angeles":   "en_US.UTF-8",
-		"Europe/London":         "en_GB.UTF-8",
-		"Europe/Paris":          "fr_FR.UTF-8",
-		"Europe/Berlin":         "de_DE.UTF-8",
-		"Europe/Madrid":         "es_ES.UTF-8",
-		"Asia/Tokyo":            "ja_JP.UTF-8",
-		"Australia/Sydney":      "en_AU.UTF-8",
-		"UTC":                   "en_US.UTF-8",
+		"America/New_York":    "en_US.UTF-8",
+		"America/Chicago":     "en_US.UTF-8",
+		"America/Denver":      "en_US.UTF-8",
+		"America/Los_Angeles": "en_US.UTF-8",
+		"Europe/London":       "en_GB.UTF-8",
+		"Europe/Paris":        "fr_FR.UTF-8",
+		"Europe/Berlin":       "de_DE.UTF-8",
+		"Europe/Madrid":       "es_ES.UTF-8",
+		"Asia/Tokyo":          "ja_JP.UTF-8",
+		"Australia/Sydney":    "en_AU.UTF-8",
+		"UTC":                 "en_US.UTF-8",
 	}
 
 	if locale, exists := suggestions[timezone]; exists {
@@ -127,10 +127,10 @@ func (r *SystemValidationRules) SuggestedKeymapForLocale(locale string) string {
 func (r *SystemValidationRules) IsValidLocaleVariant(locale string) bool {
 	// Common valid variants
 	validVariants := map[string]bool{
-		"UTF-8":  true,
-		"utf8":   true,
-		"UTF8":   true,
-		"ISO8859-1": true,
+		"UTF-8":      true,
+		"utf8":       true,
+		"UTF8":       true,
+		"ISO8859-1":  true,
 		"ISO-8859-1": true,
 	}
 

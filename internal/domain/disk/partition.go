@@ -33,10 +33,10 @@ func (f FilesystemType) String() string {
 
 // Partition is an immutable value object representing a disk partition
 type Partition struct {
-	device     string          // e.g., /dev/sda1
-	size       int64           // Size in megabytes
+	device     string // e.g., /dev/sda1
+	size       int64  // Size in megabytes
 	filesystem FilesystemType
-	mountPoint string          // e.g., /, /boot, /home
+	mountPoint string // e.g., /, /boot, /home
 	encrypted  bool
 }
 

@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/lipgloss"
 	"github.com/bnema/archup/internal/interfaces/tui/models"
+	"github.com/charmbracelet/lipgloss"
 )
 
 // RenderSummary renders the installation summary (success case)

@@ -129,10 +129,10 @@ func TestConfigPhasePreCheck(t *testing.T) {
 // TestConfigPhasePostCheck tests configuration validation
 func TestConfigPhasePostCheck(t *testing.T) {
 	tests := []struct {
-		name                    string
-		setupMocks              func(*mocks.MockFileSystem)
-		wantErr                 bool
-		errContains             string
+		name        string
+		setupMocks  func(*mocks.MockFileSystem)
+		wantErr     bool
+		errContains string
 	}{
 		{
 			name: "All configuration files exist - postcheck passes",

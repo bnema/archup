@@ -16,4 +16,3 @@ func NewInstallationModel() InstallationModel {
 func NewProgressModel() ProgressModel {
 	return models.NewProgressModel()
 }
-

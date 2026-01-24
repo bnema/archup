@@ -1,9 +1,9 @@
 package components
 
 import (
+	"github.com/bnema/archup/internal/ui/styles"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/bnema/archup/internal/ui/styles"
 )
 
 // FormBuilder provides reusable form components

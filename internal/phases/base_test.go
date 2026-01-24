@@ -73,39 +73,39 @@ func TestBaseInstallPhasePreCheck(t *testing.T) {
 // TestBaseInstallPhaseDetectCPU tests CPU vendor detection
 func TestBaseInstallPhaseDetectCPU(t *testing.T) {
 	tests := []struct {
-		name           string
-		cpuinfoContent string
-		expectedVendor string
+		name              string
+		cpuinfoContent    string
+		expectedVendor    string
 		expectedMicrocode string
-		wantErr        bool
+		wantErr           bool
 	}{
 		{
-			name:           "Intel CPU detected",
-			cpuinfoContent: "processor\t: 0\nvendor_id\t: GenuineIntel\nflags\t: fpu\n",
-			expectedVendor: "Intel",
+			name:              "Intel CPU detected",
+			cpuinfoContent:    "processor\t: 0\nvendor_id\t: GenuineIntel\nflags\t: fpu\n",
+			expectedVendor:    "Intel",
 			expectedMicrocode: "intel-ucode",
-			wantErr:        false,
+			wantErr:           false,
 		},
 		{
-			name:           "AMD CPU detected",
-			cpuinfoContent: "processor\t: 0\nvendor_id\t: AuthenticAMD\nflags\t: fpu\n",
-			expectedVendor: "AMD",
+			name:              "AMD CPU detected",
+			cpuinfoContent:    "processor\t: 0\nvendor_id\t: AuthenticAMD\nflags\t: fpu\n",
+			expectedVendor:    "AMD",
 			expectedMicrocode: "amd-ucode",
-			wantErr:        false,
+			wantErr:           false,
 		},
 		{
-			name:           "Unknown CPU vendor",
-			cpuinfoContent: "processor\t: 0\nvendor_id\t: UnknownVendor\nflags\t: fpu\n",
-			expectedVendor: "Unknown",
+			name:              "Unknown CPU vendor",
+			cpuinfoContent:    "processor\t: 0\nvendor_id\t: UnknownVendor\nflags\t: fpu\n",
+			expectedVendor:    "Unknown",
 			expectedMicrocode: "",
-			wantErr:        false,
+			wantErr:           false,
 		},
 		{
-			name:           "Empty cpuinfo",
-			cpuinfoContent: "",
-			expectedVendor: "Unknown",
+			name:              "Empty cpuinfo",
+			cpuinfoContent:    "",
+			expectedVendor:    "Unknown",
 			expectedMicrocode: "",
-			wantErr:        false,
+			wantErr:           false,
 		},
 	}
 
@@ -237,21 +237,21 @@ func TestBaseInstallPhaseLoadBasePackages(t *testing.T) {
 // TestBaseInstallPhaseGenerateFstab tests fstab generation
 func TestBaseInstallPhaseGenerateFstab(t *testing.T) {
 	tests := []struct {
-		name            string
-		genfstabResult  system.CommandResult
-		wantErr         bool
-		errContains     string
+		name           string
+		genfstabResult system.CommandResult
+		wantErr        bool
+		errContains    string
 	}{
 		{
-			name:            "Fstab generation success",
-			genfstabResult:  system.CommandResult{ExitCode: 0},
-			wantErr:         false,
+			name:           "Fstab generation success",
+			genfstabResult: system.CommandResult{ExitCode: 0},
+			wantErr:        false,
 		},
 		{
-			name:            "Genfstab command failed",
-			genfstabResult:  system.CommandResult{ExitCode: 1, Error: fmt.Errorf("permission denied")},
-			wantErr:         true,
-			errContains:     "genfstab failed",
+			name:           "Genfstab command failed",
+			genfstabResult: system.CommandResult{ExitCode: 1, Error: fmt.Errorf("permission denied")},
+			wantErr:        true,
+			errContains:    "genfstab failed",
 		},
 	}
 
@@ -295,31 +295,31 @@ func TestBaseInstallPhaseGenerateFstab(t *testing.T) {
 // TestBaseInstallPhasePostCheck tests installation validation
 func TestBaseInstallPhasePostCheck(t *testing.T) {
 	tests := []struct {
-		name                  string
-		usrDirExists          bool
-		fstabFileExists       bool
-		wantErr               bool
-		errContains           string
+		name            string
+		usrDirExists    bool
+		fstabFileExists bool
+		wantErr         bool
+		errContains     string
 	}{
 		{
-			name:                  "Both /mnt/usr and /mnt/etc/fstab exist",
-			usrDirExists:          true,
-			fstabFileExists:       true,
-			wantErr:               false,
+			name:            "Both /mnt/usr and /mnt/etc/fstab exist",
+			usrDirExists:    true,
+			fstabFileExists: true,
+			wantErr:         false,
 		},
 		{
-			name:                  "/mnt/usr does not exist",
-			usrDirExists:          false,
-			fstabFileExists:       true,
-			wantErr:               true,
-			errContains:           "/mnt/usr does not exist",
+			name:            "/mnt/usr does not exist",
+			usrDirExists:    false,
+			fstabFileExists: true,
+			wantErr:         true,
+			errContains:     "/mnt/usr does not exist",
 		},
 		{
-			name:                  "/mnt/etc/fstab does not exist",
-			usrDirExists:          true,
-			fstabFileExists:       false,
-			wantErr:               true,
-			errContains:           "fstab was not created",
+			name:            "/mnt/etc/fstab does not exist",
+			usrDirExists:    true,
+			fstabFileExists: false,
+			wantErr:         true,
+			errContains:     "fstab was not created",
 		},
 	}
 

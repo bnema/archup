@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bnema/archup/internal/application/dto"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/bnema/archup/internal/application/dto"
 )
 
 // ProgressModelImpl implements ProgressModel interface

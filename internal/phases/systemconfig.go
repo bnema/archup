@@ -97,12 +97,12 @@ func (p *ConfigPhase) configureSystem(progressChan chan<- ProgressUpdate) error 
 	// Set timezone
 	timezonePath := filepath.Join(config.PathUsrShareZoneinfo, p.config.Timezone)
 	tzCmd := fmt.Sprintf("ln -sf %s %s", timezonePath, config.PathEtcLocaltime)
-	if err := p.chrExec.ChrootExec(p.logger.LogPath(),config.PathMnt, tzCmd); err != nil {
+	if err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, tzCmd); err != nil {
 		return fmt.Errorf("failed to set timezone: %w", err)
 	}
 
 	// Set hardware clock
-	if err := p.chrExec.ChrootExec(p.logger.LogPath(),config.PathMnt, "hwclock --systohc"); err != nil {
+	if err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, "hwclock --systohc"); err != nil {
 		return fmt.Errorf("failed to set hardware clock: %w", err)
 	}
 
@@ -114,7 +114,7 @@ func (p *ConfigPhase) configureSystem(progressChan chan<- ProgressUpdate) error 
 		return fmt.Errorf("failed to write locale.gen: %w", err)
 	}
 
-	if err := p.chrExec.ChrootExec(p.logger.LogPath(),config.PathMnt, "locale-gen"); err != nil {
+	if err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, "locale-gen"); err != nil {
 		return fmt.Errorf("failed to generate locale: %w", err)
 	}
 
@@ -159,7 +159,7 @@ func (p *ConfigPhase) configureNetwork(progressChan chan<- ProgressUpdate) error
 	p.SendOutput(progressChan, "Configuring network...")
 
 	// Enable NetworkManager service
-	if err := p.chrExec.ChrootSystemctl(p.logger.LogPath(),config.PathMnt, "enable", config.ServiceNetworkManager); err != nil {
+	if err := p.chrExec.ChrootSystemctl(p.logger.LogPath(), config.PathMnt, "enable", config.ServiceNetworkManager); err != nil {
 		return fmt.Errorf("failed to enable NetworkManager: %w", err)
 	}
 
@@ -174,7 +174,7 @@ func (p *ConfigPhase) createUser(progressChan chan<- ProgressUpdate) error {
 
 	// Create user with home directory
 	userAddCmd := fmt.Sprintf("useradd -m -G %s -s %s %s", config.GroupWheel, config.ShellBash, p.config.Username)
-	if err := p.chrExec.ChrootExec(p.logger.LogPath(),config.PathMnt, userAddCmd); err != nil {
+	if err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, userAddCmd); err != nil {
 		return fmt.Errorf("failed to create user: %w", err)
 	}
 

@@ -16,14 +16,14 @@ func TestRenderSummary(t *testing.T) {
 	now := time.Now()
 	completedAt := now.Add(1 * time.Hour)
 	status := &dto.InstallationStatus{
-		Hostname:    "test-host",
-		Username:    "testuser",
-		TargetDisk:  "/dev/sda",
-		Progress:    100,
-		State:       "Complete",
+		Hostname:     "test-host",
+		Username:     "testuser",
+		TargetDisk:   "/dev/sda",
+		Progress:     100,
+		State:        "Complete",
 		CurrentPhase: "PostInstallation",
-		StartedAt:   &now,
-		CompletedAt: &completedAt,
+		StartedAt:    &now,
+		CompletedAt:  &completedAt,
 	}
 
 	im.SetStatus(status)
@@ -34,11 +34,11 @@ func TestRenderSummary(t *testing.T) {
 
 	// Verify key content is present
 	checks := []string{
-		"Installation Complete!",       // Title
-		"test-host",                    // Hostname
-		"testuser",                     // Username
-		"/dev/sda",                     // Disk
-		"Press 'q' to exit",            // Instructions
+		"Installation Complete!", // Title
+		"test-host",              // Hostname
+		"testuser",               // Username
+		"/dev/sda",               // Disk
+		"Press 'q' to exit",      // Instructions
 	}
 
 	for _, check := range checks {
@@ -63,9 +63,9 @@ func TestRenderError(t *testing.T) {
 
 	// Verify key content is present
 	checks := []string{
-		"Installation Failed",           // Title
-		errorMsg,                        // Error message
-		"Press 'q' or Ctrl+C to exit",  // Instructions
+		"Installation Failed",         // Title
+		errorMsg,                      // Error message
+		"Press 'q' or Ctrl+C to exit", // Instructions
 	}
 
 	for _, check := range checks {
@@ -84,10 +84,10 @@ func TestRenderStatus(t *testing.T) {
 
 	// Create status data
 	status := &dto.InstallationStatus{
-		Hostname:    "test-host",
+		Hostname:     "test-host",
 		CurrentPhase: "Partitioning",
-		Progress:    35,
-		State:       "Running",
+		Progress:     35,
+		State:        "Running",
 	}
 
 	im.SetStatus(status)

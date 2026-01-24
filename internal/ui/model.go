@@ -342,15 +342,15 @@ func (m *Model) handleFormComplete() tea.Cmd {
 }
 
 // Getter methods for views package
-func (m *Model) Width() int { return m.width }
-func (m *Model) Version() string { return m.version }
-func (m *Model) Config() *config.Config { return m.config }
-func (m *Model) CurrentForm() *huh.Form { return m.currentForm }
-func (m *Model) Spinner() spinner.Model { return m.spinner }
+func (m *Model) Width() int                       { return m.width }
+func (m *Model) Version() string                  { return m.version }
+func (m *Model) Config() *config.Config           { return m.config }
+func (m *Model) CurrentForm() *huh.Form           { return m.currentForm }
+func (m *Model) Spinner() spinner.Model           { return m.spinner }
 func (m *Model) Output() *components.OutputViewer { return m.output }
-func (m *Model) RenderPhaseHeader() string { return m.renderPhaseHeader() }
-func (m *Model) NetworkCheckDone() bool { return m.networkCheckDone }
-func (m *Model) NetworkErr() error { return m.networkErr }
+func (m *Model) RenderPhaseHeader() string        { return m.renderPhaseHeader() }
+func (m *Model) NetworkCheckDone() bool           { return m.networkCheckDone }
+func (m *Model) NetworkErr() error                { return m.networkErr }
 
 // executeNextPhase executes the next pending phase
 func (m *Model) executeNextPhase() tea.Cmd {

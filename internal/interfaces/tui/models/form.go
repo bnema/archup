@@ -41,14 +41,14 @@ type FormModelImpl struct {
 	BaseModel
 
 	// Form fields
-	hostname      textinput.Model
-	username      textinput.Model
-	userPassword  textinput.Model
-	rootPassword  textinput.Model
-	targetDisk    textinput.Model
-	timezone      textinput.Model
-	locale        textinput.Model
-	keymap        textinput.Model
+	hostname     textinput.Model
+	username     textinput.Model
+	userPassword textinput.Model
+	rootPassword textinput.Model
+	targetDisk   textinput.Model
+	timezone     textinput.Model
+	locale       textinput.Model
+	keymap       textinput.Model
 
 	// UI state
 	focusIndex int

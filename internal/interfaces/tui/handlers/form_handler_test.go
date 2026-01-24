@@ -3,8 +3,8 @@ package handlers
 import (
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/bnema/archup/internal/interfaces/tui/models"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 func TestHandleFormUpdate_Navigation(t *testing.T) {

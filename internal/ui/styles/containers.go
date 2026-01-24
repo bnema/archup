@@ -18,12 +18,12 @@ const (
 var (
 	// CenteredContainerStyle - Used for welcome, complete, error screens
 	CenteredContainerStyle = lipgloss.NewStyle().
-		MaxWidth(MaxContentWidth).
-		Padding(0, 2).
-		AlignHorizontal(lipgloss.Center)
+				MaxWidth(MaxContentWidth).
+				Padding(0, 2).
+				AlignHorizontal(lipgloss.Center)
 
 	// FormContainerStyle - Used for all forms (content left-aligned)
 	FormContainerStyle = lipgloss.NewStyle().
-		Padding(0, 2).
-		AlignHorizontal(lipgloss.Left)
+				Padding(0, 2).
+				AlignHorizontal(lipgloss.Left)
 )

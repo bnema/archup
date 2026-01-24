@@ -27,13 +27,13 @@ func TestRenderProgress(t *testing.T) {
 
 	// Verify key content is present
 	checks := []string{
-		"Installation Progress",      // Title
-		"Phase 2/7",                   // Phase info
-		"Partitioning",                // Phase name
-		"Partitioning disk...",        // Message
-		"[",                           // Progress bar start
-		"]",                           // Progress bar end
-		"25%",                         // Progress percentage
+		"Installation Progress", // Title
+		"Phase 2/7",             // Phase info
+		"Partitioning",          // Phase name
+		"Partitioning disk...",  // Message
+		"[",                     // Progress bar start
+		"]",                     // Progress bar end
+		"25%",                   // Progress percentage
 	}
 
 	for _, check := range checks {

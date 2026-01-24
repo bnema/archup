@@ -133,11 +133,11 @@ func ValidateShell(shell string) error {
 
 	// Common valid shells
 	validShells := map[string]bool{
-		"/bin/bash":    true,
-		"/bin/sh":      true,
-		"/bin/zsh":     true,
-		"/bin/fish":    true,
-		"/usr/bin/zsh": true,
+		"/bin/bash":     true,
+		"/bin/sh":       true,
+		"/bin/zsh":      true,
+		"/bin/fish":     true,
+		"/usr/bin/zsh":  true,
 		"/usr/bin/fish": true,
 	}
 

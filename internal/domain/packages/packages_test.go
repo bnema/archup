@@ -159,10 +159,10 @@ func TestNewRepository_Valid(t *testing.T) {
 
 func TestNewRepository_AllCombinations(t *testing.T) {
 	tests := []struct {
-		name           string
-		multilib       bool
-		chaotic        bool
-		helper         AURHelper
+		name     string
+		multilib bool
+		chaotic  bool
+		helper   AURHelper
 	}{
 		{"minimal", false, false, AURHelperParu},
 		{"chaotic only", false, true, AURHelperParu},

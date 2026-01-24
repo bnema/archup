@@ -73,11 +73,11 @@ func TestPartitionHandler_Handle_InvalidDisk(t *testing.T) {
 	handler := NewPartitionHandler(mockExec, mockLogger)
 
 	cmd := commands.PartitionDiskCommand{
-		TargetDisk:         "",
-		RootSizeGB:         50,
-		BootSizeGB:         1,
-		EncryptionType:     disk.EncryptionTypeNone,
-		FilesystemType:     disk.FilesystemExt4,
+		TargetDisk:     "",
+		RootSizeGB:     50,
+		BootSizeGB:     1,
+		EncryptionType: disk.EncryptionTypeNone,
+		FilesystemType: disk.FilesystemExt4,
 	}
 
 	result, err := handler.Handle(context.Background(), cmd)
@@ -104,11 +104,11 @@ func TestPartitionHandler_Handle_RootPartitionTooSmall(t *testing.T) {
 	handler := NewPartitionHandler(mockExec, mockLogger)
 
 	cmd := commands.PartitionDiskCommand{
-		TargetDisk:         "/dev/sda",
-		RootSizeGB:         1, // Too small
-		BootSizeGB:         1,
-		EncryptionType:     disk.EncryptionTypeNone,
-		FilesystemType:     disk.FilesystemExt4,
+		TargetDisk:     "/dev/sda",
+		RootSizeGB:     1, // Too small
+		BootSizeGB:     1,
+		EncryptionType: disk.EncryptionTypeNone,
+		FilesystemType: disk.FilesystemExt4,
 	}
 
 	result, err := handler.Handle(context.Background(), cmd)

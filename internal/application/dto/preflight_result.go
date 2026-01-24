@@ -2,9 +2,9 @@ package dto
 
 // SystemInfo contains basic system information
 type SystemInfo struct {
-	Architecture   string
-	IsUEFI         bool
-	Distribution   string
+	Architecture      string
+	IsUEFI            bool
+	Distribution      string
 	SecureBootEnabled bool
 }
 

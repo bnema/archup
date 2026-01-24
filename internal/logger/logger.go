@@ -13,10 +13,10 @@ import (
 
 // Logger wraps slog.Logger and adds dry-run mode support
 type Logger struct {
-	slog     *slog.Logger
-	logPath  string
-	dryRun   bool
-	logFile  *os.File
+	slog    *slog.Logger
+	logPath string
+	dryRun  bool
+	logFile *os.File
 }
 
 // syncWriter wraps an io.Writer to sync after every write

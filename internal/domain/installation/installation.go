@@ -26,8 +26,8 @@ type Installation struct {
 	encryptionType string
 
 	// Installation metadata
-	createdAt time.Time
-	startedAt *time.Time
+	createdAt   time.Time
+	startedAt   *time.Time
 	completedAt *time.Time
 
 	// Domain events that have occurred during this installation
@@ -65,9 +65,9 @@ func NewInstallation(
 
 	// Validate encryptionType
 	validEncryption := map[string]bool{
-		"none":      true,
-		"luks":      true,
-		"luks-lvm":  true,
+		"none":     true,
+		"luks":     true,
+		"luks-lvm": true,
 	}
 	if !validEncryption[encryptionType] {
 		return nil, fmt.Errorf("invalid encryption type: %s", encryptionType)

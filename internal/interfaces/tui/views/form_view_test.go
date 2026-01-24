@@ -18,9 +18,9 @@ func TestRenderForm(t *testing.T) {
 	// Verify key content is present
 	checks := []string{
 		"ArchUp Installer Configuration", // Title
-		"Hostname:",                        // Field labels
+		"Hostname:",                      // Field labels
 		"Username:",
-		"↑↓ Navigate",                     // Instructions
+		"↑↓ Navigate", // Instructions
 	}
 
 	for _, check := range checks {
@@ -123,9 +123,9 @@ func TestFormFieldInteraction(t *testing.T) {
 
 	// Set data
 	testData := models.FormData{
-		Hostname:     "test-host",
-		Username:     "testuser",
-		TargetDisk:   "/dev/sda",
+		Hostname:       "test-host",
+		Username:       "testuser",
+		TargetDisk:     "/dev/sda",
 		EncryptionType: "LUKS",
 	}
 	fm.SetData(testData)

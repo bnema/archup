@@ -44,14 +44,14 @@ type PhaseResult struct {
 
 // ProgressUpdate represents a progress update from a phase
 type ProgressUpdate struct {
-	PhaseName   string
-	Step        string
-	OutputLine  string
-	Current     int
-	Total       int
-	IsComplete  bool
-	IsError     bool
-	ErrorMsg    string
+	PhaseName  string
+	Step       string
+	OutputLine string
+	Current    int
+	Total      int
+	IsComplete bool
+	IsError    bool
+	ErrorMsg   string
 }
 
 // Phase represents a single installation phase

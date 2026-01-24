@@ -3,9 +3,9 @@ package components
 import (
 	"strings"
 
+	"github.com/bnema/archup/internal/ui/styles"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/bnema/archup/internal/ui/styles"
 )
 
 // OutputViewer displays scrolling command output (last N lines)

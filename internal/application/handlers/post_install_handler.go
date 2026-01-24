@@ -11,17 +11,17 @@ import (
 
 // PostInstallHandler handles post-installation tasks
 type PostInstallHandler struct {
-	chrExec ports.ChrootExecutor
+	chrExec    ports.ChrootExecutor
 	scriptExec ports.ScriptExecutor
-	logger  ports.Logger
+	logger     ports.Logger
 }
 
 // NewPostInstallHandler creates a new post-installation handler
 func NewPostInstallHandler(chrExec ports.ChrootExecutor, scriptExec ports.ScriptExecutor, logger ports.Logger) *PostInstallHandler {
 	return &PostInstallHandler{
-		chrExec: chrExec,
+		chrExec:    chrExec,
 		scriptExec: scriptExec,
-		logger:  logger,
+		logger:     logger,
 	}
 }
 
@@ -30,8 +30,8 @@ func (h *PostInstallHandler) Handle(ctx context.Context, cmd commands.PostInstal
 	h.logger.Info("Starting post-installation tasks", "username", cmd.Username)
 
 	result := &dto.PostInstallResult{
-		Success:    false,
-		TasksRun:   []string{},
+		Success:     false,
+		TasksRun:    []string{},
 		ErrorDetail: "",
 	}
 

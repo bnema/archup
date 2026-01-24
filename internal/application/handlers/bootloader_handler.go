@@ -28,11 +28,12 @@ func NewBootloaderHandler(chrExec ports.ChrootExecutor, logger ports.Logger) *Bo
 func (h *BootloaderHandler) Handle(ctx context.Context, cmd commands.InstallBootloaderCommand) (*dto.BootloaderResult, error) {
 	h.logger.Info("Starting bootloader installation", "type", cmd.BootloaderType)
 
+	h.logger.Info("Validating bootloader configuration...")
 	result := &dto.BootloaderResult{
-		Success:       false,
+		Success:        false,
 		BootloaderType: "",
-		Timeout:       cmd.TimeoutSeconds,
-		ErrorDetail:   "",
+		Timeout:        cmd.TimeoutSeconds,
+		ErrorDetail:    "",
 	}
 
 	// Create bootloader domain object
@@ -46,6 +47,7 @@ func (h *BootloaderHandler) Handle(ctx context.Context, cmd commands.InstallBoot
 	h.logger.Info("Bootloader configuration validated", "type", bl.Type())
 
 	// In a real implementation, this would configure and install the bootloader
+	h.logger.Info("Installing bootloader...", "type", bl.Type())
 	// For Limine: configure limine.cfg
 	// For systemd-boot: configure bootctl and entry files
 

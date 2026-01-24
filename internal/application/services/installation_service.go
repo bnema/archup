@@ -18,13 +18,13 @@ type InstallationService struct {
 	installAgg *installation.Installation
 
 	// Handlers
-	preflightHandler       *handlers.PreflightHandler
-	partitionHandler       *handlers.PartitionHandler
-	baseHandler            *handlers.InstallBaseHandler
-	configHandler          *handlers.ConfigureSystemHandler
-	bootloaderHandler      *handlers.BootloaderHandler
-	reposHandler           *handlers.ReposHandler
-	postInstallHandler     *handlers.PostInstallHandler
+	preflightHandler   *handlers.PreflightHandler
+	partitionHandler   *handlers.PartitionHandler
+	baseHandler        *handlers.InstallBaseHandler
+	configHandler      *handlers.ConfigureSystemHandler
+	bootloaderHandler  *handlers.BootloaderHandler
+	reposHandler       *handlers.ReposHandler
+	postInstallHandler *handlers.PostInstallHandler
 
 	// Ports
 	repo   ports.InstallationRepository
@@ -50,16 +50,16 @@ func NewInstallationService(
 	postInstallHandler *handlers.PostInstallHandler,
 ) *InstallationService {
 	return &InstallationService{
-		repo:                   repo,
-		logger:                 logger,
-		preflightHandler:       preflightHandler,
-		partitionHandler:       partitionHandler,
-		baseHandler:            baseHandler,
-		configHandler:          configHandler,
-		bootloaderHandler:      bootloaderHandler,
-		reposHandler:           reposHandler,
-		postInstallHandler:     postInstallHandler,
-		tracker:                NewProgressTracker(),
+		repo:               repo,
+		logger:             logger,
+		preflightHandler:   preflightHandler,
+		partitionHandler:   partitionHandler,
+		baseHandler:        baseHandler,
+		configHandler:      configHandler,
+		bootloaderHandler:  bootloaderHandler,
+		reposHandler:       reposHandler,
+		postInstallHandler: postInstallHandler,
+		tracker:            NewProgressTracker(),
 	}
 }
 

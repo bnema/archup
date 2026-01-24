@@ -12,10 +12,10 @@ import (
 
 // InstallBaseHandler handles base system installation
 type InstallBaseHandler struct {
-	fs       ports.FileSystem
-	cmdExec  ports.CommandExecutor
-	chrExec  ports.ChrootExecutor
-	logger   ports.Logger
+	fs      ports.FileSystem
+	cmdExec ports.CommandExecutor
+	chrExec ports.ChrootExecutor
+	logger  ports.Logger
 }
 
 // NewInstallBaseHandler creates a new base installation handler
@@ -33,9 +33,9 @@ func (h *InstallBaseHandler) Handle(ctx context.Context, cmd commands.InstallBas
 	h.logger.Info("Starting base system installation", "kernel", cmd.KernelVariant)
 
 	result := &dto.InstallBaseResult{
-		Success:       false,
+		Success:           false,
 		PackagesInstalled: []string{},
-		ErrorDetail:   "",
+		ErrorDetail:       "",
 	}
 
 	// Validate kernel variant

@@ -165,4 +165,3 @@ func (c *Configurator) setShellOwnership(userHome, username string) error {
 		username, username, relativeHome, relativeHome)
 	return c.chrExec.ChrootExec(c.logger.LogPath(), config.PathMnt, chownCmd)
 }
-

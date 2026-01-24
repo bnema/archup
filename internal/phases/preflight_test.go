@@ -14,10 +14,10 @@ import (
 // TestPreflightPhasePreCheck tests the PreCheck validation
 func TestPreflightPhasePreCheck(t *testing.T) {
 	tests := []struct {
-		name          string
-		setupMocks    func(*mocks.MockFileSystem, *mocks.MockCommandExecutor)
-		wantErr       bool
-		errContains   string
+		name        string
+		setupMocks  func(*mocks.MockFileSystem, *mocks.MockCommandExecutor)
+		wantErr     bool
+		errContains string
 	}{
 		{
 			name: "Arch Linux detection - file not found",

@@ -113,7 +113,6 @@ func (s *Setup) Configure() (SetupResult, error) {
 		}
 	}
 
-
 	// Download service template
 	serviceURL := fmt.Sprintf("%s/%s", s.config.RawURL, config.PostBootServiceTemplate)
 	resp, err = s.http.Get(serviceURL)
@@ -139,7 +138,6 @@ func (s *Setup) Configure() (SetupResult, error) {
 	if err := s.fs.WriteFile(servicePath, []byte(serviceContent), 0644); err != nil {
 		return result, fmt.Errorf("failed to write service file: %w", err)
 	}
-
 
 	if err := s.chrExec.ChrootSystemctl(s.logger.LogPath(), config.PathMnt, "enable", config.PostBootServiceName); err != nil {
 		return result, fmt.Errorf("failed to enable service: %w", err)

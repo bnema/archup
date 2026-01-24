@@ -25,10 +25,10 @@ func (b BootloaderType) String() string {
 
 // Bootloader is an immutable value object representing bootloader configuration
 type Bootloader struct {
-	bootType  BootloaderType
-	timeout   int // seconds
-	branding  string
-	efiPath   string
+	bootType BootloaderType
+	timeout  int // seconds
+	branding string
+	efiPath  string
 }
 
 // NewBootloader creates a new Bootloader value object with validation

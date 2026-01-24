@@ -127,8 +127,8 @@ func TestMultilibEdgeCases(t *testing.T) {
 		checkFunc   func(string) bool
 	}{
 		{
-			name: "Empty file",
-			input: "",
+			name:        "Empty file",
+			input:       "",
 			expectError: false,
 			checkFunc: func(s string) bool {
 				return s == ""
@@ -652,8 +652,8 @@ func TestPackageFiltering(t *testing.T) {
 			wantError:   false,
 		},
 		{
-			name: "only debug package (should filter all)",
-			output: `/tmp/yay/yay-debug-12.5.2-2-x86_64.pkg.tar.zst`,
+			name:        "only debug package (should filter all)",
+			output:      `/tmp/yay/yay-debug-12.5.2-2-x86_64.pkg.tar.zst`,
 			wantPackage: "",
 			wantError:   true,
 		},
@@ -664,8 +664,8 @@ func TestPackageFiltering(t *testing.T) {
 			wantError:   true,
 		},
 		{
-			name: "single main package without debug",
-			output: `/tmp/yay/yay-12.5.2-2-x86_64.pkg.tar.zst`,
+			name:        "single main package without debug",
+			output:      `/tmp/yay/yay-12.5.2-2-x86_64.pkg.tar.zst`,
 			wantPackage: "/tmp/yay/yay-12.5.2-2-x86_64.pkg.tar.zst",
 			wantError:   false,
 		},

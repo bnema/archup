@@ -46,11 +46,11 @@ func IsValidAURHelper(helper string) bool {
 // ReposPhase handles repository configuration
 type ReposPhase struct {
 	*BasePhase
-	fs                  interfaces.FileSystem
-	sysExec             interfaces.SystemExecutor
-	chrExec             interfaces.ChrootExecutor
-	chaoticConfig       map[string]string
-	chaoticAUREnabled   bool
+	fs                interfaces.FileSystem
+	sysExec           interfaces.SystemExecutor
+	chrExec           interfaces.ChrootExecutor
+	chaoticConfig     map[string]string
+	chaoticAUREnabled bool
 }
 
 // NewReposPhase creates a new repos phase

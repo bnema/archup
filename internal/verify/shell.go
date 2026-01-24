@@ -11,11 +11,11 @@ import (
 
 // ShellConfig holds verification results for shell configuration
 type ShellConfig struct {
-	BashrcExists    bool
-	ShellFilesOK    bool
-	BashrcSyntaxOK  bool
-	Warnings        []string
-	Errors          []string
+	BashrcExists   bool
+	ShellFilesOK   bool
+	BashrcSyntaxOK bool
+	Warnings       []string
+	Errors         []string
 }
 
 // ValidateShellConfigs performs comprehensive shell configuration verification

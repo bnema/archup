@@ -3,12 +3,12 @@ package tui
 import (
 	"context"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/bnema/archup/internal/application/services"
 	"github.com/bnema/archup/internal/domain/ports"
 	"github.com/bnema/archup/internal/interfaces/tui/handlers"
 	"github.com/bnema/archup/internal/interfaces/tui/models"
 	"github.com/bnema/archup/internal/interfaces/tui/views"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 // App is the main TUI application coordinator
@@ -37,11 +37,11 @@ type App struct {
 type Screen string
 
 const (
-	ScreenForm        Screen = "form"
-	ScreenInstalling  Screen = "installing"
-	ScreenProgress    Screen = "progress"
-	ScreenSummary     Screen = "summary"
-	ScreenError       Screen = "error"
+	ScreenForm       Screen = "form"
+	ScreenInstalling Screen = "installing"
+	ScreenProgress   Screen = "progress"
+	ScreenSummary    Screen = "summary"
+	ScreenError      Screen = "error"
 )
 
 // NewApp creates a new TUI application

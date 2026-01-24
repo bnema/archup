@@ -17,9 +17,9 @@ import (
 // TestBootstrapPhasePreCheck tests internet connectivity validation
 func TestBootstrapPhasePreCheck(t *testing.T) {
 	tests := []struct {
-		name       string
-		setupMocks func(*mocks.MockHTTPClient)
-		wantErr    bool
+		name        string
+		setupMocks  func(*mocks.MockHTTPClient)
+		wantErr     bool
 		errContains string
 	}{
 		{

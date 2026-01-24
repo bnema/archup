@@ -14,8 +14,8 @@ var (
 	// Background Colors
 	ColorDeepNavy = lipgloss.CompleteColor{
 		TrueColor: "#050a14",
-		ANSI256:   "16",  // Pure black
-		ANSI:      "0",   // Black
+		ANSI256:   "16", // Pure black
+		ANSI:      "0",  // Black
 	}
 
 	ColorDarkBlue = lipgloss.CompleteColor{
@@ -38,8 +38,8 @@ var (
 
 	ColorOceanBlue = lipgloss.CompleteColor{
 		TrueColor: "#2d4a6b",
-		ANSI256:   "24",  // Deep blue
-		ANSI:      "4",   // Blue
+		ANSI256:   "24", // Deep blue
+		ANSI:      "4",  // Blue
 	}
 
 	// Text Colors
@@ -64,14 +64,14 @@ var (
 	// Accent Colors
 	ColorBrightCyan = lipgloss.CompleteColor{
 		TrueColor: "#00d4ff",
-		ANSI256:   "45",  // Bright cyan
-		ANSI:      "14",  // Bright cyan
+		ANSI256:   "45", // Bright cyan
+		ANSI:      "14", // Bright cyan
 	}
 
 	ColorPureBlue = lipgloss.CompleteColor{
 		TrueColor: "#5588cc",
-		ANSI256:   "69",  // Steel blue
-		ANSI:      "12",  // Bright blue
+		ANSI256:   "69", // Steel blue
+		ANSI:      "12", // Bright blue
 	}
 
 	ColorLightSkyBlue = lipgloss.CompleteColor{
@@ -82,8 +82,8 @@ var (
 
 	ColorSkyBlue = lipgloss.CompleteColor{
 		TrueColor: "#4a7ba7",
-		ANSI256:   "67",  // Steel blue
-		ANSI:      "4",   // Blue
+		ANSI256:   "67", // Steel blue
+		ANSI:      "4",  // Blue
 	}
 
 	// Status Colors
@@ -273,52 +273,52 @@ func HuhTheme() *huh.Theme {
 	// 0=black, 4=blue, 6=cyan, 7=white, 8=grey, 10=bright green, 12=bright blue, 14=bright cyan, 15=bright white
 
 	// Form and Group styles
-	theme.Group.Title = lipgloss.NewStyle().Foreground(lipgloss.Color("14")).Bold(true)       // Bright cyan
-	theme.Group.Description = lipgloss.NewStyle().Foreground(lipgloss.Color("12"))            // Bright blue
+	theme.Group.Title = lipgloss.NewStyle().Foreground(lipgloss.Color("14")).Bold(true) // Bright cyan
+	theme.Group.Description = lipgloss.NewStyle().Foreground(lipgloss.Color("12"))      // Bright blue
 
 	// Focused field styles
-	theme.Focused.Title = lipgloss.NewStyle().Foreground(lipgloss.Color("14")).Bold(true)     // Bright cyan
-	theme.Focused.Description = lipgloss.NewStyle().Foreground(lipgloss.Color("12"))          // Bright blue
+	theme.Focused.Title = lipgloss.NewStyle().Foreground(lipgloss.Color("14")).Bold(true) // Bright cyan
+	theme.Focused.Description = lipgloss.NewStyle().Foreground(lipgloss.Color("12"))      // Bright blue
 	theme.Focused.SelectSelector = lipgloss.NewStyle().Foreground(lipgloss.Color("14")).SetString("> ")
-	theme.Focused.Option = lipgloss.NewStyle().Foreground(lipgloss.Color("7"))                // White
+	theme.Focused.Option = lipgloss.NewStyle().Foreground(lipgloss.Color("7")) // White
 	theme.Focused.MultiSelectSelector = lipgloss.NewStyle().Foreground(lipgloss.Color("14")).SetString("> ")
-	theme.Focused.SelectedOption = lipgloss.NewStyle().Foreground(lipgloss.Color("14"))       // Bright cyan
+	theme.Focused.SelectedOption = lipgloss.NewStyle().Foreground(lipgloss.Color("14"))                    // Bright cyan
 	theme.Focused.SelectedPrefix = lipgloss.NewStyle().Foreground(lipgloss.Color("10")).SetString("[OK] ") // Bright green
-	theme.Focused.UnselectedOption = lipgloss.NewStyle().Foreground(lipgloss.Color("7"))      // White
-	theme.Focused.UnselectedPrefix = lipgloss.NewStyle().Foreground(lipgloss.Color("8")).SetString("○ ") // Grey
+	theme.Focused.UnselectedOption = lipgloss.NewStyle().Foreground(lipgloss.Color("7"))                   // White
+	theme.Focused.UnselectedPrefix = lipgloss.NewStyle().Foreground(lipgloss.Color("8")).SetString("○ ")   // Grey
 
 	// Button styles with explicit background colors for TTY compatibility
 	// Active/focused button (currently selected - e.g., "Yes" when on Yes)
 	theme.Focused.FocusedButton = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("15")).  // Bright white text
-		Background(lipgloss.Color("4")).   // Blue background
+		Foreground(lipgloss.Color("15")). // Bright white text
+		Background(lipgloss.Color("4")).  // Blue background
 		Padding(0, 2).
 		Bold(true)
 
 	// Inactive/blurred button (not selected - e.g., "No" when on Yes)
 	theme.Focused.BlurredButton = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("7")).   // White text
-		Background(lipgloss.Color("0")).   // Black background
+		Foreground(lipgloss.Color("7")). // White text
+		Background(lipgloss.Color("0")). // Black background
 		Padding(0, 2)
 
 	// Blurred field styles (when entire field loses focus)
-	theme.Blurred.Title = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))                 // Grey
-	theme.Blurred.Description = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))           // Grey
+	theme.Blurred.Title = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))       // Grey
+	theme.Blurred.Description = lipgloss.NewStyle().Foreground(lipgloss.Color("8")) // Grey
 	theme.Blurred.SelectSelector = lipgloss.NewStyle().Foreground(lipgloss.Color("8")).SetString("> ")
-	theme.Blurred.Option = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))                // Grey
+	theme.Blurred.Option = lipgloss.NewStyle().Foreground(lipgloss.Color("8")) // Grey
 
 	// Override buttons in Blurred state too (inherited from Focused in Base16)
 	theme.Blurred.FocusedButton = theme.Focused.FocusedButton
 	theme.Blurred.BlurredButton = theme.Focused.BlurredButton
 
 	// Text input styles
-	theme.Focused.TextInput.Cursor = lipgloss.NewStyle().Foreground(lipgloss.Color("14"))     // Bright cyan
-	theme.Focused.TextInput.Placeholder = lipgloss.NewStyle().Foreground(lipgloss.Color("8")) // Grey
+	theme.Focused.TextInput.Cursor = lipgloss.NewStyle().Foreground(lipgloss.Color("14"))            // Bright cyan
+	theme.Focused.TextInput.Placeholder = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))        // Grey
 	theme.Focused.TextInput.Prompt = lipgloss.NewStyle().Foreground(lipgloss.Color("14")).Bold(true) // Bright cyan
 
 	// Error styles
 	theme.Focused.ErrorIndicator = lipgloss.NewStyle().Foreground(lipgloss.Color("9")).SetString("[KO] ") // Bright red
-	theme.Focused.ErrorMessage = lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Bold(true)         // Bright red
+	theme.Focused.ErrorMessage = lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Bold(true)           // Bright red
 
 	return theme
 }

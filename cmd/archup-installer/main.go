@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	tea "github.com/charmbracelet/bubbletea"
 	apphandlers "github.com/bnema/archup/internal/application/handlers"
 	"github.com/bnema/archup/internal/application/services"
 	"github.com/bnema/archup/internal/cleanup"
@@ -16,6 +15,7 @@ import (
 	"github.com/bnema/archup/internal/infrastructure/persistence"
 	"github.com/bnema/archup/internal/interfaces/tui"
 	"github.com/bnema/archup/internal/logger"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 // version is set via ldflags at build time

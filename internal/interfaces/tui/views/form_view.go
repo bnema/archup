@@ -3,8 +3,8 @@ package views
 import (
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
 	"github.com/bnema/archup/internal/interfaces/tui/models"
+	"github.com/charmbracelet/lipgloss"
 )
 
 // RenderForm renders the form model to a styled string

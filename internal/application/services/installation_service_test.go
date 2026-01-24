@@ -180,11 +180,11 @@ func TestInstallationService_RunPartition(t *testing.T) {
 	service.Start(ctx, "myarch", "testuser", "/dev/sda", "none")
 
 	cmd := commands.PartitionDiskCommand{
-		TargetDisk:         "/dev/sda",
-		RootSizeGB:         50,
-		BootSizeGB:         1,
-		EncryptionType:     disk.EncryptionTypeNone,
-		FilesystemType:     disk.FilesystemExt4,
+		TargetDisk:     "/dev/sda",
+		RootSizeGB:     50,
+		BootSizeGB:     1,
+		EncryptionType: disk.EncryptionTypeNone,
+		FilesystemType: disk.FilesystemExt4,
 	}
 
 	result, err := service.RunPartition(ctx, cmd)

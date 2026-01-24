@@ -178,7 +178,7 @@ func (p *PostInstallPhase) installBootLogo(progressChan chan<- ProgressUpdate) e
 	p.SendOutput(progressChan, "[OK] Logo downloaded")
 
 	// Update Limine config
-	limineConf := filepath.Join(config.PathMntBootEFILimine, config.FileLimineConfig)
+	limineConf := config.PathMntBootLimineConf
 	content, err := p.fs.ReadFile(limineConf)
 	switch {
 	case err != nil:
@@ -264,7 +264,7 @@ func (p *PostInstallPhase) configurePlymouth(progressChan chan<- ProgressUpdate)
 
 	// Set as default theme
 	setThemeCmd := fmt.Sprintf("plymouth-set-default-theme %s", config.PlymouthThemeName)
-	switch err := p.chrExec.ChrootExec(p.logger.LogPath(),config.PathMnt, setThemeCmd); {
+	switch err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, setThemeCmd); {
 	case err != nil:
 		return fmt.Errorf("failed to set Plymouth theme: %w", err)
 	}
@@ -273,7 +273,7 @@ func (p *PostInstallPhase) configurePlymouth(progressChan chan<- ProgressUpdate)
 
 	// Regenerate initramfs
 	p.SendOutput(progressChan, "Regenerating initramfs with Plymouth...")
-	switch err := p.chrExec.ChrootExec(p.logger.LogPath(),config.PathMnt, "mkinitcpio -P"); {
+	switch err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, "mkinitcpio -P"); {
 	case err != nil:
 		return fmt.Errorf("failed to regenerate initramfs: %w", err)
 	}
@@ -287,7 +287,7 @@ func (p *PostInstallPhase) configureSnapper(progressChan chan<- ProgressUpdate) 
 	p.SendOutput(progressChan, "Installing limine-snapper-sync...")
 
 	// Install limine-snapper-sync
-	switch err := p.chrExec.ChrootPacman(p.logger.LogPath(),config.PathMnt, "-S", "--needed", "limine-snapper-sync"); {
+	switch err := p.chrExec.ChrootPacman(p.logger.LogPath(), config.PathMnt, "-S", "--needed", "limine-snapper-sync"); {
 	case err != nil:
 		return fmt.Errorf("failed to install limine-snapper-sync: %w", err)
 	}
@@ -295,7 +295,7 @@ func (p *PostInstallPhase) configureSnapper(progressChan chan<- ProgressUpdate) 
 	p.SendOutput(progressChan, "[OK] Package installed")
 
 	// Get kernel cmdline from existing Limine config
-	limineConf := filepath.Join(config.PathMntBootEFILimine, config.FileLimineConfig)
+	limineConf := config.PathMntBootLimineConf
 	content, err := p.fs.ReadFile(limineConf)
 	switch {
 	case err != nil:
@@ -511,7 +511,7 @@ func (p *PostInstallPhase) configureShell(progressChan chan<- ProgressUpdate) er
 	}
 
 	for _, gitCmd := range gitCommands {
-		switch err := p.chrExec.ChrootExec(p.logger.LogPath(),config.PathMnt, gitCmd); {
+		switch err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, gitCmd); {
 		case err != nil:
 			// Non-fatal
 			p.SendOutput(progressChan, "[WARN] Failed to configure git delta")
@@ -563,7 +563,7 @@ func (p *PostInstallPhase) setShellOwnership(userHome, username string) error {
 	relativeHome := strings.TrimPrefix(userHome, config.PathMnt)
 	chownCmd := fmt.Sprintf("chown -R %s:%s %s/.local %s/.bashrc",
 		username, username, relativeHome, relativeHome)
-	return p.chrExec.ChrootExec(p.logger.LogPath(),config.PathMnt, chownCmd)
+	return p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, chownCmd)
 }
 
 // applyThemes applies bleu-theme to CLI tools
@@ -664,7 +664,7 @@ func (p *PostInstallPhase) verifyInstallation(progressChan chan<- ProgressUpdate
 	}
 
 	// Verify Limine config
-	limineConfPath := filepath.Join(config.PathMntBootEFILimine, config.FileLimineConfig)
+	limineConfPath := config.PathMntBootLimineConf
 	switch content, err := p.fs.ReadFile(limineConfPath); {
 	case err != nil:
 		p.SendOutput(progressChan, "[ERROR] Limine config missing")

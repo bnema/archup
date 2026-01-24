@@ -15,10 +15,10 @@ import (
 // TestPostInstallPhasePreCheck tests post-install prerequisites
 func TestPostInstallPhasePreCheck(t *testing.T) {
 	tests := []struct {
-		name                string
-		setupMocks          func(*mocks.MockFileSystem, *mocks.MockSystemExecutor)
-		wantErr             bool
-		errContains         string
+		name        string
+		setupMocks  func(*mocks.MockFileSystem, *mocks.MockSystemExecutor)
+		wantErr     bool
+		errContains string
 	}{
 		{
 			name: "/mnt mounted and boot directory exists",
@@ -270,8 +270,8 @@ func TestPostInstallPhaseExecute(t *testing.T) {
 // TestPostInstallPhaseEncryptionHandling tests encryption-aware operations
 func TestPostInstallPhaseEncryptionHandling(t *testing.T) {
 	tests := []struct {
-		name           string
-		encryptionType string
+		name            string
+		encryptionType  string
 		expectedClosing bool
 	}{
 		{
@@ -331,8 +331,8 @@ func TestPostInstallPhaseEncryptionHandling(t *testing.T) {
 // TestPostInstallPhaseFileSystemOperations tests file system interaction patterns
 func TestPostInstallPhaseFileSystemOperations(t *testing.T) {
 	tests := []struct {
-		name       string
-		operation  string // "read", "write", "mkdir", "create"
+		name      string
+		operation string // "read", "write", "mkdir", "create"
 	}{
 		{
 			name:      "Read pacman.conf",

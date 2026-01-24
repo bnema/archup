@@ -95,13 +95,13 @@ Server = https://tabs.com/$repo/$arch	`,
 
 func TestBuildPackageURLs(t *testing.T) {
 	tests := []struct {
-		name              string
-		mirrors           []MirrorlistEntry
-		packageName       string
-		preferEnabled     bool
-		wantCount         int
-		wantURLContains   []string
-		shouldStartWith   string
+		name            string
+		mirrors         []MirrorlistEntry
+		packageName     string
+		preferEnabled   bool
+		wantCount       int
+		wantURLContains []string
+		shouldStartWith string
 	}{
 		{
 			name: "Basic URL building with enabled mirrors preferred",
@@ -126,9 +126,9 @@ func TestBuildPackageURLs(t *testing.T) {
 				{URL: "https://enabled1.com/$repo/$arch", Enabled: true},
 				{URL: "https://enabled2.com/$repo/$arch", Enabled: true},
 			},
-			packageName:   "pkg.tar.zst",
-			preferEnabled: true,
-			wantCount:     3,
+			packageName:     "pkg.tar.zst",
+			preferEnabled:   true,
+			wantCount:       3,
 			shouldStartWith: "https://enabled1.com/chaotic-aur/x86_64/pkg.tar.zst",
 		},
 		{
@@ -142,8 +142,8 @@ func TestBuildPackageURLs(t *testing.T) {
 			wantCount:     2,
 		},
 		{
-			name: "Empty mirrors list",
-			mirrors: []MirrorlistEntry{},
+			name:          "Empty mirrors list",
+			mirrors:       []MirrorlistEntry{},
 			packageName:   "test.pkg.tar.zst",
 			preferEnabled: true,
 			wantCount:     0,

@@ -16,10 +16,10 @@ import (
 // TestPartitioningPhasePreCheck tests partitioning prerequisites
 func TestPartitioningPhasePreCheck(t *testing.T) {
 	tests := []struct {
-		name         string
-		targetDisk   string
-		wantErr      bool
-		errContains  string
+		name        string
+		targetDisk  string
+		wantErr     bool
+		errContains string
 	}{
 		{
 			name:        "Valid target disk",
@@ -78,10 +78,10 @@ func TestPartitioningPhasePreCheck(t *testing.T) {
 // TestPartitioningPhasePartitionNaming tests partition naming logic
 func TestPartitioningPhasePartitionNaming(t *testing.T) {
 	tests := []struct {
-		name           string
-		targetDisk     string
-		expectedEFI    string
-		expectedRoot   string
+		name         string
+		targetDisk   string
+		expectedEFI  string
+		expectedRoot string
 	}{
 		{
 			name:         "NVMe disk naming",
@@ -262,10 +262,10 @@ func TestPartitioningPhaseEncryptionValidation(t *testing.T) {
 // TestPartitioningPhasePostCheck tests mount point validation
 func TestPartitioningPhasePostCheck(t *testing.T) {
 	tests := []struct {
-		name          string
-		setupMocks    func(*mocks.MockSystemExecutor)
-		wantErr       bool
-		errContains   string
+		name        string
+		setupMocks  func(*mocks.MockSystemExecutor)
+		wantErr     bool
+		errContains string
 	}{
 		{
 			name: "/mnt is mounted - postcheck passes",

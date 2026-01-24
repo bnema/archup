@@ -19,12 +19,12 @@ const (
 	LimineConfigTemplate   = "configs/limine.conf.template"
 	ChaoticConfigFile      = "configs/chaotic-aur.conf"
 	StarshipConfigTemplate = "configs/shell/starship.toml"
-	ShellConfigTemplate  = "configs/shell/shell"
-	ShellInitTemplate    = "configs/shell/init"
-	ShellAliasesTemplate = "configs/shell/aliases"
-	ShellEnvsTemplate    = "configs/shell/envs"
-	ShellRcTemplate      = "configs/shell/rc"
-	BashrcTemplate       = "configs/shell/bashrc"
+	ShellConfigTemplate    = "configs/shell/shell"
+	ShellInitTemplate      = "configs/shell/init"
+	ShellAliasesTemplate   = "configs/shell/aliases"
+	ShellEnvsTemplate      = "configs/shell/envs"
+	ShellRcTemplate        = "configs/shell/rc"
+	BashrcTemplate         = "configs/shell/bashrc"
 )
 
 // Encryption types
@@ -36,7 +36,7 @@ const (
 
 // Bootloader types
 const (
-	BootloaderLimine     = "limine"
+	BootloaderLimine      = "limine"
 	BootloaderSystemdBoot = "systemd-boot"
 )
 
@@ -48,7 +48,6 @@ const (
 	KernelLinuxHardened = "linux-hardened"
 	KernelLinuxCachyOS  = "linux-cachyos"
 )
-
 
 // System paths
 const (
@@ -89,10 +88,10 @@ const (
 
 // Locale defaults
 const (
-	LocaleDefault     = "en_US.UTF-8"
-	LocaleDefaultGen  = "en_US.UTF-8 UTF-8"
-	TimezoneDefault   = ""
-	KeymapDefault     = "us"
+	LocaleDefault    = "en_US.UTF-8"
+	LocaleDefaultGen = "en_US.UTF-8 UTF-8"
+	TimezoneDefault  = ""
+	KeymapDefault    = "us"
 )
 
 // Zram configuration
@@ -116,18 +115,19 @@ const (
 
 // Boot paths
 const (
-	PathMntBoot              = "/mnt/boot"
-	PathMntBootEFI           = "/mnt/boot/EFI"
-	PathMntBootEFILimine     = "/mnt/boot/EFI/limine"
-	PathMntEtcMkinitcpio     = "/mnt/etc/mkinitcpio.conf"
-	PathUsrShareLimine       = "/mnt/usr/share/limine"
-	FileLimineBootloader     = "BOOTX64.EFI"
-	FileLimineConfig         = "limine.conf"
+	PathMntBoot           = "/mnt/boot"
+	PathMntBootEFI        = "/mnt/boot/EFI"
+	PathMntBootEFILimine  = "/mnt/boot/EFI/limine"
+	PathMntBootLimineConf = "/mnt/boot/limine.conf"
+	PathMntEtcMkinitcpio  = "/mnt/etc/mkinitcpio.conf"
+	PathUsrShareLimine    = "/mnt/usr/share/limine"
+	FileLimineBootloader  = "BOOTX64.EFI"
+	FileLimineConfig      = "limine.conf"
 )
 
 // Mkinitcpio hooks
 const (
-	MkinitcpioHooksPlymouth = "HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block plymouth filesystems fsck)"
+	MkinitcpioHooksPlymouth  = "HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block plymouth filesystems fsck)"
 	MkinitcpioHooksEncrypted = "HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block plymouth encrypt filesystems fsck)"
 )
 
@@ -155,16 +155,15 @@ const (
 	PathMntEtcPacmanConf = "/mnt/etc/pacman.conf"
 )
 
-
 // PostInstall paths
 const (
-	PathMntBootLogo           = "/mnt/boot/arch-logo.png"
-	PathMntPlymouthThemes     = "/mnt/usr/share/plymouth/themes"
-	PathMntEtcDefaultLimine   = "/mnt/etc/default/limine"
-	PathMntEtcPacmanDHooks    = "/mnt/etc/pacman.d/hooks"
-	PathBootEFILimineConf     = "/boot/EFI/limine/limine.conf"
-	ArchLogoURL               = "assets/Arch_Linux__Crystal__icon.png"
-	PlymouthThemeName         = "archup"
+	PathMntBootLogo         = "/mnt/boot/arch-logo.png"
+	PathMntPlymouthThemes   = "/mnt/usr/share/plymouth/themes"
+	PathMntEtcDefaultLimine = "/mnt/etc/default/limine"
+	PathMntEtcPacmanDHooks  = "/mnt/etc/pacman.d/hooks"
+	PathBootLimineConf      = "/boot/limine.conf"
+	ArchLogoURL             = "assets/Arch_Linux__Crystal__icon.png"
+	PlymouthThemeName       = "archup"
 )
 
 // Plymouth files
@@ -203,16 +202,16 @@ const PostBootServiceTemplate = "install/mandatory/post-boot/archup-first-boot.s
 // This mirrors the shell script's config format for compatibility
 type Config struct {
 	// Preflight
-	Hostname       string
-	Username       string
-	UserPassword   string
-	RootPassword   string
-	Email          string // Optional, for git and SSH configuration
-	Keymap         string
-	Timezone       string
-	Locale         string
-	Bootloader     string // "limine" or "systemd-boot"
-	EncryptionType string // "none", "luks", or "luks-lvm"
+	Hostname        string
+	Username        string
+	UserPassword    string
+	RootPassword    string
+	Email           string // Optional, for git and SSH configuration
+	Keymap          string
+	Timezone        string
+	Locale          string
+	Bootloader      string // "limine" or "systemd-boot"
+	EncryptionType  string // "none", "luks", or "luks-lvm"
 	EncryptPassword string // Separate encryption password if different from user password
 
 	// Form-only fields (not persisted)
@@ -220,18 +219,18 @@ type Config struct {
 	UseSamePasswordForEncryption bool   // Checkbox state for using same password for encryption
 
 	// Partitioning
-	TargetDisk     string
-	BootPartition  string
-	RootPartition  string
-	SwapPartition  string
-	EFIPartition   string
-	CryptDevice    string // /dev/mapper/cryptroot if encrypted
+	TargetDisk    string
+	BootPartition string
+	RootPartition string
+	SwapPartition string
+	EFIPartition  string
+	CryptDevice   string // /dev/mapper/cryptroot if encrypted
 
 	// Base
-	KernelChoice   string // "linux", "linux-zen", "linux-lts", "linux-hardened"
-	Microcode      string // "intel-ucode" or "amd-ucode"
-	CPUVendor      string // "Intel", "AMD", or "Unknown"
-	AMDPState      string // "active", "passive", "guided", or empty
+	KernelChoice string // "linux", "linux-zen", "linux-lts", "linux-hardened"
+	Microcode    string // "intel-ucode" or "amd-ucode"
+	CPUVendor    string // "Intel", "AMD", or "Unknown"
+	AMDPState    string // "active", "passive", "guided", or empty
 
 	// Config
 	NetworkManager string // "NetworkManager" by default
@@ -242,11 +241,11 @@ type Config struct {
 	EnableChaotic  bool
 
 	// Paths
-	ConfigPath     string
-	LogPath        string
-	InstallPath    string // ~/.local/share/archup/install
-	RepoURL        string
-	RawURL         string
+	ConfigPath  string
+	LogPath     string
+	InstallPath string // ~/.local/share/archup/install
+	RepoURL     string
+	RawURL      string
 }
 
 // NewConfig creates a new Config with sensible defaults

@@ -453,9 +453,9 @@ func TestValidateArchLinux(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
-		name      string
+		name       string
 		fileExists bool
-		shouldErr bool
+		shouldErr  bool
 	}{
 		{"arch-release exists", true, false},
 		{"arch-release missing", false, true},
@@ -592,9 +592,9 @@ func TestValidateUEFIBoot(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
-		name      string
+		name          string
 		efivarsExists bool
-		shouldErr bool
+		shouldErr     bool
 	}{
 		{"efivars exists", true, false},
 		{"efivars missing", false, true},

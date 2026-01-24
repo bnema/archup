@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/bnema/archup/internal/interfaces/tui/models"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 // HandleFormUpdate processes form input and updates the form model

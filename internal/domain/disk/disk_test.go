@@ -124,9 +124,9 @@ func TestNewPartition_FAT32NotForRoot(t *testing.T) {
 
 func TestPartition_IsBootPartition(t *testing.T) {
 	tests := []struct {
-		name     string
-		mount    string
-		isBoot   bool
+		name   string
+		mount  string
+		isBoot bool
 	}{
 		{"boot partition", "/boot", true},
 		{"efi boot partition", "/boot/efi", true},
@@ -146,10 +146,10 @@ func TestPartition_IsBootPartition(t *testing.T) {
 
 func TestPartition_IsEFI(t *testing.T) {
 	tests := []struct {
-		name     string
-		fs       FilesystemType
-		mount    string
-		isEFI    bool
+		name      string
+		fs        FilesystemType
+		mount     string
+		isEFI     bool
 		shouldErr bool
 	}{
 		{"EFI partition", FilesystemFAT32, "/boot/efi", true, false},

@@ -15,9 +15,9 @@ import (
 // BootPhase handles bootloader installation
 type BootPhase struct {
 	*BasePhase
-	fs       interfaces.FileSystem
-	sysExec  interfaces.SystemExecutor
-	chrExec  interfaces.ChrootExecutor
+	fs      interfaces.FileSystem
+	sysExec interfaces.SystemExecutor
+	chrExec interfaces.ChrootExecutor
 }
 
 // NewBootPhase creates a new boot phase
@@ -119,7 +119,7 @@ func (p *BootPhase) configureMkinitcpio(progressChan chan<- ProgressUpdate) erro
 
 	// Regenerate initramfs
 	p.SendOutput(progressChan, "Regenerating initramfs...")
-	if err := p.chrExec.ChrootExec(p.logger.LogPath(),config.PathMnt, "mkinitcpio -P"); err != nil {
+	if err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, "mkinitcpio -P"); err != nil {
 		return fmt.Errorf("failed to regenerate initramfs: %w", err)
 	}
 
@@ -134,7 +134,7 @@ func (p *BootPhase) installLimine(progressChan chan<- ProgressUpdate) error {
 
 	// Install Limine to disk (BIOS - optional, may fail on UEFI-only)
 	biosCmd := fmt.Sprintf("limine bios-install %s", p.config.TargetDisk)
-	switch err := p.chrExec.ChrootExec(p.logger.LogPath(),config.PathMnt, biosCmd); {
+	switch err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, biosCmd); {
 	case err != nil:
 		p.SendOutput(progressChan, "[WARN] BIOS installation skipped (UEFI-only system)")
 	default:
@@ -224,8 +224,8 @@ func (p *BootPhase) configureLimine(progressChan chan<- ProgressUpdate) error {
 	limineConfig = strings.ReplaceAll(limineConfig, "{{KERNEL}}", p.config.KernelChoice)
 	limineConfig = strings.ReplaceAll(limineConfig, "{{KERNEL_PARAMS}}", kernelParams)
 
-	// Write Limine configuration
-	limineConfigPath := filepath.Join(config.PathMntBootEFILimine, config.FileLimineConfig)
+	// Write Limine configuration to /boot/limine.conf (standard Limine search path)
+	limineConfigPath := config.PathMntBootLimineConf
 	if err := p.fs.WriteFile(limineConfigPath, []byte(limineConfig), 0644); err != nil {
 		return fmt.Errorf("failed to write Limine config: %w", err)
 	}
@@ -253,7 +253,7 @@ func (p *BootPhase) createUEFIEntry(progressChan chan<- ProgressUpdate) error {
 		config.UEFIBootLoader,
 	)
 
-	if err := p.chrExec.ChrootExec(p.logger.LogPath(),config.PathMnt, efiCmd); err != nil {
+	if err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, efiCmd); err != nil {
 		return fmt.Errorf("failed to create UEFI boot entry: %w", err)
 	}
 
@@ -287,7 +287,7 @@ func (p *BootPhase) PostCheck() error {
 	}
 
 	// Verify Limine config exists
-	configPath := filepath.Join(config.PathMntBootEFILimine, config.FileLimineConfig)
+	configPath := config.PathMntBootLimineConf
 	if _, err := p.fs.Stat(configPath); p.fs.IsNotExist(err) {
 		return fmt.Errorf("Limine config was not created")
 	}

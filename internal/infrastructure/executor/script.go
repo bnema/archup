@@ -12,8 +12,8 @@ import (
 
 // ScriptExecutor implements the ScriptExecutor port for shell scripts
 type ScriptExecutor struct {
-	fs       ports.FileSystem
-	cmdExec  ports.CommandExecutor
+	fs        ports.FileSystem
+	cmdExec   ports.CommandExecutor
 	scriptDir string
 }
 

@@ -29,11 +29,11 @@ func (h *ReposHandler) Handle(ctx context.Context, cmd commands.SetupRepositorie
 	h.logger.Info("Starting repository configuration", "multilib", cmd.EnableMultilib, "chaotic", cmd.EnableChaotic)
 
 	result := &dto.RepositoriesResult{
-		Success:        false,
-		Multilib:       cmd.EnableMultilib,
-		Chaotic:        cmd.EnableChaotic,
-		AURHelper:      "",
-		ErrorDetail:    "",
+		Success:     false,
+		Multilib:    cmd.EnableMultilib,
+		Chaotic:     cmd.EnableChaotic,
+		AURHelper:   "",
+		ErrorDetail: "",
 	}
 
 	// Create repository domain object

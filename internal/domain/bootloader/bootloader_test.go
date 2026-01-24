@@ -26,8 +26,8 @@ func TestNewBootloader_Valid(t *testing.T) {
 
 func TestNewBootloader_InvalidTimeout(t *testing.T) {
 	tests := []struct {
-		name    string
-		timeout int
+		name      string
+		timeout   int
 		shouldErr bool
 	}{
 		{"negative timeout", -1, true},

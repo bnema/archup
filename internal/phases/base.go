@@ -13,8 +13,8 @@ import (
 // BaseInstallPhase handles base system installation
 type BaseInstallPhase struct {
 	*BasePhase
-	fs      interfaces.FileSystem
-	sysExec interfaces.SystemExecutor
+	fs       interfaces.FileSystem
+	sysExec  interfaces.SystemExecutor
 	packages []string
 }
 

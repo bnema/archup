@@ -199,18 +199,18 @@ func Genfstab(logPath, mountPoint, fstabPath string) error {
 
 // DefaultChrootSession represents a persistent chroot session
 type DefaultChrootSession struct {
-	cmd         *exec.Cmd
-	stdin       *os.File
-	stdoutPipe  *os.File
-	stderrPipe  *os.File
-	logFile     *os.File
-	logPath     string
-	mountPoint  string
-	ctx         context.Context
-	cancel      context.CancelFunc
-	outputChan  chan string
-	errorChan   chan error
-	closed      bool
+	cmd        *exec.Cmd
+	stdin      *os.File
+	stdoutPipe *os.File
+	stderrPipe *os.File
+	logFile    *os.File
+	logPath    string
+	mountPoint string
+	ctx        context.Context
+	cancel     context.CancelFunc
+	outputChan chan string
+	errorChan  chan error
+	closed     bool
 }
 
 // BeginSession starts a persistent chroot session

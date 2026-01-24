@@ -12,10 +12,10 @@ import (
 
 // PreflightHandler handles preflight checks
 type PreflightHandler struct {
-	fs       ports.FileSystem
-	cmdExec  ports.CommandExecutor
-	logger   ports.Logger
-	rules    *system.SystemValidationRules
+	fs      ports.FileSystem
+	cmdExec ports.CommandExecutor
+	logger  ports.Logger
+	rules   *system.SystemValidationRules
 }
 
 // NewPreflightHandler creates a new preflight handler

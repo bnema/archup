@@ -27,27 +27,27 @@ const (
 	WarnDiskErase        = "WARNING: This will delete all data on the selected disk!"
 
 	// Encryption
-	SectionDiskEncryption   = "Disk Encryption"
-	DescEncryption          = "LUKS encryption protects your data with Argon2id (2000ms iteration)"
-	DescEncryptionPassword  = "Leave empty to use the same password as your user account"
-	DescEncryptionSamePass  = "Use the same password for disk encryption as your user account?"
+	SectionDiskEncryption  = "Disk Encryption"
+	DescEncryption         = "LUKS encryption protects your data with Argon2id (2000ms iteration)"
+	DescEncryptionPassword = "Leave empty to use the same password as your user account"
+	DescEncryptionSamePass = "Use the same password for disk encryption as your user account?"
 
 	// Kernel
-	SectionKernel     = "Kernel Selection"
-	DescKernelLinux   = "Stable mainline kernel (recommended)"
-	DescKernelLTS     = "Long-term support (maximum stability)"
-	DescKernelZen     = "Performance-optimized for general use"
+	SectionKernel      = "Kernel Selection"
+	DescKernelLinux    = "Stable mainline kernel (recommended)"
+	DescKernelLTS      = "Long-term support (maximum stability)"
+	DescKernelZen      = "Performance-optimized for general use"
 	DescKernelHardened = "Security-focused kernel"
-	DescKernelCachyOS = "Gaming-optimized (requires CachyOS repo)"
+	DescKernelCachyOS  = "Gaming-optimized (requires CachyOS repo)"
 
 	// AMD P-State
 	SectionAMDTuning = "AMD CPU Tuning"
 	DescAMDPState    = "Select AMD P-State driver mode for CPU frequency scaling"
 
 	// Repository options
-	DescMultilib     = "Required for 32-bit applications and Wine"
-	DescChaoticAUR   = "Community repository with pre-built AUR packages"
-	DescAURHelper    = "Tool for installing packages from Arch User Repository"
+	DescMultilib      = "Required for 32-bit applications and Wine"
+	DescChaoticAUR    = "Community repository with pre-built AUR packages"
+	DescAURHelper     = "Tool for installing packages from Arch User Repository"
 	DescAURHelperParu = "Rust-based AUR helper"
 	DescAURHelperYay  = "Go-based AUR helper"
 )

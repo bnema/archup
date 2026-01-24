@@ -1,9 +1,9 @@
 package tui
 
 import (
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/bnema/archup/internal/application/dto"
 	"github.com/bnema/archup/internal/interfaces/tui/models"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 // FormModel manages form state for user input
