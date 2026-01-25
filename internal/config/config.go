@@ -188,7 +188,7 @@ const (
 var PostBootScripts = []string{
 	"all.sh",
 	"snapper.sh",
-	"ufw.sh",
+	"firewalld.sh",
 	"ssh-keygen.sh",
 	"archup-cli.sh",
 	"blesh.sh",
@@ -249,18 +249,24 @@ type Config struct {
 
 // NewConfig creates a new Config with sensible defaults
 // version parameter determines which branch to use for downloads (dev builds use dev branch)
+// ENV=dev environment variable takes precedence over version-based detection
 func NewConfig(version string) *Config {
-	// Determine which branch to use based on version
+	// Determine which branch to use
+	// ENV=dev takes precedence, then fall back to version-based detection
 	var branch string
-	switch {
-	case version == "dev" || version == "":
+	if os.Getenv("ENV") == "dev" {
 		branch = "dev"
-	case strings.Contains(version, "-dev"):
-		branch = "dev"
-	case strings.Contains(version, "-next"):
-		branch = "dev"
-	default:
-		branch = "main"
+	} else {
+		switch {
+		case version == "dev" || version == "":
+			branch = "dev"
+		case strings.Contains(version, "-dev"):
+			branch = "dev"
+		case strings.Contains(version, "-next"):
+			branch = "dev"
+		default:
+			branch = "main"
+		}
 	}
 
 	return &Config{
