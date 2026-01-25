@@ -36,13 +36,19 @@ func TestHTTPClient_Get_Success(t *testing.T) {
 	// Create a test server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
-		w.Write([]byte("test response"))
+		if _, err := w.Write([]byte("test response")); err != nil {
+			t.Fatalf("failed to write response: %v", err)
+		}
 	}))
 	defer server.Close()
 
 	client := NewHTTPClient()
 	resp, err := client.Get(server.URL)
-	defer resp.Close()
+	defer func() {
+		if err := resp.Close(); err != nil {
+			t.Fatalf("failed to close response: %v", err)
+		}
+	}()
 
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -65,7 +71,11 @@ func TestHTTPClient_Get_StatusCode(t *testing.T) {
 
 	client := NewHTTPClient()
 	resp, err := client.Get(server.URL)
-	defer resp.Close()
+	defer func() {
+		if err := resp.Close(); err != nil {
+			t.Fatalf("failed to close response: %v", err)
+		}
+	}()
 
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -84,7 +94,11 @@ func TestHTTPClient_Get_EmptyBody(t *testing.T) {
 
 	client := NewHTTPClient()
 	resp, err := client.Get(server.URL)
-	defer resp.Close()
+	defer func() {
+		if err := resp.Close(); err != nil {
+			t.Fatalf("failed to close response: %v", err)
+		}
+	}()
 
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -100,13 +114,19 @@ func TestHTTPClient_Get_LargeBody(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
-		w.Write([]byte(largeBody))
+		if _, err := w.Write([]byte(largeBody)); err != nil {
+			t.Fatalf("failed to write response: %v", err)
+		}
 	}))
 	defer server.Close()
 
 	client := NewHTTPClient()
 	resp, err := client.Get(server.URL)
-	defer resp.Close()
+	defer func() {
+		if err := resp.Close(); err != nil {
+			t.Fatalf("failed to close response: %v", err)
+		}
+	}()
 
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -129,13 +149,19 @@ func TestHTTPClient_Get_InvalidURL(t *testing.T) {
 func TestHTTPClient_Post_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(201)
-		w.Write([]byte("created"))
+		if _, err := w.Write([]byte("created")); err != nil {
+			t.Fatalf("failed to write response: %v", err)
+		}
 	}))
 	defer server.Close()
 
 	client := NewHTTPClient()
 	resp, err := client.Post(server.URL, "application/json", []byte(`{"key":"value"}`))
-	defer resp.Close()
+	defer func() {
+		if err := resp.Close(); err != nil {
+			t.Fatalf("failed to close response: %v", err)
+		}
+	}()
 
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -162,7 +188,9 @@ func TestHTTPClient_Post_InvalidURL(t *testing.T) {
 func TestHTTPClient_Response_Close(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
-		w.Write([]byte("test"))
+		if _, err := w.Write([]byte("test")); err != nil {
+			t.Fatalf("failed to write response: %v", err)
+		}
 	}))
 	defer server.Close()
 

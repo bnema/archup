@@ -18,14 +18,28 @@ func TestPreflightHandler_Handle(t *testing.T) {
 	mockLogger := mocks.NewMockLogger(ctrl)
 
 	// Expect basic logging calls
-	mockLogger.EXPECT().Info("Starting preflight checks").Times(1)
-	mockLogger.EXPECT().Info("Detected architecture", gomock.Any(), gomock.Any()).Times(1)
-	mockLogger.EXPECT().Info("Preflight checks passed").Times(1)
+	mockLogger.EXPECT().Info(gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Warn(gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
 	// Mock filesystem and executor responses
-	mockFS.EXPECT().Exists("/sys/firmware/efi/fw_platform_size").Return(true, nil).Times(1)
+	mockFS.EXPECT().Exists(gomock.Any()).DoAndReturn(func(path string) (bool, error) {
+		switch path {
+		case "/etc/arch-release":
+			return true, nil
+		case "/sys/firmware/efi/efivars":
+			return true, nil
+		default:
+			return false, nil
+		}
+	}).AnyTimes()
 	mockExec.EXPECT().Execute(gomock.Any(), "id", "-u").Return([]byte("0\n"), nil).Times(1)
 	mockExec.EXPECT().Execute(gomock.Any(), "uname", "-m").Return([]byte("x86_64\n"), nil).Times(1)
+	mockExec.EXPECT().Execute(gomock.Any(), "bootctl", "status").Return([]byte("Secure Boot: disabled"), nil).Times(2)
 	mockExec.EXPECT().Execute(gomock.Any(), "ping", "-c", "1", "archlinux.org").Return([]byte{}, nil).Times(1)
 	mockExec.EXPECT().Execute(gomock.Any(), "grep", "model name", "/proc/cpuinfo").Return([]byte("model name  : Intel(R) Core(TM) i7-9700K CPU @ 3.60GHz\n"), nil).Times(1)
 
@@ -59,11 +73,23 @@ func TestPreflightHandler_NotRoot(t *testing.T) {
 
 	mockLogger.EXPECT().Info(gomock.Any()).AnyTimes()
 	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
-	mockLogger.EXPECT().Warn(gomock.Any()).Times(1)
-	mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).Times(1)
-	mockFS.EXPECT().Exists(gomock.Any()).Return(false, nil).AnyTimes()
+	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Warn(gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+	mockFS.EXPECT().Exists(gomock.Any()).DoAndReturn(func(path string) (bool, error) {
+		switch path {
+		case "/etc/arch-release":
+			return true, nil
+		default:
+			return false, nil
+		}
+	}).AnyTimes()
 	mockExec.EXPECT().Execute(gomock.Any(), "id", "-u").Return([]byte("1000\n"), nil).Times(1)
+	mockExec.EXPECT().Execute(gomock.Any(), "bootctl", "status").Return([]byte("Secure Boot: disabled"), nil).AnyTimes()
 	mockExec.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+	mockExec.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
 	handler := NewPreflightHandler(mockFS, mockExec, mockLogger)
 	result, err := handler.Handle(context.Background(), commands.PreflightCommand{})

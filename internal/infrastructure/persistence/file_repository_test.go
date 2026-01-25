@@ -75,7 +75,9 @@ func TestFileRepository_Save_Content(t *testing.T) {
 	ctx := context.Background()
 	state := "test installation state with content"
 
-	repo.Save(ctx, "install-001", state)
+	if err := repo.Save(ctx, "install-001", state); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	// Verify file content
 	filePath := filepath.Join(tmpDir, "install-001.state")
@@ -93,11 +95,15 @@ func TestFileRepository_Save_Overwrite(t *testing.T) {
 	ctx := context.Background()
 
 	// Save first state
-	repo.Save(ctx, "install-001", "first state")
+	if err := repo.Save(ctx, "install-001", "first state"); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	// Overwrite with second state
 	secondState := "second state"
-	repo.Save(ctx, "install-001", secondState)
+	if err := repo.Save(ctx, "install-001", secondState); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	// Verify file content is updated
 	filePath := filepath.Join(tmpDir, "install-001.state")
@@ -115,7 +121,9 @@ func TestFileRepository_Load_Success(t *testing.T) {
 	// Save first
 	ctx := context.Background()
 	state := "test installation state"
-	repo.Save(ctx, "install-001", state)
+	if err := repo.Save(ctx, "install-001", state); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	// Load
 	loaded, err := repo.Load(ctx, "install-001")
@@ -146,7 +154,9 @@ func TestFileRepository_Exists_True(t *testing.T) {
 
 	// Save first
 	ctx := context.Background()
-	repo.Save(ctx, "install-001", "state")
+	if err := repo.Save(ctx, "install-001", "state"); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	// Check exists
 	exists, err := repo.Exists(ctx, "install-001")
@@ -194,7 +204,9 @@ func TestFileRepository_Load_ContextCancelled(t *testing.T) {
 
 	// Save first
 	ctx := context.Background()
-	repo.Save(ctx, "install-001", "state")
+	if err := repo.Save(ctx, "install-001", "state"); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	// Load with cancelled context
 	ctx2, cancel := context.WithCancel(context.Background())
@@ -226,9 +238,15 @@ func TestFileRepository_MultipleInstallations(t *testing.T) {
 	ctx := context.Background()
 
 	// Save multiple installations
-	repo.Save(ctx, "install-001", "state 1")
-	repo.Save(ctx, "install-002", "state 2")
-	repo.Save(ctx, "install-003", "state 3")
+	if err := repo.Save(ctx, "install-001", "state 1"); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if err := repo.Save(ctx, "install-002", "state 2"); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if err := repo.Save(ctx, "install-003", "state 3"); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	// Load each one
 	state1, _ := repo.Load(ctx, "install-001")

@@ -44,10 +44,16 @@ func (s *System) DetectTimezone() string {
 				"error", lastErr)
 			continue
 		}
-		defer resp.Body.Close()
 
 		// Check HTTP status code
 		if resp.StatusCode != http.StatusOK {
+			if closeErr := resp.Body.Close(); closeErr != nil {
+				lastErr = fmt.Errorf("failed to close response: %w", closeErr)
+				s.log.Debug("Timezone detection failed",
+					"attempt", attempt,
+					"error", lastErr)
+				continue
+			}
 			lastErr = fmt.Errorf("API returned status %d", resp.StatusCode)
 			s.log.Debug("Timezone detection failed",
 				"attempt", attempt,
@@ -58,7 +64,22 @@ func (s *System) DetectTimezone() string {
 		// Read response body
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
+			if closeErr := resp.Body.Close(); closeErr != nil {
+				lastErr = fmt.Errorf("failed to close response: %w", closeErr)
+				s.log.Debug("Timezone detection failed",
+					"attempt", attempt,
+					"error", lastErr)
+				continue
+			}
 			lastErr = fmt.Errorf("failed to read response: %w", err)
+			s.log.Debug("Timezone detection failed",
+				"attempt", attempt,
+				"error", lastErr)
+			continue
+		}
+
+		if err := resp.Body.Close(); err != nil {
+			lastErr = fmt.Errorf("failed to close response: %w", err)
 			s.log.Debug("Timezone detection failed",
 				"attempt", attempt,
 				"error", lastErr)
@@ -99,4 +120,43 @@ func ValidateTimezone(tz string) bool {
 	default:
 		return true
 	}
+}
+
+// DetectTimezoneSimple fetches timezone from ipapi.co API without logging
+// Returns detected timezone string or empty string on failure
+func DetectTimezoneSimple() string {
+	client := &http.Client{
+		Timeout: timezoneAPITimeout,
+	}
+
+	resp, err := client.Get(timezoneAPIURL)
+	if err != nil {
+		return ""
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		if err := resp.Body.Close(); err != nil {
+			return ""
+		}
+		return ""
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		if err := resp.Body.Close(); err != nil {
+			return ""
+		}
+		return ""
+	}
+
+	if err := resp.Body.Close(); err != nil {
+		return ""
+	}
+
+	timezone := strings.TrimSpace(string(body))
+	if !strings.Contains(timezone, "/") {
+		return ""
+	}
+
+	return timezone
 }

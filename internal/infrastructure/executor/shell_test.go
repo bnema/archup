@@ -56,16 +56,6 @@ func TestShellExecutor_Execute_WithArgs(t *testing.T) {
 	}
 }
 
-func newMockLogger() *mocks.MockLogger {
-	ctrl := gomock.NewController(&testing.T{})
-	mockLogger := mocks.NewMockLogger(ctrl)
-	mockLogger.EXPECT().Debug(gomock.Any(), gomock.Any()).AnyTimes()
-	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
-	mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
-	mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
-	return mockLogger
-}
-
 func TestShellExecutor_Execute_CommandNotFound(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

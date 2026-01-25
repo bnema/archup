@@ -20,6 +20,9 @@ func TestInstallBaseHandler_Handle_Success(t *testing.T) {
 	mockLogger := mocks.NewMockLogger(ctrl)
 
 	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockExec.EXPECT().Execute(gomock.Any(), "pacstrap", "/mnt", "base", "linux-firmware", "linux-zen", "intel-ucode", "amd-ucode", "vim", "git").Return([]byte{}, nil).AnyTimes()
+	mockExec.EXPECT().Execute(gomock.Any(), "genfstab", "-U", "/mnt").Return([]byte("# fstab"), nil).AnyTimes()
+	mockFS.EXPECT().WriteFile(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 	handler := NewInstallBaseHandler(mockFS, mockExec, mockChrExec, mockLogger)
 
@@ -99,6 +102,9 @@ func TestInstallBaseHandler_Handle_WithCustomPackages(t *testing.T) {
 	mockLogger := mocks.NewMockLogger(ctrl)
 
 	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockExec.EXPECT().Execute(gomock.Any(), "pacstrap", "/mnt", "base", "linux-firmware", "linux", "neovim", "zsh", "tmux").Return([]byte{}, nil).AnyTimes()
+	mockExec.EXPECT().Execute(gomock.Any(), "genfstab", "-U", "/mnt").Return([]byte("# fstab"), nil).AnyTimes()
+	mockFS.EXPECT().WriteFile(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 	handler := NewInstallBaseHandler(mockFS, mockExec, mockChrExec, mockLogger)
 

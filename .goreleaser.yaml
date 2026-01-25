@@ -8,9 +8,9 @@ before:
 
 builds:
   # Main build - static binary for Arch Linux ISO
-  - id: archup-installer
-    main: ./cmd/archup-installer
-    binary: archup-installer
+  - id: archup
+    main: ./cmd/archup
+    binary: archup
 
     env:
       - CGO_ENABLED=0
@@ -24,7 +24,7 @@ builds:
     # Version information via ldflags
     ldflags:
       - -s -w
-      - -X main.version={{.Version}}
+      - -X github.com/bnema/archup/cmd.version={{.Version}}
 
     # Build flags for reproducible builds
     flags:
@@ -54,8 +54,8 @@ checksum:
   name_template: 'checksums.txt'
   algorithm: sha256
   extra_files:
-    - glob: ./dist/archup-installer_linux_amd64_v1/archup-installer
-      name_template: archup-installer
+    - glob: ./dist/archup_linux_amd64_v1/archup
+      name_template: archup
 
 snapshot:
   version_template: "{{ incpatch .Version }}-next"
@@ -129,23 +129,23 @@ release:
     ### Install Specific Version
     ```bash
     # Download and run specific version
-    curl -fsSL https://github.com/bnema/archup/releases/download/{{.Tag}}/archup-installer -o /tmp/archup-installer
-    chmod +x /tmp/archup-installer
-    /tmp/archup-installer
+    curl -fsSL https://github.com/bnema/archup/releases/download/{{.Tag}}/archup -o /tmp/archup
+    chmod +x /tmp/archup
+    /tmp/archup install
     ```
 
     ### Manual Install
     ```bash
     # Download binary
-    wget https://github.com/bnema/archup/releases/download/{{.Tag}}/archup-installer
+    wget https://github.com/bnema/archup/releases/download/{{.Tag}}/archup
 
     # Verify checksum
     wget https://github.com/bnema/archup/releases/download/{{.Tag}}/checksums.txt
     sha256sum -c checksums.txt --ignore-missing
 
     # Install
-    chmod +x archup-installer
-    sudo install -m 755 archup-installer /usr/local/bin/
+    chmod +x archup
+    sudo install -m 755 archup /usr/local/bin/
     ```
 
     ---
@@ -163,5 +163,5 @@ release:
 
   # Also upload standalone binary
   extra_files:
-    - glob: ./dist/archup-installer_linux_amd64_v1/archup-installer
-      name_template: archup-installer
+    - glob: ./dist/archup_linux_amd64_v1/archup
+      name_template: archup

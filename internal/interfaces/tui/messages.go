@@ -1,16 +1,12 @@
 package tui
 
-import "github.com/bnema/archup/internal/application/dto"
+import (
+	"github.com/bnema/archup/internal/domain/system"
+	legacysystem "github.com/bnema/archup/internal/system"
+)
 
-// InstallationErrorMsg is sent when an error occurs during installation
-type InstallationErrorMsg struct {
-	Err error
-}
-
-// InstallationCompleteMsg is sent when installation completes successfully
-type InstallationCompleteMsg struct {
-	Duration int // seconds
-}
+// Note: ProgressUpdateMsg, InstallationErrorMsg, InstallationCompleteMsg
+// are defined in handlers package to avoid circular imports
 
 // FormSubmitMsg is sent when the form is submitted
 type FormSubmitMsg struct {
@@ -22,7 +18,18 @@ type ScreenChangeMsg struct {
 	Screen Screen
 }
 
-// ProgressUpdateMsg is sent when installation progress updates
-type ProgressUpdateMsg struct {
-	Update *dto.ProgressUpdate
+// GPUDetectedMsg is sent when GPU detection completes
+type GPUDetectedMsg struct {
+	GPU *system.GPU
+}
+
+// TimezoneDetectedMsg is sent when timezone detection completes
+type TimezoneDetectedMsg struct {
+	Timezone string
+}
+
+// DisksDetectedMsg is sent when disk detection completes
+type DisksDetectedMsg struct {
+	Disks []legacysystem.Disk
+	Err   error
 }

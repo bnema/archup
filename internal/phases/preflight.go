@@ -66,7 +66,7 @@ func (p *PreflightPhase) PreCheck() error {
 	out, err = p.cmdExec.Execute("bootctl", "status")
 	switch {
 	case err == nil && strings.Contains(string(out), "Secure Boot: enabled"):
-		return fmt.Errorf("Secure Boot must be disabled")
+		return fmt.Errorf("secure boot must be disabled")
 	}
 
 	return nil

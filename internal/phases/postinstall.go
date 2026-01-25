@@ -154,7 +154,11 @@ func (p *PostInstallPhase) installBootLogo(progressChan chan<- ProgressUpdate) e
 	case err != nil:
 		return fmt.Errorf("failed to download logo: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			p.SendOutput(progressChan, fmt.Sprintf("[WARN] Failed to close response body: %v", err))
+		}
+	}()
 
 	switch {
 	case resp.StatusCode != http.StatusOK:
@@ -167,7 +171,11 @@ func (p *PostInstallPhase) installBootLogo(progressChan chan<- ProgressUpdate) e
 	case err != nil:
 		return fmt.Errorf("failed to create logo file: %w", err)
 	}
-	defer logoFile.Close()
+	defer func() {
+		if err := logoFile.Close(); err != nil {
+			p.SendOutput(progressChan, fmt.Sprintf("[WARN] Failed to close logo file: %v", err))
+		}
+	}()
 
 	_, err = io.Copy(logoFile, resp.Body)
 	switch {
@@ -231,7 +239,9 @@ func (p *PostInstallPhase) configurePlymouth(progressChan chan<- ProgressUpdate)
 
 		switch {
 		case resp.StatusCode != http.StatusOK:
-			resp.Body.Close()
+			if closeErr := resp.Body.Close(); closeErr != nil {
+				return fmt.Errorf("failed to close %s response: %w", filename, closeErr)
+			}
 			return fmt.Errorf("failed to download %s: HTTP %d", filename, resp.StatusCode)
 		}
 
@@ -240,13 +250,19 @@ func (p *PostInstallPhase) configurePlymouth(progressChan chan<- ProgressUpdate)
 		destFile, err := p.fs.Create(destPath)
 		switch {
 		case err != nil:
-			resp.Body.Close()
+			if closeErr := resp.Body.Close(); closeErr != nil {
+				return fmt.Errorf("failed to close response for %s: %w", filename, closeErr)
+			}
 			return fmt.Errorf("failed to create %s: %w", filename, err)
 		}
 
 		_, err = io.Copy(destFile, resp.Body)
-		destFile.Close()
-		resp.Body.Close()
+		if closeErr := destFile.Close(); closeErr != nil {
+			return fmt.Errorf("failed to close %s: %w", filename, closeErr)
+		}
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			return fmt.Errorf("failed to close response for %s: %w", filename, closeErr)
+		}
 
 		switch {
 		case err != nil:
@@ -312,7 +328,7 @@ func (p *PostInstallPhase) configureSnapper(progressChan chan<- ProgressUpdate) 
 	}
 
 	// Create Limine snapper config
-	limineDefaultConfig := fmt.Sprintf(`TARGET_OS_NAME="ArchUp"
+	limineDefaultConfig := fmt.Sprintf(`TARGET_OS_NAME="%s"
 
 ESP_PATH="/boot"
 
@@ -328,7 +344,7 @@ BOOT_ORDER="*, *fallback, Snapshots"
 MAX_SNAPSHOT_ENTRIES=5
 
 SNAPSHOT_FORMAT_CHOICE=5
-`, cmdline)
+`, config.LimineBranding, cmdline)
 
 	switch err := p.fs.WriteFile(config.PathMntEtcDefaultLimine, []byte(limineDefaultConfig), 0644); {
 	case err != nil:
@@ -515,7 +531,6 @@ func (p *PostInstallPhase) configureShell(progressChan chan<- ProgressUpdate) er
 		case err != nil:
 			// Non-fatal
 			p.SendOutput(progressChan, "[WARN] Failed to configure git delta")
-			break
 		}
 	}
 
@@ -575,7 +590,9 @@ func (p *PostInstallPhase) applyThemes(progressChan chan<- ProgressUpdate, usern
 	p.SendOutput(progressChan, "Configuring starship theme...")
 	starshipCmd := fmt.Sprintf("su - %s -c 'cp %s/starship/bleu.toml %s/starship.toml'",
 		username, themeDir, archupDefault)
-	p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, starshipCmd)
+	if err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, starshipCmd); err != nil {
+		p.SendOutput(progressChan, fmt.Sprintf("[WARN] Failed to configure starship theme: %v", err))
+	}
 
 	// Eza theme
 	p.SendOutput(progressChan, "Configuring eza theme...")
@@ -585,7 +602,9 @@ func (p *PostInstallPhase) applyThemes(progressChan chan<- ProgressUpdate, usern
 		fmt.Sprintf("su - %s -c 'cp %s/eza/theme.yml %s/'", username, themeDir, ezaConfigDir),
 	}
 	for _, cmd := range ezaCommands {
-		p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, cmd)
+		if err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, cmd); err != nil {
+			p.SendOutput(progressChan, fmt.Sprintf("[WARN] Failed to configure eza theme: %v", err))
+		}
 	}
 
 	// Bat theme
@@ -597,7 +616,9 @@ func (p *PostInstallPhase) applyThemes(progressChan chan<- ProgressUpdate, usern
 		fmt.Sprintf("su - %s -c 'bat cache --build'", username),
 	}
 	for _, cmd := range batCommands {
-		p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, cmd)
+		if err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, cmd); err != nil {
+			p.SendOutput(progressChan, fmt.Sprintf("[WARN] Failed to configure bat theme: %v", err))
+		}
 	}
 
 	// Btop theme
@@ -608,7 +629,9 @@ func (p *PostInstallPhase) applyThemes(progressChan chan<- ProgressUpdate, usern
 		fmt.Sprintf("su - %s -c 'cp %s/btop/bleu.theme %s/'", username, themeDir, btopThemeDir),
 	}
 	for _, cmd := range btopCommands {
-		p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, cmd)
+		if err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, cmd); err != nil {
+			p.SendOutput(progressChan, fmt.Sprintf("[WARN] Failed to configure btop theme: %v", err))
+		}
 	}
 
 	// Yazi theme
@@ -619,7 +642,9 @@ func (p *PostInstallPhase) applyThemes(progressChan chan<- ProgressUpdate, usern
 		fmt.Sprintf("su - %s -c 'cp %s/yazi/bleu.toml %s/flavor.toml'", username, themeDir, yaziFlavorDir),
 	}
 	for _, cmd := range yaziCommands {
-		p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, cmd)
+		if err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, cmd); err != nil {
+			p.SendOutput(progressChan, fmt.Sprintf("[WARN] Failed to configure yazi theme: %v", err))
+		}
 	}
 
 	p.SendOutput(progressChan, "[OK] CLI themes configured")
@@ -764,7 +789,9 @@ func (p *PostInstallPhase) setupPostBoot(progressChan chan<- ProgressUpdate) err
 	case err != nil:
 		return fmt.Errorf("failed to download logo.txt: %w", err)
 	case resp.StatusCode != http.StatusOK:
-		resp.Body.Close()
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			return fmt.Errorf("failed to close logo response: %w", closeErr)
+		}
 		return fmt.Errorf("failed to download logo.txt: HTTP %d", resp.StatusCode)
 	}
 
@@ -772,13 +799,19 @@ func (p *PostInstallPhase) setupPostBoot(progressChan chan<- ProgressUpdate) err
 	logoFile, err := p.fs.Create(logoPath)
 	switch {
 	case err != nil:
-		resp.Body.Close()
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			return fmt.Errorf("failed to close logo response: %w", closeErr)
+		}
 		return fmt.Errorf("failed to create logo.txt: %w", err)
 	}
 
 	_, err = io.Copy(logoFile, resp.Body)
-	logoFile.Close()
-	resp.Body.Close()
+	if closeErr := logoFile.Close(); closeErr != nil {
+		return fmt.Errorf("failed to close logo.txt: %w", closeErr)
+	}
+	if closeErr := resp.Body.Close(); closeErr != nil {
+		return fmt.Errorf("failed to close logo response: %w", closeErr)
+	}
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to save logo.txt: %w", err)
@@ -794,7 +827,9 @@ func (p *PostInstallPhase) setupPostBoot(progressChan chan<- ProgressUpdate) err
 		case err != nil:
 			return fmt.Errorf("failed to download %s: %w", script, err)
 		case resp.StatusCode != http.StatusOK:
-			resp.Body.Close()
+			if closeErr := resp.Body.Close(); closeErr != nil {
+				return fmt.Errorf("failed to close %s response: %w", script, closeErr)
+			}
 			return fmt.Errorf("failed to download %s: HTTP %d", script, resp.StatusCode)
 		}
 
@@ -802,13 +837,19 @@ func (p *PostInstallPhase) setupPostBoot(progressChan chan<- ProgressUpdate) err
 		scriptFile, err := p.fs.Create(scriptPath)
 		switch {
 		case err != nil:
-			resp.Body.Close()
+			if closeErr := resp.Body.Close(); closeErr != nil {
+				return fmt.Errorf("failed to close %s response: %w", script, closeErr)
+			}
 			return fmt.Errorf("failed to create %s: %w", script, err)
 		}
 
 		_, err = io.Copy(scriptFile, resp.Body)
-		scriptFile.Close()
-		resp.Body.Close()
+		if closeErr := scriptFile.Close(); closeErr != nil {
+			return fmt.Errorf("failed to close %s: %w", script, closeErr)
+		}
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			return fmt.Errorf("failed to close %s response: %w", script, closeErr)
+		}
 
 		switch {
 		case err != nil:
@@ -831,12 +872,16 @@ func (p *PostInstallPhase) setupPostBoot(progressChan chan<- ProgressUpdate) err
 	case err != nil:
 		return fmt.Errorf("failed to download service template: %w", err)
 	case resp.StatusCode != http.StatusOK:
-		resp.Body.Close()
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			return fmt.Errorf("failed to close service response: %w", closeErr)
+		}
 		return fmt.Errorf("failed to download service template: HTTP %d", resp.StatusCode)
 	}
 
 	templateBytes, err := io.ReadAll(resp.Body)
-	resp.Body.Close()
+	if closeErr := resp.Body.Close(); closeErr != nil {
+		return fmt.Errorf("failed to close service response: %w", closeErr)
+	}
 	switch {
 	case err != nil:
 		return fmt.Errorf("failed to read service template: %w", err)

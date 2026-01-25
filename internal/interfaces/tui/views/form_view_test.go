@@ -83,8 +83,8 @@ func TestFormModelCreation(t *testing.T) {
 
 	// Verify initial state
 	fields := fm.GetFields()
-	if len(fields) != 8 {
-		t.Errorf("Expected 8 form fields, got %d", len(fields))
+	if len(fields) != 7 {
+		t.Errorf("Expected 7 form fields, got %d", len(fields))
 	}
 
 	if fm.GetFocusIndex() != 0 {

@@ -51,7 +51,11 @@ func TestBaseInstallPhasePreCheck(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create logger: %v", err)
 			}
-			defer log.Close()
+			defer func() {
+				if err := log.Close(); err != nil {
+					t.Fatalf("failed to close log: %v", err)
+				}
+			}()
 
 			cfg := config.NewConfig("test")
 			phase := NewBaseInstallPhase(cfg, log, mockFS, mockSysExec)
@@ -126,7 +130,11 @@ func TestBaseInstallPhaseDetectCPU(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create logger: %v", err)
 			}
-			defer log.Close()
+			defer func() {
+				if err := log.Close(); err != nil {
+					t.Fatalf("failed to close log: %v", err)
+				}
+			}()
 
 			cfg := config.NewConfig("test")
 			phase := NewBaseInstallPhase(cfg, log, mockFS, mockSysExec)
@@ -208,7 +216,11 @@ func TestBaseInstallPhaseLoadBasePackages(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create logger: %v", err)
 			}
-			defer log.Close()
+			defer func() {
+				if err := log.Close(); err != nil {
+					t.Fatalf("failed to close log: %v", err)
+				}
+			}()
 
 			cfg := config.NewConfig("test")
 			phase := NewBaseInstallPhase(cfg, log, mockFS, mockSysExec)
@@ -271,7 +283,11 @@ func TestBaseInstallPhaseGenerateFstab(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create logger: %v", err)
 			}
-			defer log.Close()
+			defer func() {
+				if err := log.Close(); err != nil {
+					t.Fatalf("failed to close log: %v", err)
+				}
+			}()
 
 			cfg := config.NewConfig("test")
 			phase := NewBaseInstallPhase(cfg, log, mockFS, mockSysExec)
@@ -352,7 +368,11 @@ func TestBaseInstallPhasePostCheck(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create logger: %v", err)
 			}
-			defer log.Close()
+			defer func() {
+				if err := log.Close(); err != nil {
+					t.Fatalf("failed to close log: %v", err)
+				}
+			}()
 
 			cfg := config.NewConfig("test")
 			cfg.ConfigPath = filepath.Join(tmpDir, "config")
@@ -384,7 +404,11 @@ func TestBaseInstallPhaseExecute(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Fatalf("failed to close log: %v", err)
+		}
+	}()
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -422,7 +446,11 @@ func TestBaseInstallPhaseRollback(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Fatalf("failed to close log: %v", err)
+		}
+	}()
 
 	cfg := config.NewConfig("test")
 	phase := NewBaseInstallPhase(cfg, log, mockFS, mockSysExec)
@@ -448,7 +476,11 @@ func TestBaseInstallPhaseCanSkip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Fatalf("failed to close log: %v", err)
+		}
+	}()
 
 	cfg := config.NewConfig("test")
 	phase := NewBaseInstallPhase(cfg, log, mockFS, mockSysExec)

@@ -13,9 +13,8 @@ import (
 // BaseInstallPhase handles base system installation
 type BaseInstallPhase struct {
 	*BasePhase
-	fs       interfaces.FileSystem
-	sysExec  interfaces.SystemExecutor
-	packages []string
+	fs      interfaces.FileSystem
+	sysExec interfaces.SystemExecutor
 }
 
 // NewBaseInstallPhase creates a new base installation phase
@@ -60,8 +59,7 @@ func (p *BaseInstallPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResu
 	}
 
 	// Step 2.5: Configure CachyOS repository on ISO if needed
-	switch {
-	case p.config.KernelChoice == config.KernelLinuxCachyOS:
+	if p.config.KernelChoice == config.KernelLinuxCachyOS {
 		p.SendProgress(progressChan, "Configuring CachyOS repository...", 2, 5)
 		switch err := p.configureCachyOSRepo(progressChan); {
 		case err != nil:
@@ -263,7 +261,11 @@ func (p *BaseInstallPhase) detectCPU(progressChan chan<- ProgressUpdate) error {
 	case err != nil:
 		return fmt.Errorf("failed to read /proc/cpuinfo: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			p.logger.Warn("Failed to close file", "error", err)
+		}
+	}()
 
 	scanner := bufio.NewScanner(file)
 	var vendor string
@@ -363,8 +365,7 @@ func (p *BaseInstallPhase) runPacstrap(progressChan chan<- ProgressUpdate) error
 	p.SendOutput(progressChan, fmt.Sprintf("[OK] Installed %d packages", len(packages)))
 
 	// Copy CachyOS configuration to installed system if needed
-	switch {
-	case p.config.KernelChoice == config.KernelLinuxCachyOS:
+	if p.config.KernelChoice == config.KernelLinuxCachyOS {
 		p.SendOutput(progressChan, "Configuring CachyOS repository in installed system...")
 		if err := p.copyCachyOSConfig(progressChan); err != nil {
 			return fmt.Errorf("failed to configure CachyOS in installed system: %w", err)
@@ -385,7 +386,11 @@ func (p *BaseInstallPhase) loadBasePackages() ([]string, error) {
 	case err != nil:
 		return nil, fmt.Errorf("failed to open %s: %w", packageFile, err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			p.logger.Warn("Failed to close file", "error", err)
+		}
+	}()
 
 	var packages []string
 	scanner := bufio.NewScanner(file)

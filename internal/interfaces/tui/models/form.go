@@ -24,10 +24,13 @@ func (bm *BaseModel) SetSize(width, height int) {
 type FormData struct {
 	Hostname       string
 	Username       string
+	UserEmail      string
 	UserPassword   string
 	RootPassword   string
 	TargetDisk     string
 	EncryptionType string
+	GPUVendor      string
+	GPUDrivers     []string
 	Timezone       string
 	Locale         string
 	Keymap         string
@@ -43,8 +46,8 @@ type FormModelImpl struct {
 	// Form fields
 	hostname     textinput.Model
 	username     textinput.Model
+	userEmail    textinput.Model
 	userPassword textinput.Model
-	rootPassword textinput.Model
 	targetDisk   textinput.Model
 	timezone     textinput.Model
 	locale       textinput.Model
@@ -66,32 +69,40 @@ func NewFormModel() *FormModelImpl {
 		fields: []textinput.Model{},
 	}
 
-	// Initialize text inputs with labels
-	fm.hostname = createTextInput("Hostname", "myarch", "Enter system hostname")
-	fm.username = createTextInput("Username", "archuser", "Enter regular user name")
+	// Initialize text inputs with default values
+	fm.hostname = createTextInput("Hostname", "", "Enter system hostname")
+	fm.hostname.SetValue("myarch")
+
+	fm.username = createTextInput("Username", "", "Enter regular user name")
+	fm.username.SetValue("archuser")
+
+	fm.userEmail = createTextInput("Email", "", "Enter email for git config")
+
 	fm.userPassword = createTextInput("User Password", "", "Enter user password")
 	fm.userPassword.EchoMode = textinput.EchoPassword
-	fm.rootPassword = createTextInput("Root Password", "", "Enter root password")
-	fm.rootPassword.EchoMode = textinput.EchoPassword
-	fm.targetDisk = createTextInput("Target Disk", "/dev/sda", "Enter target disk (e.g., /dev/sda)")
-	fm.timezone = createTextInput("Timezone", "UTC", "Enter timezone")
-	fm.locale = createTextInput("Locale", "en_US.UTF-8", "Enter locale")
-	fm.keymap = createTextInput("Keymap", "us", "Enter keymap")
+
+	// No root password - user will be sudoer
+	// targetDisk is selected via disk selection screen, not a text field
+	fm.timezone = createTextInput("Timezone", "", "Enter timezone")
+	fm.timezone.SetValue("UTC")
+
+	fm.locale = createTextInput("Locale", "", "Enter locale")
+	fm.locale.SetValue("en_US.UTF-8")
+
+	fm.keymap = createTextInput("Keymap", "", "Enter keymap")
+	fm.keymap.SetValue("us")
 
 	fm.fields = []textinput.Model{
-		fm.hostname, fm.username, fm.userPassword, fm.rootPassword,
-		fm.targetDisk, fm.timezone, fm.locale, fm.keymap,
+		fm.hostname, fm.username, fm.userEmail, fm.userPassword,
+		fm.timezone, fm.locale, fm.keymap,
 	}
-
-	// Set first field as focused
-	fm.fields[0].Focus()
 
 	return fm
 }
 
-// Init initializes the form model
+// Init initializes the form model by focusing the first field
 func (fm *FormModelImpl) Init() tea.Cmd {
-	return textinput.Blink
+	return fm.fields[0].Focus()
 }
 
 // Update handles input and updates the form
@@ -137,9 +148,8 @@ func (fm *FormModelImpl) View() string {
 	labels := []string{
 		"Hostname:",
 		"Username:",
-		"User Password:",
-		"Root Password:",
-		"Target Disk:",
+		"Email(opt):",
+		"Password:",
 		"Timezone:",
 		"Locale:",
 		"Keymap:",
@@ -198,7 +208,6 @@ func (fm *FormModelImpl) SetData(data FormData) {
 	fm.hostname.SetValue(data.Hostname)
 	fm.username.SetValue(data.Username)
 	fm.userPassword.SetValue(data.UserPassword)
-	fm.rootPassword.SetValue(data.RootPassword)
 	fm.targetDisk.SetValue(data.TargetDisk)
 	fm.timezone.SetValue(data.Timezone)
 	fm.locale.SetValue(data.Locale)
@@ -255,6 +264,11 @@ func (fm *FormModelImpl) ExtractData() {
 	fm.extractData()
 }
 
+// SetTimezone sets the timezone field value
+func (fm *FormModelImpl) SetTimezone(tz string) {
+	fm.timezone.SetValue(tz)
+}
+
 // Helper methods
 
 func (fm *FormModelImpl) focusNext() {
@@ -273,20 +287,25 @@ func (fm *FormModelImpl) focusPrevious() {
 }
 
 func (fm *FormModelImpl) updateInput(msg tea.Msg) tea.Cmd {
-	_, cmd := fm.fields[fm.focusIndex].Update(msg)
+	var cmd tea.Cmd
+	fm.fields[fm.focusIndex], cmd = fm.fields[fm.focusIndex].Update(msg)
 	return cmd
 }
 
 func (fm *FormModelImpl) extractData() {
+	// Use fm.fields slice values, not the original fields (which are copies)
+	// Field order: hostname(0), username(1), email(2), password(3), timezone(4), locale(5), keymap(6)
 	fm.data = FormData{
-		Hostname:     fm.hostname.Value(),
-		Username:     fm.username.Value(),
-		UserPassword: fm.userPassword.Value(),
-		RootPassword: fm.rootPassword.Value(),
-		TargetDisk:   fm.targetDisk.Value(),
-		Timezone:     fm.timezone.Value(),
-		Locale:       fm.locale.Value(),
-		Keymap:       fm.keymap.Value(),
+		Hostname:       fm.fields[0].Value(),
+		Username:       fm.fields[1].Value(),
+		UserEmail:      fm.fields[2].Value(), // Optional - for git config
+		UserPassword:   fm.fields[3].Value(),
+		RootPassword:   "", // No root password - root account locked, user is sudoer
+		TargetDisk:     fm.targetDisk.Value(),
+		EncryptionType: fm.data.EncryptionType,
+		Timezone:       fm.fields[4].Value(),
+		Locale:         fm.fields[5].Value(),
+		Keymap:         fm.fields[6].Value(),
 	}
 }
 

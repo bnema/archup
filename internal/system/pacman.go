@@ -79,7 +79,10 @@ func DownloadAndInstallPackages(logPath, chrootPath string, urls ...string) erro
 	cmd += "pacman -U --noconfirm /tmp/pkg*.tar.zst && rm -f /tmp/pkg*.tar.zst"
 
 	if err := ChrootExec(logPath, chrootPath, cmd); err != nil {
-		ChrootExec(logPath, chrootPath, "rm -f /tmp/pkg*.tar.zst") // Cleanup
+		cleanupErr := ChrootExec(logPath, chrootPath, "rm -f /tmp/pkg*.tar.zst")
+		if cleanupErr != nil {
+			return fmt.Errorf("%w (cleanup failed: %v)", err, cleanupErr)
+		}
 		return err
 	}
 

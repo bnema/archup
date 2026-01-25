@@ -95,7 +95,6 @@ func (s *InstallationService) RunPreflight(ctx context.Context) (*dto.PreflightR
 	}
 
 	s.tracker.EmitPhaseStarted("Preflight Checks", 1, 8)
-	defer s.tracker.EmitPhaseCompleted("Preflight Checks", 1, 8)
 
 	result, err := s.preflightHandler.Handle(ctx, commands.PreflightCommand{})
 	if err != nil {
@@ -112,6 +111,7 @@ func (s *InstallationService) RunPreflight(ctx context.Context) (*dto.PreflightR
 		return result, errors.New(errMsg)
 	}
 
+	s.tracker.EmitPhaseCompleted("Preflight Checks", 1, 8)
 	return result, nil
 }
 
@@ -122,7 +122,6 @@ func (s *InstallationService) RunPartition(ctx context.Context, cmd commands.Par
 	}
 
 	s.tracker.EmitPhaseStarted("Disk Partitioning", 2, 8)
-	defer s.tracker.EmitPhaseCompleted("Disk Partitioning", 2, 8)
 
 	result, err := s.partitionHandler.Handle(ctx, cmd)
 	if err != nil {
@@ -135,6 +134,7 @@ func (s *InstallationService) RunPartition(ctx context.Context, cmd commands.Par
 		return result, errors.New(result.ErrorDetail)
 	}
 
+	s.tracker.EmitPhaseCompleted("Disk Partitioning", 2, 8)
 	return result, nil
 }
 
@@ -145,7 +145,6 @@ func (s *InstallationService) RunBaseInstall(ctx context.Context, cmd commands.I
 	}
 
 	s.tracker.EmitPhaseStarted("Base Installation", 3, 8)
-	defer s.tracker.EmitPhaseCompleted("Base Installation", 3, 8)
 
 	result, err := s.baseHandler.Handle(ctx, cmd)
 	if err != nil {
@@ -158,6 +157,7 @@ func (s *InstallationService) RunBaseInstall(ctx context.Context, cmd commands.I
 		return result, errors.New(result.ErrorDetail)
 	}
 
+	s.tracker.EmitPhaseCompleted("Base Installation", 3, 8)
 	return result, nil
 }
 
@@ -168,7 +168,6 @@ func (s *InstallationService) RunConfigSystem(ctx context.Context, cmd commands.
 	}
 
 	s.tracker.EmitPhaseStarted("System Configuration", 4, 8)
-	defer s.tracker.EmitPhaseCompleted("System Configuration", 4, 8)
 
 	result, err := s.configHandler.Handle(ctx, cmd)
 	if err != nil {
@@ -181,6 +180,7 @@ func (s *InstallationService) RunConfigSystem(ctx context.Context, cmd commands.
 		return result, errors.New(result.ErrorDetail)
 	}
 
+	s.tracker.EmitPhaseCompleted("System Configuration", 4, 8)
 	return result, nil
 }
 
@@ -191,7 +191,6 @@ func (s *InstallationService) RunBootloaderSetup(ctx context.Context, cmd comman
 	}
 
 	s.tracker.EmitPhaseStarted("Bootloader Setup", 5, 8)
-	defer s.tracker.EmitPhaseCompleted("Bootloader Setup", 5, 8)
 
 	result, err := s.bootloaderHandler.Handle(ctx, cmd)
 	if err != nil {
@@ -204,6 +203,7 @@ func (s *InstallationService) RunBootloaderSetup(ctx context.Context, cmd comman
 		return result, errors.New(result.ErrorDetail)
 	}
 
+	s.tracker.EmitPhaseCompleted("Bootloader Setup", 5, 8)
 	return result, nil
 }
 
@@ -214,7 +214,6 @@ func (s *InstallationService) RunRepositorySetup(ctx context.Context, cmd comman
 	}
 
 	s.tracker.EmitPhaseStarted("Repository Setup", 6, 8)
-	defer s.tracker.EmitPhaseCompleted("Repository Setup", 6, 8)
 
 	result, err := s.reposHandler.Handle(ctx, cmd)
 	if err != nil {
@@ -227,6 +226,7 @@ func (s *InstallationService) RunRepositorySetup(ctx context.Context, cmd comman
 		return result, errors.New(result.ErrorDetail)
 	}
 
+	s.tracker.EmitPhaseCompleted("Repository Setup", 6, 8)
 	return result, nil
 }
 
@@ -237,7 +237,6 @@ func (s *InstallationService) RunPostInstall(ctx context.Context, cmd commands.P
 	}
 
 	s.tracker.EmitPhaseStarted("Post-Installation", 7, 8)
-	defer s.tracker.EmitPhaseCompleted("Post-Installation", 7, 8)
 
 	result, err := s.postInstallHandler.Handle(ctx, cmd)
 	if err != nil {
@@ -250,6 +249,7 @@ func (s *InstallationService) RunPostInstall(ctx context.Context, cmd commands.P
 		return result, errors.New(result.ErrorDetail)
 	}
 
+	s.tracker.EmitPhaseCompleted("Post-Installation", 7, 8)
 	return result, nil
 }
 

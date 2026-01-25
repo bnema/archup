@@ -56,7 +56,7 @@ curl -fsSL https://archup.run/install/dev | bash
 - Firewall (ufw) and power management (TLP)
 - Shell completion and theme system
 
-Run `archup wizard` after installation to add a Wayland compositor (Hyprland, Sway, Niri, or River) with integrated theming. Support will expand as the community contributes.
+Run `archup wizard` after installation to add a Wayland compositor with integrated theming. Support will expand as the community contributes.
 
 ## Status
 

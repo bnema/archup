@@ -1,4 +1,4 @@
-//go:generate go run go.uber.org/mock/mockgen@latest -destination=mocks/mock_ports.go -package=mocks . FileSystem,File,CommandExecutor,ChrootExecutor,ScriptExecutor,HTTPClient,Response,Logger,InstallationRepository
+//go:generate go run go.uber.org/mock/mockgen@v0.6.0 -destination=mocks/mock_ports.go -package=mocks . FileSystem,File,CommandExecutor,ChrootExecutor,ScriptExecutor,HTTPClient,Response,Logger,InstallationRepository
 
 package ports
 
@@ -61,8 +61,11 @@ type ChrootExecutor interface {
 	// ExecuteInChroot runs a command inside a chroot
 	ExecuteInChroot(ctx context.Context, chrootPath string, command string, args ...string) ([]byte, error)
 
+	// ExecuteInChrootWithStdin runs a command inside a chroot with stdin
+	ExecuteInChrootWithStdin(ctx context.Context, chrootPath string, stdin string, command string, args ...string) error
+
 	// ChrootSystemctl runs systemctl commands in chroot
-	ChrootSystemctl(logPath string, chrootPath string, args ...string) error
+	ChrootSystemctl(ctx context.Context, logPath string, chrootPath string, args ...string) error
 }
 
 // ScriptExecutor is the port for executing shell scripts

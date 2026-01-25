@@ -83,7 +83,7 @@ func NewCPUInfo(vendor CPUVendor, model string, microcode Microcode) (*CPUInfo, 
 	}
 
 	if vendor == CPUVendorAMD && microcode == MicrocodeIntel {
-		return nil, errors.New("Intel microcode cannot be used with AMD CPU")
+		return nil, errors.New("intel microcode cannot be used with AMD CPU")
 	}
 
 	return &CPUInfo{

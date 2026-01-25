@@ -3,11 +3,14 @@ package tui
 import (
 	"context"
 
+	apphandlers "github.com/bnema/archup/internal/application/handlers"
 	"github.com/bnema/archup/internal/application/services"
 	"github.com/bnema/archup/internal/domain/ports"
+	"github.com/bnema/archup/internal/domain/system"
 	"github.com/bnema/archup/internal/interfaces/tui/handlers"
 	"github.com/bnema/archup/internal/interfaces/tui/models"
 	"github.com/bnema/archup/internal/interfaces/tui/views"
+	legacysystem "github.com/bnema/archup/internal/system"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -18,12 +21,15 @@ type App struct {
 	// Core services
 	installService  *services.InstallationService
 	progressTracker *services.ProgressTracker
+	gpuHandler      *apphandlers.GPUHandler
 
 	// Infrastructure ports
 	logger ports.Logger
 
 	// UI models (using concrete types for compatibility with views/handlers)
 	formModel         *models.FormModelImpl
+	diskModel         *models.DiskModelImpl
+	gpuModel          *models.GPUModelImpl
 	installationModel *models.InstallationModelImpl
 	progressModel     *models.ProgressModelImpl
 
@@ -31,6 +37,12 @@ type App struct {
 	currentScreen Screen
 	ctx           context.Context
 	cancel        context.CancelFunc
+
+	// Validated form data - stored after form validation passes
+	formData models.FormData
+
+	// Program reference for sending messages from goroutines
+	program *tea.Program
 }
 
 // Screen represents the current TUI screen
@@ -38,6 +50,8 @@ type Screen string
 
 const (
 	ScreenForm       Screen = "form"
+	ScreenDisk       Screen = "disk"
+	ScreenGPU        Screen = "gpu"
 	ScreenInstalling Screen = "installing"
 	ScreenProgress   Screen = "progress"
 	ScreenSummary    Screen = "summary"
@@ -48,6 +62,7 @@ const (
 func NewApp(
 	installService *services.InstallationService,
 	progressTracker *services.ProgressTracker,
+	gpuHandler *apphandlers.GPUHandler,
 	logger ports.Logger,
 ) *App {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -55,8 +70,11 @@ func NewApp(
 	return &App{
 		installService:    installService,
 		progressTracker:   progressTracker,
+		gpuHandler:        gpuHandler,
 		logger:            logger,
 		formModel:         models.NewFormModel(),
+		diskModel:         models.NewDiskModel(),
+		gpuModel:          models.NewGPUModel(),
 		installationModel: models.NewInstallationModel(),
 		progressModel:     models.NewProgressModel(),
 		currentScreen:     ScreenForm,
@@ -90,7 +108,10 @@ func (a *App) GetContext() context.Context {
 // Init is called when the program starts
 func (a *App) Init() tea.Cmd {
 	a.logger.Debug("TUI app initialized")
-	return nil
+	return tea.Batch(
+		a.formModel.Init(),
+		a.detectTimezoneCmd(),
+	)
 }
 
 // Update handles messages and updates the model
@@ -98,12 +119,18 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		return a.handleKeyMsg(msg)
-	case ProgressUpdateMsg:
+	case handlers.ProgressUpdateMsg:
 		return a.handleProgressUpdate(msg)
-	case InstallationErrorMsg:
+	case handlers.InstallationErrorMsg:
 		return a.handleInstallationError(msg)
-	case InstallationCompleteMsg:
+	case handlers.InstallationCompleteMsg:
 		return a.handleInstallationComplete(msg)
+	case GPUDetectedMsg:
+		return a.handleGPUDetected(msg)
+	case TimezoneDetectedMsg:
+		return a.handleTimezoneDetected(msg)
+	case DisksDetectedMsg:
+		return a.handleDisksDetected(msg)
 	}
 
 	return a, nil
@@ -114,6 +141,10 @@ func (a *App) View() string {
 	switch a.currentScreen {
 	case ScreenForm:
 		return views.RenderForm(a.formModel)
+	case ScreenDisk:
+		return views.RenderDiskSelection(a.diskModel)
+	case ScreenGPU:
+		return views.RenderGPUSelection(a.gpuModel)
 	case ScreenInstalling, ScreenProgress:
 		return views.RenderProgress(a.progressModel)
 	case ScreenSummary:
@@ -130,12 +161,20 @@ func (a *App) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch a.currentScreen {
 	case ScreenForm:
 		return a.handleFormInput(msg)
+	case ScreenDisk:
+		return a.handleDiskInput(msg)
+	case ScreenGPU:
+		return a.handleGPUInput(msg)
 	case ScreenProgress:
 		// Limited input during installation
 		if msg.String() == "ctrl+c" {
 			return a.handleCancel()
 		}
 	case ScreenSummary:
+		if msg.String() == "q" || msg.String() == "ctrl+c" {
+			return a, tea.Quit
+		}
+	case ScreenError:
 		if msg.String() == "q" || msg.String() == "ctrl+c" {
 			return a, tea.Quit
 		}
@@ -150,15 +189,19 @@ func (a *App) handleFormInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "ctrl+c":
 		return a, tea.Quit
 	case "enter":
-		// Validate form and start installation
+		a.formModel.ExtractData()
+		// Validate form and go to disk selection
 		if err := a.validateForm(); err != nil {
-			a.logger.Error("Form validation failed", "error", err)
-			a.currentScreen = ScreenError
-			a.installationModel.SetError(err.Error())
+			a.logger.Warn("Form validation failed", "error", err)
+			// Show error on form, don't leave screen
+			a.formModel.SetError(err)
 			return a, nil
 		}
-		// Start installation
-		return a.startInstallation()
+		// Clear any previous error and store validated data in App
+		a.formModel.SetError(nil)
+		a.formData = a.formModel.GetData()
+		a.logger.Debug("Form data stored", "password_len", len(a.formData.UserPassword))
+		return a.startDiskSelection()
 	default:
 		// Delegate to form handler
 		updatedForm, cmd := handlers.HandleFormUpdate(a.formModel, msg)
@@ -168,7 +211,7 @@ func (a *App) handleFormInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 // handleProgressUpdate processes progress events
-func (a *App) handleProgressUpdate(msg ProgressUpdateMsg) (tea.Model, tea.Cmd) {
+func (a *App) handleProgressUpdate(msg handlers.ProgressUpdateMsg) (tea.Model, tea.Cmd) {
 	updatedProgress, cmd := handlers.HandleProgressUpdate(a, msg, a.progressModel)
 	a.progressModel = updatedProgress
 	a.currentScreen = ScreenProgress
@@ -176,7 +219,7 @@ func (a *App) handleProgressUpdate(msg ProgressUpdateMsg) (tea.Model, tea.Cmd) {
 }
 
 // handleInstallationError processes installation errors
-func (a *App) handleInstallationError(msg InstallationErrorMsg) (tea.Model, tea.Cmd) {
+func (a *App) handleInstallationError(msg handlers.InstallationErrorMsg) (tea.Model, tea.Cmd) {
 	updatedInstall, cmd := handlers.HandleInstallationError(a, msg, a.installationModel)
 	a.installationModel = updatedInstall
 	a.currentScreen = ScreenError
@@ -184,11 +227,17 @@ func (a *App) handleInstallationError(msg InstallationErrorMsg) (tea.Model, tea.
 }
 
 // handleInstallationComplete processes installation completion
-func (a *App) handleInstallationComplete(msg InstallationCompleteMsg) (tea.Model, tea.Cmd) {
+func (a *App) handleInstallationComplete(msg handlers.InstallationCompleteMsg) (tea.Model, tea.Cmd) {
 	updatedInstall, cmd := handlers.HandleInstallationComplete(a, msg, a.installationModel)
 	a.installationModel = updatedInstall
 	a.currentScreen = ScreenSummary
 	return a, cmd
+}
+
+// handleGPUDetected updates GPU model with detection result.
+func (a *App) handleGPUDetected(msg GPUDetectedMsg) (tea.Model, tea.Cmd) {
+	a.gpuModel.SetDetectedGPU(msg.GPU)
+	return a, nil
 }
 
 // handleCancel cancels the installation
@@ -200,34 +249,160 @@ func (a *App) handleCancel() (tea.Model, tea.Cmd) {
 	return a, nil
 }
 
-// validateForm validates the form data
+func (a *App) handleGPUInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "ctrl+c":
+		return a, tea.Quit
+	case "up", "shift+tab":
+		a.gpuModel.MoveUp()
+		return a, nil
+	case "down", "tab":
+		a.gpuModel.MoveDown()
+		return a, nil
+	case "enter":
+		selected := a.gpuModel.SelectedOption()
+		// Update stored form data directly
+		a.formData.GPUVendor = string(selected.Vendor)
+		a.formData.GPUDrivers = append([]string{}, selected.Drivers...)
+		return a.startInstallation()
+	}
+
+	return a, nil
+}
+
+// validateForm validates the form data using domain validation
 func (a *App) validateForm() error {
 	formData := a.formModel.GetData()
-	if formData.Hostname == "" {
-		return ErrInvalidHostname
+
+	// Use domain validation for all fields
+	if err := system.ValidateHostname(formData.Hostname); err != nil {
+		return err
 	}
-	if formData.Username == "" {
-		return ErrInvalidUsername
+
+	if err := system.ValidateUsername(formData.Username); err != nil {
+		return err
 	}
-	if formData.TargetDisk == "" {
-		return ErrInvalidDisk
+
+	if err := system.ValidatePassword(formData.UserPassword); err != nil {
+		return err
 	}
+
+	if err := system.ValidateTimezone(formData.Timezone); err != nil {
+		return err
+	}
+
+	if err := system.ValidateLocale(formData.Locale); err != nil {
+		return err
+	}
+
+	if err := system.ValidateKeymap(formData.Keymap); err != nil {
+		return err
+	}
+
+	// TargetDisk is selected in disk selection screen, not validated here
 	return nil
 }
 
 // startInstallation starts the installation process
 func (a *App) startInstallation() (tea.Model, tea.Cmd) {
-	formData := a.formModel.GetData()
 	a.currentScreen = ScreenInstalling
+	a.logger.Debug("Starting installation", "password_len", len(a.formData.UserPassword))
 
-	// Create installation command using handler
-	cmd := handlers.CreateInstallationCommand(a, formData)
+	// Create installation command using stored form data
+	cmd := handlers.CreateInstallationCommand(a, a.formData)
 
 	return a, tea.Batch(cmd)
+}
+
+func (a *App) startGPUSelection() (tea.Model, tea.Cmd) {
+	a.currentScreen = ScreenGPU
+	return a, a.detectGPUCmd()
+}
+
+func (a *App) detectGPUCmd() tea.Cmd {
+	return func() tea.Msg {
+		gpu, err := a.gpuHandler.Detect(a.ctx)
+		if err != nil {
+			a.logger.Warn("GPU detection failed", "error", err)
+		}
+		return GPUDetectedMsg{GPU: gpu}
+	}
+}
+
+func (a *App) startDiskSelection() (tea.Model, tea.Cmd) {
+	a.currentScreen = ScreenDisk
+	return a, a.detectDisksCmd()
+}
+
+func (a *App) detectDisksCmd() tea.Cmd {
+	return func() tea.Msg {
+		disks, err := legacysystem.ListDisks()
+		return DisksDetectedMsg{Disks: disks, Err: err}
+	}
+}
+
+func (a *App) detectTimezoneCmd() tea.Cmd {
+	return func() tea.Msg {
+		tz := legacysystem.DetectTimezoneSimple()
+		return TimezoneDetectedMsg{Timezone: tz}
+	}
+}
+
+func (a *App) handleDiskInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "ctrl+c":
+		return a, tea.Quit
+	case "up", "shift+tab":
+		a.diskModel.MoveUp()
+		return a, nil
+	case "down", "tab":
+		a.diskModel.MoveDown()
+		return a, nil
+	case "enter":
+		selected := a.diskModel.SelectedOption()
+		if selected.Path == "" {
+			// No disk selected
+			a.currentScreen = ScreenError
+			a.installationModel.SetError("No disk selected")
+			return a, nil
+		}
+		// Update stored form data directly
+		a.formData.TargetDisk = selected.Path
+		return a.startGPUSelection()
+	}
+	return a, nil
+}
+
+func (a *App) handleTimezoneDetected(msg TimezoneDetectedMsg) (tea.Model, tea.Cmd) {
+	if msg.Timezone != "" {
+		a.logger.Info("Timezone detected", "timezone", msg.Timezone)
+		a.formModel.SetTimezone(msg.Timezone)
+	}
+	return a, nil
+}
+
+func (a *App) handleDisksDetected(msg DisksDetectedMsg) (tea.Model, tea.Cmd) {
+	if msg.Err != nil {
+		a.logger.Warn("Disk detection failed", "error", msg.Err)
+		a.diskModel.SetError(msg.Err)
+	} else {
+		a.diskModel.SetDisks(msg.Disks)
+	}
+	return a, nil
 }
 
 // Close cleans up resources
 func (a *App) Close() error {
 	a.cancel()
 	return a.installService.Close()
+}
+
+// SetProgram sets the tea.Program reference for sending messages from goroutines
+func (a *App) SetProgram(p *tea.Program) {
+	a.program = p
+}
+
+// GetProgram returns the tea.Program reference
+func (a *App) GetProgram() *tea.Program {
+	return a.program
 }

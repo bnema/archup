@@ -25,7 +25,7 @@ func ValidateHostname(s string) error {
 	}
 	// Basic validation
 	for _, c := range s {
-		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-') {
+		if !isHostnameChar(c) {
 			return errors.New("hostname can only contain letters, numbers, and hyphens")
 		}
 	}
@@ -46,7 +46,7 @@ func ValidateUsername(s string) error {
 	}
 	// Can only contain lowercase letters, numbers, underscore, hyphen
 	for _, c := range s {
-		if !((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' || c == '-') {
+		if !isUsernameChar(c) {
 			return errors.New("username can only contain lowercase letters, numbers, underscore, and hyphen")
 		}
 	}
@@ -78,6 +78,34 @@ func ValidateLocale(s string) error {
 	}
 	// Basic validation - should match pattern like en_US.UTF-8
 	return nil
+}
+
+func isHostnameChar(c rune) bool {
+	switch {
+	case c >= 'a' && c <= 'z':
+		return true
+	case c >= 'A' && c <= 'Z':
+		return true
+	case c >= '0' && c <= '9':
+		return true
+	case c == '-':
+		return true
+	default:
+		return false
+	}
+}
+
+func isUsernameChar(c rune) bool {
+	switch {
+	case c >= 'a' && c <= 'z':
+		return true
+	case c >= '0' && c <= '9':
+		return true
+	case c == '_' || c == '-':
+		return true
+	default:
+		return false
+	}
 }
 
 // ValidatePasswordConfirmation validates that password and confirmation match

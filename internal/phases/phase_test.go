@@ -42,7 +42,11 @@ func TestNewBasePhase(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Fatalf("failed to close log: %v", err)
+		}
+	}()
 
 	cfg := config.NewConfig("test")
 
@@ -75,7 +79,11 @@ func TestBasePhaseSetStatus(t *testing.T) {
 	logPath := filepath.Join(tmpDir, "test.log")
 
 	log, _ := logger.New(logPath, false)
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Fatalf("failed to close log: %v", err)
+		}
+	}()
 
 	cfg := config.NewConfig("test")
 	phase := NewBasePhase("test", "test", cfg, log)
@@ -104,7 +112,11 @@ func TestBasePhaseDefaultPreCheck(t *testing.T) {
 	logPath := filepath.Join(tmpDir, "test.log")
 
 	log, _ := logger.New(logPath, false)
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Fatalf("failed to close log: %v", err)
+		}
+	}()
 
 	tests := []struct {
 		name      string
@@ -141,7 +153,11 @@ func TestBasePhaseDefaultPostCheck(t *testing.T) {
 	logPath := filepath.Join(tmpDir, "test.log")
 
 	log, _ := logger.New(logPath, false)
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Fatalf("failed to close log: %v", err)
+		}
+	}()
 
 	cfg := config.NewConfig("test")
 	phase := NewBasePhase("test", "test", cfg, log)
@@ -158,7 +174,11 @@ func TestBasePhaseDefaultRollback(t *testing.T) {
 	logPath := filepath.Join(tmpDir, "test.log")
 
 	log, _ := logger.New(logPath, false)
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Fatalf("failed to close log: %v", err)
+		}
+	}()
 
 	cfg := config.NewConfig("test")
 	phase := NewBasePhase("my-phase", "test", cfg, log)
@@ -180,7 +200,11 @@ func TestBasePhaseDefaultCanSkip(t *testing.T) {
 	logPath := filepath.Join(tmpDir, "test.log")
 
 	log, _ := logger.New(logPath, false)
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Fatalf("failed to close log: %v", err)
+		}
+	}()
 
 	cfg := config.NewConfig("test")
 	phase := NewBasePhase("test", "test", cfg, log)
@@ -196,7 +220,11 @@ func TestSendProgress(t *testing.T) {
 	logPath := filepath.Join(tmpDir, "test.log")
 
 	log, _ := logger.New(logPath, false)
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Fatalf("failed to close log: %v", err)
+		}
+	}()
 
 	cfg := config.NewConfig("test")
 	phase := NewBasePhase("test-phase", "test", cfg, log)
@@ -237,7 +265,11 @@ func TestSendProgressWithNilChannel(t *testing.T) {
 	logPath := filepath.Join(tmpDir, "test.log")
 
 	log, _ := logger.New(logPath, false)
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Fatalf("failed to close log: %v", err)
+		}
+	}()
 
 	cfg := config.NewConfig("test")
 	phase := NewBasePhase("test", "test", cfg, log)
@@ -252,7 +284,11 @@ func TestSendComplete(t *testing.T) {
 	logPath := filepath.Join(tmpDir, "test.log")
 
 	log, _ := logger.New(logPath, false)
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Fatalf("failed to close log: %v", err)
+		}
+	}()
 
 	cfg := config.NewConfig("test")
 	phase := NewBasePhase("test-phase", "test", cfg, log)
@@ -279,7 +315,11 @@ func TestSendError(t *testing.T) {
 	logPath := filepath.Join(tmpDir, "test.log")
 
 	log, _ := logger.New(logPath, false)
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Fatalf("failed to close log: %v", err)
+		}
+	}()
 
 	cfg := config.NewConfig("test")
 	phase := NewBasePhase("test-phase", "test", cfg, log)
@@ -308,7 +348,11 @@ func TestSendOutput(t *testing.T) {
 	logPath := filepath.Join(tmpDir, "test.log")
 
 	log, _ := logger.New(logPath, false)
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Fatalf("failed to close log: %v", err)
+		}
+	}()
 
 	cfg := config.NewConfig("test")
 	phase := NewBasePhase("test-phase", "test", cfg, log)

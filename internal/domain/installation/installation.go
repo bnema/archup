@@ -251,17 +251,17 @@ func (i *Installation) FailCurrentPhase(errorMessage string, recoverable bool) e
 }
 
 // Complete marks the installation as successfully completed
+// Can be called from any non-terminal state (phases are tracked by progress tracker, not state machine)
 func (i *Installation) Complete(totalDurationSeconds int) error {
-	if i.state != StatePostInstallation {
-		return ErrInvalidPhaseTransition
+	if i.state.IsTerminal() {
+		return ErrInstallationAlreadyCompleted
+	}
+	if i.state == StateNotStarted {
+		return ErrInstallationNotStarted
 	}
 
 	now := time.Now().UTC()
 	i.completedAt = &now
-
-	if err := i.state.TransitionTo(StateCompleted); err != nil {
-		return err
-	}
 	i.state = StateCompleted
 
 	// Emit completion event

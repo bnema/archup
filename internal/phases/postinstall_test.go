@@ -67,7 +67,11 @@ func TestPostInstallPhasePreCheck(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create logger: %v", err)
 			}
-			defer log.Close()
+			defer func() {
+				if err := log.Close(); err != nil {
+					t.Fatalf("failed to close log: %v", err)
+				}
+			}()
 
 			cfg := config.NewConfig("test")
 			phase := NewPostInstallPhase(cfg, log, mockFS, mockHTTP, mockSysExec, mockChrExec)
@@ -123,7 +127,11 @@ func TestPostInstallPhaseShellConfiguration(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create logger: %v", err)
 			}
-			defer log.Close()
+			defer func() {
+				if err := log.Close(); err != nil {
+					t.Fatalf("failed to close log: %v", err)
+				}
+			}()
 
 			cfg := config.NewConfig("test")
 			phase := NewPostInstallPhase(cfg, log, mockFS, mockHTTP, mockSysExec, mockChrExec)
@@ -152,7 +160,11 @@ func TestPostInstallPhasePostCheck(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Fatalf("failed to close log: %v", err)
+		}
+	}()
 
 	cfg := config.NewConfig("test")
 	cfg.ConfigPath = filepath.Join(tmpDir, "config")
@@ -182,7 +194,11 @@ func TestPostInstallPhaseRollback(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Fatalf("failed to close log: %v", err)
+		}
+	}()
 
 	cfg := config.NewConfig("test")
 	phase := NewPostInstallPhase(cfg, log, mockFS, mockHTTP, mockSysExec, mockChrExec)
@@ -210,7 +226,11 @@ func TestPostInstallPhaseCanSkip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Fatalf("failed to close log: %v", err)
+		}
+	}()
 
 	cfg := config.NewConfig("test")
 	phase := NewPostInstallPhase(cfg, log, mockFS, mockHTTP, mockSysExec, mockChrExec)
@@ -250,7 +270,11 @@ func TestPostInstallPhaseExecute(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Fatalf("failed to close log: %v", err)
+		}
+	}()
 
 	cfg := config.NewConfig("test")
 	cfg.KernelChoice = "linux"
@@ -307,7 +331,11 @@ func TestPostInstallPhaseEncryptionHandling(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create logger: %v", err)
 			}
-			defer log.Close()
+			defer func() {
+				if err := log.Close(); err != nil {
+					t.Fatalf("failed to close log: %v", err)
+				}
+			}()
 
 			cfg := config.NewConfig("test")
 			cfg.EncryptionType = tt.encryptionType
@@ -380,7 +408,11 @@ func TestPostInstallPhaseFileSystemOperations(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create logger: %v", err)
 			}
-			defer log.Close()
+			defer func() {
+				if err := log.Close(); err != nil {
+					t.Fatalf("failed to close log: %v", err)
+				}
+			}()
 
 			cfg := config.NewConfig("test")
 			phase := NewPostInstallPhase(cfg, log, mockFS, mockHTTP, mockSysExec, mockChrExec)
@@ -433,7 +465,11 @@ func TestPostInstallPhaseKernelVerification(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create logger: %v", err)
 			}
-			defer log.Close()
+			defer func() {
+				if err := log.Close(); err != nil {
+					t.Fatalf("failed to close log: %v", err)
+				}
+			}()
 
 			cfg := config.NewConfig("test")
 			cfg.KernelChoice = tt.kernelChoice

@@ -62,20 +62,31 @@ func (s *Setup) Configure() (SetupResult, error) {
 	case err != nil:
 		return result, fmt.Errorf("failed to download logo.txt: %w", err)
 	case resp.StatusCode != http.StatusOK:
-		resp.Body.Close()
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			return result, fmt.Errorf("failed to close logo response: %w", closeErr)
+		}
 		return result, fmt.Errorf("failed to download logo.txt: HTTP %d", resp.StatusCode)
 	}
 
 	logoPath := filepath.Join(config.PathMntPostBoot, "logo.txt")
 	logoFile, err := s.fs.Create(logoPath)
 	if err != nil {
-		resp.Body.Close()
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			return result, fmt.Errorf("failed to close logo response: %w", closeErr)
+		}
 		return result, fmt.Errorf("failed to create logo.txt: %w", err)
 	}
 
 	_, err = io.Copy(logoFile, resp.Body)
-	logoFile.Close()
-	resp.Body.Close()
+	if closeErr := logoFile.Close(); closeErr != nil {
+		if respCloseErr := resp.Body.Close(); respCloseErr != nil {
+			return result, fmt.Errorf("failed to close logo response: %w", respCloseErr)
+		}
+		return result, fmt.Errorf("failed to close logo.txt: %w", closeErr)
+	}
+	if closeErr := resp.Body.Close(); closeErr != nil {
+		return result, fmt.Errorf("failed to close logo response: %w", closeErr)
+	}
 	if err != nil {
 		return result, fmt.Errorf("failed to save logo.txt: %w", err)
 	}
@@ -89,20 +100,31 @@ func (s *Setup) Configure() (SetupResult, error) {
 		case err != nil:
 			return result, fmt.Errorf("failed to download %s: %w", script, err)
 		case resp.StatusCode != http.StatusOK:
-			resp.Body.Close()
+			if closeErr := resp.Body.Close(); closeErr != nil {
+				return result, fmt.Errorf("failed to close %s response: %w", script, closeErr)
+			}
 			return result, fmt.Errorf("failed to download %s: HTTP %d", script, resp.StatusCode)
 		}
 
 		scriptPath := filepath.Join(config.PathMntPostBoot, script)
 		scriptFile, err := s.fs.Create(scriptPath)
 		if err != nil {
-			resp.Body.Close()
+			if closeErr := resp.Body.Close(); closeErr != nil {
+				return result, fmt.Errorf("failed to close %s response: %w", script, closeErr)
+			}
 			return result, fmt.Errorf("failed to create %s: %w", script, err)
 		}
 
 		_, err = io.Copy(scriptFile, resp.Body)
-		scriptFile.Close()
-		resp.Body.Close()
+		if closeErr := scriptFile.Close(); closeErr != nil {
+			if respCloseErr := resp.Body.Close(); respCloseErr != nil {
+				return result, fmt.Errorf("failed to close %s response: %w", script, respCloseErr)
+			}
+			return result, fmt.Errorf("failed to close %s: %w", script, closeErr)
+		}
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			return result, fmt.Errorf("failed to close %s response: %w", script, closeErr)
+		}
 
 		if err != nil {
 			return result, fmt.Errorf("failed to save %s: %w", script, err)
@@ -120,12 +142,16 @@ func (s *Setup) Configure() (SetupResult, error) {
 	case err != nil:
 		return result, fmt.Errorf("failed to download service template: %w", err)
 	case resp.StatusCode != http.StatusOK:
-		resp.Body.Close()
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			return result, fmt.Errorf("failed to close service response: %w", closeErr)
+		}
 		return result, fmt.Errorf("failed to download service template: HTTP %d", resp.StatusCode)
 	}
 
 	templateBytes, err := io.ReadAll(resp.Body)
-	resp.Body.Close()
+	if closeErr := resp.Body.Close(); closeErr != nil {
+		return result, fmt.Errorf("failed to close service response: %w", closeErr)
+	}
 	if err != nil {
 		return result, fmt.Errorf("failed to read service template: %w", err)
 	}

@@ -4,18 +4,18 @@
 help:
 	@echo "archup - Makefile targets:"
 	@echo ""
-	@echo "  make build          - Build archup-installer binary"
+	@echo "  make build          - Build archup binary"
 	@echo "  make check          - Run all checks (syntax + shellcheck)"
 	@echo "  make check-syntax   - Check shell script syntax with bash -n"
 	@echo "  make check-shellcheck - Run shellcheck linting"
 	@echo "  make clean          - Remove generated files"
 	@echo ""
 
-# Build archup-installer binary
+# Build archup binary
 build:
-	@echo "Building archup-installer..."
+	@echo "Building archup..."
 	goreleaser build --snapshot --clean --single-target
-	@echo "✓ Build complete: ./dist/archup-installer_linux_amd64_v1/archup-installer"
+	@echo "✓ Build complete: ./dist/archup_linux_amd64_v1/archup"
 
 # Run all checks
 check: check-syntax check-shellcheck

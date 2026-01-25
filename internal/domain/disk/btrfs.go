@@ -168,12 +168,12 @@ func (l *BtrfsLayout) GetRootSubvolume() *BtrfsSubvolume {
 func (l *BtrfsLayout) ValidateLayout() error {
 	// Must have at least one subvolume
 	if len(l.subvolumes) == 0 {
-		return errors.New("Btrfs layout must have at least one subvolume")
+		return errors.New("btrfs layout must have at least one subvolume")
 	}
 
 	// Must have a root subvolume
 	if !l.HasRootSubvolume() {
-		return errors.New("Btrfs layout must have a root (/) subvolume")
+		return errors.New("btrfs layout must have a root (/) subvolume")
 	}
 
 	// Root subvolume should be named @ by convention
@@ -225,10 +225,7 @@ func ValidateSubvolumeName(name string) error {
 
 	// Check characters after @
 	for i, ch := range name[1:] { // Skip the @
-		if !((ch >= 'a' && ch <= 'z') ||
-			(ch >= 'A' && ch <= 'Z') ||
-			(ch >= '0' && ch <= '9') ||
-			ch == '-' || ch == '_') {
+		if !isValidSubvolumeChar(ch) {
 			return fmt.Errorf("%w: invalid character at position %d: %c", ErrInvalidSubvolumeName, i+1, ch)
 		}
 	}
@@ -239,4 +236,19 @@ func ValidateSubvolumeName(name string) error {
 	}
 
 	return nil
+}
+
+func isValidSubvolumeChar(ch rune) bool {
+	switch {
+	case ch >= 'a' && ch <= 'z':
+		return true
+	case ch >= 'A' && ch <= 'Z':
+		return true
+	case ch >= '0' && ch <= '9':
+		return true
+	case ch == '-' || ch == '_':
+		return true
+	default:
+		return false
+	}
 }

@@ -111,14 +111,25 @@ func ValidateUsername(username string) error {
 
 	// Can contain lowercase, digits, underscore, hyphen
 	for _, ch := range username {
-		if !((ch >= 'a' && ch <= 'z') ||
-			(ch >= '0' && ch <= '9') ||
-			ch == '_' || ch == '-') {
+		if !isUsernameChar(ch) {
 			return errors.New("username contains invalid characters")
 		}
 	}
 
 	return nil
+}
+
+func isUsernameChar(ch rune) bool {
+	switch {
+	case ch >= 'a' && ch <= 'z':
+		return true
+	case ch >= '0' && ch <= '9':
+		return true
+	case ch == '_' || ch == '-':
+		return true
+	default:
+		return false
+	}
 }
 
 // ValidateShell validates shell path

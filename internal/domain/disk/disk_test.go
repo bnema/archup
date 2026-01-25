@@ -48,7 +48,7 @@ func TestNewEncryptionConfig_MissingPassword(t *testing.T) {
 }
 
 func TestNewEncryptionConfig_WeakPassword(t *testing.T) {
-	_, err := NewEncryptionConfig(EncryptionTypeLUKS, "weak")
+	_, err := NewEncryptionConfig(EncryptionTypeLUKS, "wee")
 
 	if err == nil {
 		t.Error("expected error for weak password")
@@ -250,7 +250,9 @@ func TestDisk_AddPartition_DuplicateMountPoint(t *testing.T) {
 	partition1, _ := NewPartition("/dev/sda1", 20*1024, FilesystemExt4, "/", false)
 	partition2, _ := NewPartition("/dev/sda2", 20*1024, FilesystemExt4, "/", false)
 
-	disk.AddPartition(partition1)
+	if err := disk.AddPartition(partition1); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 	err := disk.AddPartition(partition2)
 
 	if err == nil {
@@ -263,7 +265,9 @@ func TestDisk_AddPartition_ExceedsCapacity(t *testing.T) {
 	partition1, _ := NewPartition("/dev/sda1", 80*1024, FilesystemExt4, "/", false)
 	partition2, _ := NewPartition("/dev/sda2", 50*1024, FilesystemExt4, "/home", false)
 
-	disk.AddPartition(partition1)
+	if err := disk.AddPartition(partition1); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 	err := disk.AddPartition(partition2)
 
 	if err == nil {
@@ -274,7 +278,9 @@ func TestDisk_AddPartition_ExceedsCapacity(t *testing.T) {
 func TestDisk_FindPartitionByMountPoint(t *testing.T) {
 	disk, _ := NewDisk("/dev/sda", 500)
 	partition, _ := NewPartition("/dev/sda1", 20*1024, FilesystemExt4, "/", false)
-	disk.AddPartition(partition)
+	if err := disk.AddPartition(partition); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	found := disk.FindPartitionByMountPoint("/")
 	if found == nil {
@@ -294,7 +300,9 @@ func TestDisk_FindPartitionByMountPoint(t *testing.T) {
 func TestDisk_FindPartitionByDevice(t *testing.T) {
 	disk, _ := NewDisk("/dev/sda", 500)
 	partition, _ := NewPartition("/dev/sda1", 20*1024, FilesystemExt4, "/", false)
-	disk.AddPartition(partition)
+	if err := disk.AddPartition(partition); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	found := disk.FindPartitionByDevice("/dev/sda1")
 	if found == nil {
@@ -315,7 +323,9 @@ func TestDisk_HasRootPartition(t *testing.T) {
 	}
 
 	partition, _ := NewPartition("/dev/sda1", 20*1024, FilesystemExt4, "/", false)
-	disk.AddPartition(partition)
+	if err := disk.AddPartition(partition); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	if !disk.HasRootPartition() {
 		t.Error("expected to have root partition")
@@ -327,11 +337,15 @@ func TestDisk_ValidateLayout_Success(t *testing.T) {
 
 	// Add EFI partition
 	efi, _ := NewPartition("/dev/sda1", 512, FilesystemFAT32, "/boot/efi", false)
-	disk.AddPartition(efi)
+	if err := disk.AddPartition(efi); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	// Add root partition
 	root, _ := NewPartition("/dev/sda2", 50*1024, FilesystemExt4, "/", false)
-	disk.AddPartition(root)
+	if err := disk.AddPartition(root); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	err := disk.ValidateLayout()
 	if err != nil {
@@ -343,7 +357,9 @@ func TestDisk_ValidateLayout_MissingRoot(t *testing.T) {
 	disk, _ := NewDisk("/dev/sda", 500)
 
 	efi, _ := NewPartition("/dev/sda1", 512, FilesystemFAT32, "/boot/efi", false)
-	disk.AddPartition(efi)
+	if err := disk.AddPartition(efi); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	err := disk.ValidateLayout()
 	if err == nil {
@@ -355,7 +371,9 @@ func TestDisk_ValidateLayout_MissingEFI(t *testing.T) {
 	disk, _ := NewDisk("/dev/sda", 500)
 
 	root, _ := NewPartition("/dev/sda1", 50*1024, FilesystemExt4, "/", false)
-	disk.AddPartition(root)
+	if err := disk.AddPartition(root); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	err := disk.ValidateLayout()
 	if err == nil {
@@ -367,10 +385,14 @@ func TestDisk_ValidateLayout_RootTooSmall(t *testing.T) {
 	disk, _ := NewDisk("/dev/sda", 500)
 
 	efi, _ := NewPartition("/dev/sda1", 512, FilesystemFAT32, "/boot/efi", false)
-	disk.AddPartition(efi)
+	if err := disk.AddPartition(efi); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	root, _ := NewPartition("/dev/sda2", 10*1024, FilesystemExt4, "/", false)
-	disk.AddPartition(root)
+	if err := disk.AddPartition(root); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	err := disk.ValidateLayout()
 	if err == nil {
@@ -382,10 +404,14 @@ func TestDisk_ValidateLayout_EFIWrongFilesystem(t *testing.T) {
 	disk, _ := NewDisk("/dev/sda", 500)
 
 	efi, _ := NewPartition("/dev/sda1", 512, FilesystemExt4, "/boot/efi", false)
-	disk.AddPartition(efi)
+	if err := disk.AddPartition(efi); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	root, _ := NewPartition("/dev/sda2", 50*1024, FilesystemExt4, "/", false)
-	disk.AddPartition(root)
+	if err := disk.AddPartition(root); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	err := disk.ValidateLayout()
 	if err == nil {
@@ -397,10 +423,14 @@ func TestDisk_CalculateSpaces(t *testing.T) {
 	disk, _ := NewDisk("/dev/sda", 500)
 
 	efi, _ := NewPartition("/dev/sda1", 1*1024, FilesystemFAT32, "/boot/efi", false)
-	disk.AddPartition(efi)
+	if err := disk.AddPartition(efi); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	root, _ := NewPartition("/dev/sda2", 100*1024, FilesystemExt4, "/", false)
-	disk.AddPartition(root)
+	if err := disk.AddPartition(root); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	used := disk.CalculateUsedSpace()
 	if used != 101 { // 1GB + 100GB

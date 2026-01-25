@@ -13,13 +13,19 @@ func TestConfigureSystemHandler_Handle_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	mockFS := mocks.NewMockFileSystem(ctrl)
 	mockChrExec := mocks.NewMockChrootExecutor(ctrl)
 	mockLogger := mocks.NewMockLogger(ctrl)
 
 	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
 	mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().LogPath().Return("/var/log/archup-install.log").AnyTimes()
+	mockFS.EXPECT().WriteFile(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockChrExec.EXPECT().ExecuteInChrootWithStdin(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
-	handler := NewConfigureSystemHandler(mockChrExec, mockLogger)
+	handler := NewConfigureSystemHandler(mockFS, mockChrExec, mockLogger)
 
 	cmd := commands.ConfigureSystemCommand{
 		MountPoint:   "/mnt",
@@ -60,13 +66,14 @@ func TestConfigureSystemHandler_Handle_InvalidHostname(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	mockFS := mocks.NewMockFileSystem(ctrl)
 	mockChrExec := mocks.NewMockChrootExecutor(ctrl)
 	mockLogger := mocks.NewMockLogger(ctrl)
 
 	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
 	mockLogger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 
-	handler := NewConfigureSystemHandler(mockChrExec, mockLogger)
+	handler := NewConfigureSystemHandler(mockFS, mockChrExec, mockLogger)
 
 	cmd := commands.ConfigureSystemCommand{
 		MountPoint:   "/mnt",
@@ -95,13 +102,14 @@ func TestConfigureSystemHandler_Handle_InvalidUser(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	mockFS := mocks.NewMockFileSystem(ctrl)
 	mockChrExec := mocks.NewMockChrootExecutor(ctrl)
 	mockLogger := mocks.NewMockLogger(ctrl)
 
 	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
 	mockLogger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 
-	handler := NewConfigureSystemHandler(mockChrExec, mockLogger)
+	handler := NewConfigureSystemHandler(mockFS, mockChrExec, mockLogger)
 
 	cmd := commands.ConfigureSystemCommand{
 		MountPoint:   "/mnt",
@@ -130,13 +138,14 @@ func TestConfigureSystemHandler_Handle_InvalidPassword(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	mockFS := mocks.NewMockFileSystem(ctrl)
 	mockChrExec := mocks.NewMockChrootExecutor(ctrl)
 	mockLogger := mocks.NewMockLogger(ctrl)
 
 	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
 	mockLogger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 
-	handler := NewConfigureSystemHandler(mockChrExec, mockLogger)
+	handler := NewConfigureSystemHandler(mockFS, mockChrExec, mockLogger)
 
 	cmd := commands.ConfigureSystemCommand{
 		MountPoint:   "/mnt",

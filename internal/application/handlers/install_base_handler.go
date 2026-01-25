@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 
 	"github.com/bnema/archup/internal/application/commands"
 	"github.com/bnema/archup/internal/application/dto"
@@ -63,9 +64,27 @@ func (h *InstallBaseHandler) Handle(ctx context.Context, cmd commands.InstallBas
 	basePackages = append(basePackages, cmd.Packages...)
 
 	h.logger.Info("Installing base packages", "count", len(basePackages))
+	args := append([]string{cmd.MountPoint}, basePackages...)
+	if _, err := h.cmdExec.Execute(ctx, "pacstrap", args...); err != nil {
+		h.logger.Error("Pacstrap failed", "error", err)
+		result.ErrorDetail = fmt.Sprintf("Pacstrap failed: %v", err)
+		return result, err
+	}
 
-	// In a real implementation, this would run pacstrap
-	// For now, we just validate and return success
+	fstabOutput, err := h.cmdExec.Execute(ctx, "genfstab", "-U", cmd.MountPoint)
+	if err != nil {
+		h.logger.Error("Failed to generate fstab", "error", err)
+		result.ErrorDetail = fmt.Sprintf("Failed to generate fstab: %v", err)
+		return result, err
+	}
+
+	fstabPath := filepath.Join(cmd.MountPoint, "etc", "fstab")
+	if err := h.fs.WriteFile(fstabPath, fstabOutput, 0644); err != nil {
+		h.logger.Error("Failed to write fstab", "error", err)
+		result.ErrorDetail = fmt.Sprintf("Failed to write fstab: %v", err)
+		return result, err
+	}
+
 	result.PackagesInstalled = basePackages
 	result.Success = true
 

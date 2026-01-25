@@ -252,7 +252,9 @@ func TestBtrfsLayoutHasRootSubvolume(t *testing.T) {
 	}
 
 	root, _ := NewBtrfsSubvolume("@", "/")
-	layout.AddSubvolume(root)
+	if err := layout.AddSubvolume(root); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	if !layout.HasRootSubvolume() {
 		t.Error("layout with @ subvolume should have root subvolume")
@@ -270,7 +272,9 @@ func TestBtrfsLayoutValidateLayout(t *testing.T) {
 
 	// Layout without root should fail
 	home, _ := NewBtrfsSubvolume("@home", "/home")
-	layout.AddSubvolume(home)
+	if err := layout.AddSubvolume(home); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 	err = layout.ValidateLayout()
 	if err == nil {
 		t.Error("layout without root subvolume should fail validation")
@@ -279,7 +283,9 @@ func TestBtrfsLayoutValidateLayout(t *testing.T) {
 	// Layout with wrong root name should fail
 	wrongRoot, _ := NewBtrfsSubvolume("@root", "/")
 	layout2 := NewBtrfsLayout()
-	layout2.AddSubvolume(wrongRoot)
+	if err := layout2.AddSubvolume(wrongRoot); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 	err = layout2.ValidateLayout()
 	if err == nil {
 		t.Error("layout with wrong root name should fail validation")

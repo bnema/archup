@@ -1,6 +1,9 @@
 package bootloader
 
-import "errors"
+import (
+	"errors"
+	"strconv"
+)
 
 // BootloaderType represents the bootloader implementation
 type BootloaderType int
@@ -8,19 +11,11 @@ type BootloaderType int
 const (
 	// BootloaderTypeLimine is the Limine bootloader
 	BootloaderTypeLimine BootloaderType = iota
-
-	// BootloaderTypeSystemdBoot is systemd-boot
-	BootloaderTypeSystemdBoot
 )
 
 // String returns human-readable bootloader name
 func (b BootloaderType) String() string {
-	switch b {
-	case BootloaderTypeSystemdBoot:
-		return "systemd-boot"
-	default:
-		return "Limine"
-	}
+	return "Limine"
 }
 
 // Bootloader is an immutable value object representing bootloader configuration
@@ -84,14 +79,9 @@ func (b *Bootloader) IsLimine() bool {
 	return b.bootType == BootloaderTypeLimine
 }
 
-// IsSystemdBoot returns true if bootloader is systemd-boot
-func (b *Bootloader) IsSystemdBoot() bool {
-	return b.bootType == BootloaderTypeSystemdBoot
-}
-
 // String returns human-readable representation
 func (b *Bootloader) String() string {
-	return "Bootloader(type=" + b.bootType.String() + ", timeout=" + intToString(b.timeout) + "s)"
+	return "Bootloader(type=" + b.bootType.String() + ", timeout=" + strconv.Itoa(b.timeout) + "s)"
 }
 
 // Equals checks if two Bootloader objects are equal
@@ -102,20 +92,4 @@ func (b *Bootloader) Equals(other *Bootloader) bool {
 	return b.bootType == other.bootType &&
 		b.timeout == other.timeout &&
 		b.branding == other.branding
-}
-
-func intToString(n int) string {
-	if n == 0 {
-		return "0"
-	}
-	if n < 0 {
-		return "-" + intToString(-n)
-	}
-	digits := "0123456789"
-	var result string
-	for n > 0 {
-		result = string(digits[n%10]) + result
-		n /= 10
-	}
-	return result
 }

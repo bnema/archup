@@ -95,18 +95,13 @@ func CheckCPPCSupport() bool {
 		return false
 	}
 
-	switch {
-	case strings.Contains(string(data), "cppc"):
+	if strings.Contains(string(data), "cppc") {
 		return true
 	}
 
 	// Check if amd_pstate directory exists
 	_, err = os.Stat("/sys/devices/system/cpu/cpu0/cpufreq/amd_pstate")
-	if err == nil {
-		return true
-	}
-
-	return false
+	return err == nil
 }
 
 // DetectAMDPStateModes detects available AMD P-State modes
@@ -115,20 +110,16 @@ func DetectAMDPStateModes() []AMDPStateMode {
 
 	// Try to read available modes from sysfs
 	data, err := os.ReadFile("/sys/devices/system/cpu/amd_pstate/status")
-	switch {
-	case err == nil:
+	if err == nil {
 		// Parse available modes from status file
 		content := string(data)
-		switch {
-		case strings.Contains(content, "active"):
+		if strings.Contains(content, "active") {
 			modes = append(modes, AMDPStateModeActive)
 		}
-		switch {
-		case strings.Contains(content, "guided"):
+		if strings.Contains(content, "guided") {
 			modes = append(modes, AMDPStateModeGuided)
 		}
-		switch {
-		case strings.Contains(content, "passive"):
+		if strings.Contains(content, "passive") {
 			modes = append(modes, AMDPStateModePassive)
 		}
 

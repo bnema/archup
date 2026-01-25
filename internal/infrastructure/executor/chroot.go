@@ -45,9 +45,30 @@ func (ce *ChrootExecutor) ExecuteInChroot(ctx context.Context, chrootPath string
 	return stdout.Bytes(), nil
 }
 
+// ExecuteInChrootWithStdin runs a command inside a chroot with stdin
+func (ce *ChrootExecutor) ExecuteInChrootWithStdin(ctx context.Context, chrootPath string, stdin string, command string, args ...string) error {
+	if _, err := os.Stat(chrootPath); err != nil {
+		return fmt.Errorf("chroot path does not exist: %w", err)
+	}
+
+	allArgs := append([]string{chrootPath, command}, args...)
+	cmd := exec.CommandContext(ctx, "arch-chroot", allArgs...)
+	cmd.Stdin = bytes.NewBufferString(stdin)
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("chroot command failed: %w (stderr: %s)", err, stderr.String())
+	}
+
+	return nil
+}
+
 // ChrootSystemctl runs systemctl commands in chroot
 // This is a convenience method that ensures proper logging of systemctl operations
-func (ce *ChrootExecutor) ChrootSystemctl(logPath string, chrootPath string, args ...string) error {
+func (ce *ChrootExecutor) ChrootSystemctl(ctx context.Context, logPath string, chrootPath string, args ...string) error {
 	// Verify paths exist
 	if _, err := os.Stat(chrootPath); err != nil {
 		return fmt.Errorf("chroot path does not exist: %w", err)
@@ -61,7 +82,7 @@ func (ce *ChrootExecutor) ChrootSystemctl(logPath string, chrootPath string, arg
 
 	// Build chroot command with systemctl
 	allArgs := append([]string{chrootPath, "systemctl"}, args...)
-	cmd := exec.Command("arch-chroot", allArgs...)
+	cmd := exec.CommandContext(ctx, "arch-chroot", allArgs...)
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -74,8 +95,13 @@ func (ce *ChrootExecutor) ChrootSystemctl(logPath string, chrootPath string, arg
 		if logPath != "" {
 			logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 			if err == nil {
-				defer logFile.Close()
-				logFile.WriteString(errMsg + "\n")
+				if _, writeErr := logFile.WriteString(errMsg + "\n"); writeErr != nil {
+					_ = logFile.Close()
+					return fmt.Errorf("%s (failed to write log: %v)", errMsg, writeErr)
+				}
+				if closeErr := logFile.Close(); closeErr != nil {
+					return fmt.Errorf("%s (failed to close log: %v)", errMsg, closeErr)
+				}
 			}
 		}
 
@@ -86,8 +112,13 @@ func (ce *ChrootExecutor) ChrootSystemctl(logPath string, chrootPath string, arg
 	if logPath != "" {
 		logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 		if err == nil {
-			defer logFile.Close()
-			logFile.WriteString(fmt.Sprintf("systemctl %v executed successfully\n", args))
+			if _, writeErr := fmt.Fprintf(logFile, "systemctl %v executed successfully\n", args); writeErr != nil {
+				_ = logFile.Close()
+				return fmt.Errorf("failed to write log: %w", writeErr)
+			}
+			if closeErr := logFile.Close(); closeErr != nil {
+				return fmt.Errorf("failed to close log: %w", closeErr)
+			}
 		}
 	}
 

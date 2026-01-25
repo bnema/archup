@@ -54,7 +54,11 @@ func TestPartitioningPhasePreCheck(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create logger: %v", err)
 			}
-			defer log.Close()
+			defer func() {
+				if err := log.Close(); err != nil {
+					t.Fatalf("failed to close log: %v", err)
+				}
+			}()
 
 			cfg := config.NewConfig("test")
 			cfg.TargetDisk = tt.targetDisk
@@ -116,7 +120,11 @@ func TestPartitioningPhasePartitionNaming(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create logger: %v", err)
 			}
-			defer log.Close()
+			defer func() {
+				if err := log.Close(); err != nil {
+					t.Fatalf("failed to close log: %v", err)
+				}
+			}()
 
 			cfg := config.NewConfig("test")
 			cfg.TargetDisk = tt.targetDisk
@@ -175,7 +183,11 @@ func TestPartitioningPhaseFormatRoot(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create logger: %v", err)
 			}
-			defer log.Close()
+			defer func() {
+				if err := log.Close(); err != nil {
+					t.Fatalf("failed to close log: %v", err)
+				}
+			}()
 
 			cfg := config.NewConfig("test")
 			cfg.TargetDisk = "/dev/sda"
@@ -235,7 +247,11 @@ func TestPartitioningPhaseEncryptionValidation(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create logger: %v", err)
 			}
-			defer log.Close()
+			defer func() {
+				if err := log.Close(); err != nil {
+					t.Fatalf("failed to close log: %v", err)
+				}
+			}()
 
 			cfg := config.NewConfig("test")
 			cfg.TargetDisk = "/dev/sda"
@@ -252,6 +268,7 @@ func TestPartitioningPhaseEncryptionValidation(t *testing.T) {
 					// Empty password for encryption - should fail in actual execution
 					if phase.config.EncryptionType != config.EncryptionNone {
 						// Password is required for encryption
+						t.Log("password required for encryption")
 					}
 				}
 			}
@@ -299,7 +316,11 @@ func TestPartitioningPhasePostCheck(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create logger: %v", err)
 			}
-			defer log.Close()
+			defer func() {
+				if err := log.Close(); err != nil {
+					t.Fatalf("failed to close log: %v", err)
+				}
+			}()
 
 			cfg := config.NewConfig("test")
 			cfg.ConfigPath = filepath.Join(tmpDir, "config")
@@ -380,7 +401,11 @@ func TestPartitioningPhaseRollback(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create logger: %v", err)
 			}
-			defer log.Close()
+			defer func() {
+				if err := log.Close(); err != nil {
+					t.Fatalf("failed to close log: %v", err)
+				}
+			}()
 
 			cfg := config.NewConfig("test")
 			cfg.EncryptionType = tt.encryption
@@ -409,7 +434,11 @@ func TestPartitioningPhaseCanSkip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Fatalf("failed to close log: %v", err)
+		}
+	}()
 
 	cfg := config.NewConfig("test")
 	phase := NewPartitioningPhase(cfg, log, mockSysExec)
@@ -432,7 +461,11 @@ func TestPartitioningPhaseExecute(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Fatalf("failed to close log: %v", err)
+		}
+	}()
 
 	cfg := config.NewConfig("test")
 	cfg.TargetDisk = "/dev/sda"
@@ -497,7 +530,11 @@ func TestPartitioningPhaseDeviceHandling(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create logger: %v", err)
 			}
-			defer log.Close()
+			defer func() {
+				if err := log.Close(); err != nil {
+					t.Fatalf("failed to close log: %v", err)
+				}
+			}()
 
 			cfg := config.NewConfig("test")
 			cfg.EncryptionType = tt.encryptionType

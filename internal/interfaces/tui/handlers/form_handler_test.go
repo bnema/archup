@@ -11,8 +11,7 @@ func TestHandleFormUpdate_Navigation(t *testing.T) {
 	fm := models.NewFormModel()
 
 	// Test down navigation
-	downKey := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}}
-	downKey = tea.KeyMsg{Type: tea.KeyDown}
+	downKey := tea.KeyMsg{Type: tea.KeyDown}
 	_, _ = HandleFormUpdate(fm, downKey)
 
 	// The handler would call focusNext()

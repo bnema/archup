@@ -1,6 +1,10 @@
 package disk
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/bnema/archup/internal/domain/user"
+)
 
 // EncryptionType represents the disk encryption method
 type EncryptionType int
@@ -97,17 +101,8 @@ func (e *EncryptionConfig) Equals(other *EncryptionConfig) bool {
 // Private helper functions
 
 func validateEncryptionPassword(password string) error {
-	// Minimum length 8 characters
-	if len(password) < 8 {
-		return errors.New("encryption password must be at least 8 characters")
-	}
-
-	// Maximum length 512 characters (reasonable limit)
-	if len(password) > 512 {
-		return errors.New("encryption password cannot exceed 512 characters")
-	}
-
-	return nil
+	// Delegate to user password validation (single source of truth)
+	return user.ValidatePassword(password)
 }
 
 // constantTimeEqual compares two strings in constant time to prevent timing attacks

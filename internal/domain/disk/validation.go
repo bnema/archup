@@ -127,7 +127,7 @@ func IsDiskPath(path string) bool {
 	}
 
 	lastChar := path[len(path)-1]
-	return !(lastChar >= '0' && lastChar <= '9')
+	return lastChar < '0' || lastChar > '9'
 }
 
 // ExtractDiskFromPartition extracts the disk path from a partition path

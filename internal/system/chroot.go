@@ -1,3 +1,4 @@
+//nolint:errcheck
 package system
 
 import (
@@ -56,8 +57,14 @@ func ChrootExecWithOutputAndContext(ctx context.Context, logPath, mountPoint, co
 	if logPath != "" {
 		logFile, logErr := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if logErr == nil {
-			defer logFile.Close()
-			logFile.Write(output)
+			defer func() {
+				if err := logFile.Close(); err != nil {
+					fmt.Fprintf(os.Stderr, "failed to close log file: %v\n", err)
+				}
+			}()
+			if _, err := logFile.Write(output); err != nil {
+				fmt.Fprintf(os.Stderr, "failed to write log file: %v\n", err)
+			}
 		}
 	}
 
@@ -81,7 +88,11 @@ func ChrootExecWithContext(ctx context.Context, logPath, mountPoint, command str
 	if logPath != "" {
 		logFile, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err == nil {
-			defer logFile.Close()
+			defer func() {
+				if closeErr := logFile.Close(); closeErr != nil {
+					fmt.Fprintf(os.Stderr, "failed to close log file: %v\n", closeErr)
+				}
+			}()
 			cmd.Stdout = logFile
 			cmd.Stderr = logFile
 		}
@@ -114,7 +125,11 @@ func ChrootExecWithStdin(logPath, mountPoint, command, stdin string) error {
 	if logPath != "" {
 		logFile, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err == nil {
-			defer logFile.Close()
+			defer func() {
+				if closeErr := logFile.Close(); closeErr != nil {
+					fmt.Fprintf(os.Stderr, "failed to close log file: %v\n", closeErr)
+				}
+			}()
 			cmd.Stdout = logFile
 			cmd.Stderr = logFile
 		}
@@ -129,7 +144,9 @@ func ChrootExecWithStdin(logPath, mountPoint, command, stdin string) error {
 	if _, err := stdinPipe.Write([]byte(stdin)); err != nil {
 		return fmt.Errorf("failed to write to stdin: %w", err)
 	}
-	stdinPipe.Close()
+	if err := stdinPipe.Close(); err != nil {
+		return fmt.Errorf("failed to close stdin: %w", err)
+	}
 
 	// Wait for command to complete
 	if err := cmd.Wait(); err != nil {
@@ -258,7 +275,9 @@ func BeginSessionWithContext(ctx context.Context, logPath, mountPoint string) (*
 	// Start the command
 	if err := cmd.Start(); err != nil {
 		if logFile != nil {
-			logFile.Close()
+			if closeErr := logFile.Close(); closeErr != nil {
+				fmt.Fprintf(os.Stderr, "failed to close log file: %v\n", closeErr)
+			}
 		}
 		cancel()
 		return nil, fmt.Errorf("failed to start chroot session: %w", err)
@@ -294,8 +313,12 @@ func (s *DefaultChrootSession) handleOutput() {
 		if n > 0 {
 			data := string(buf[:n])
 			if s.logFile != nil {
-				s.logFile.WriteString(data)
-				s.logFile.Sync()
+				if _, err := s.logFile.WriteString(data); err != nil {
+					fmt.Fprintf(os.Stderr, "failed to write log file: %v\n", err)
+				}
+				if err := s.logFile.Sync(); err != nil {
+					fmt.Fprintf(os.Stderr, "failed to sync log file: %v\n", err)
+				}
 			}
 			s.outputChan <- data
 		}
@@ -314,8 +337,12 @@ func (s *DefaultChrootSession) handleError() {
 		if n > 0 {
 			data := string(buf[:n])
 			if s.logFile != nil {
-				s.logFile.WriteString(data)
-				s.logFile.Sync()
+				if _, err := s.logFile.WriteString(data); err != nil {
+					fmt.Fprintf(os.Stderr, "failed to write log file: %v\n", err)
+				}
+				if err := s.logFile.Sync(); err != nil {
+					fmt.Fprintf(os.Stderr, "failed to sync log file: %v\n", err)
+				}
 			}
 		}
 		if err != nil {
@@ -408,8 +435,12 @@ func (s *DefaultChrootSession) Close() error {
 
 	// Send exit command
 	if s.stdin != nil {
-		s.stdin.WriteString("exit\n")
-		s.stdin.Close()
+		if _, err := s.stdin.WriteString("exit\n"); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to write exit to stdin: %v\n", err)
+		}
+		if err := s.stdin.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to close stdin: %v\n", err)
+		}
 	}
 
 	// Wait for the command to finish with timeout
@@ -422,7 +453,9 @@ func (s *DefaultChrootSession) Close() error {
 	case <-time.After(5 * time.Second):
 		// Force kill if it doesn't exit gracefully
 		if s.cmd.Process != nil {
-			s.cmd.Process.Kill()
+			if err := s.cmd.Process.Kill(); err != nil {
+				fmt.Fprintf(os.Stderr, "failed to kill process: %v\n", err)
+			}
 		}
 	case <-done:
 		// Command exited normally
@@ -430,13 +463,19 @@ func (s *DefaultChrootSession) Close() error {
 
 	// Close pipes and log file
 	if s.stdoutPipe != nil {
-		s.stdoutPipe.Close()
+		if err := s.stdoutPipe.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to close stdout pipe: %v\n", err)
+		}
 	}
 	if s.stderrPipe != nil {
-		s.stderrPipe.Close()
+		if err := s.stderrPipe.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to close stderr pipe: %v\n", err)
+		}
 	}
 	if s.logFile != nil {
-		s.logFile.Close()
+		if err := s.logFile.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to close log file: %v\n", err)
+		}
 	}
 
 	// Cancel context

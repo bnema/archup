@@ -84,7 +84,9 @@ func TestOrchestratorRegistration(t *testing.T) {
 		phase1 := newTestPhase("duplicate", cfg)
 		phase2 := newTestPhase("duplicate", cfg)
 
-		orch2.RegisterPhase(phase1)
+		if err := orch2.RegisterPhase(phase1); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
 		err := orch2.RegisterPhase(phase2)
 		if err == nil {
 			t.Error("Expected error for duplicate phase name, got nil")
@@ -98,7 +100,9 @@ func TestOrchestratorCurrentPhase(t *testing.T) {
 	orch := NewOrchestrator(cfg, "test.log")
 
 	phase := newTestPhase("test", cfg)
-	orch.RegisterPhase(phase)
+	if err := orch.RegisterPhase(phase); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	// Before execution, current should be nil
 	if orch.CurrentPhase() != nil {
@@ -106,7 +110,9 @@ func TestOrchestratorCurrentPhase(t *testing.T) {
 	}
 
 	// After executing, current should be set
-	orch.ExecutePhase(phase)
+	if err := orch.ExecutePhase(phase); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 	current := orch.CurrentPhase()
 	if current == nil {
 		t.Error("CurrentPhase should not be nil after execution")
@@ -125,9 +131,15 @@ func TestOrchestratorNextPhase(t *testing.T) {
 	phase2 := newTestPhase("phase-2", cfg)
 	phase3 := newTestPhase("phase-3", cfg)
 
-	orch.RegisterPhase(phase1)
-	orch.RegisterPhase(phase2)
-	orch.RegisterPhase(phase3)
+	if err := orch.RegisterPhase(phase1); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if err := orch.RegisterPhase(phase2); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if err := orch.RegisterPhase(phase3); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	// Next should be phase-1
 	next := orch.NextPhase()
@@ -169,7 +181,9 @@ func TestOrchestratorExecutePhaseSuccess(t *testing.T) {
 	orch := NewOrchestrator(cfg, "test.log")
 
 	phase := newTestPhase("test", cfg)
-	orch.RegisterPhase(phase)
+	if err := orch.RegisterPhase(phase); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	err := orch.ExecutePhase(phase)
 	if err != nil {
@@ -188,7 +202,9 @@ func TestOrchestratorExecutePhasePreCheckFails(t *testing.T) {
 
 	phase := newTestPhase("test", cfg)
 	phase.preCheckErr = fmt.Errorf("precondition failed")
-	orch.RegisterPhase(phase)
+	if err := orch.RegisterPhase(phase); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	err := orch.ExecutePhase(phase)
 	if err == nil {
@@ -207,7 +223,9 @@ func TestOrchestratorExecutePhaseExecuteFails(t *testing.T) {
 
 	phase := newTestPhase("test", cfg)
 	phase.executeErr = fmt.Errorf("execution failed")
-	orch.RegisterPhase(phase)
+	if err := orch.RegisterPhase(phase); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	err := orch.ExecutePhase(phase)
 	if err == nil {
@@ -227,7 +245,9 @@ func TestOrchestratorExecutePhaseRollbackFails(t *testing.T) {
 	phase := newTestPhase("test", cfg)
 	phase.executeErr = fmt.Errorf("execution failed")
 	phase.rollbackErr = fmt.Errorf("rollback also failed")
-	orch.RegisterPhase(phase)
+	if err := orch.RegisterPhase(phase); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	err := orch.ExecutePhase(phase)
 	if err == nil {
@@ -246,7 +266,9 @@ func TestOrchestratorExecutePhasePostCheckFails(t *testing.T) {
 
 	phase := newTestPhase("test", cfg)
 	phase.postCheckErr = fmt.Errorf("validation failed")
-	orch.RegisterPhase(phase)
+	if err := orch.RegisterPhase(phase); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	err := orch.ExecutePhase(phase)
 	if err == nil {
@@ -266,7 +288,9 @@ func TestOrchestratorSkipPhase(t *testing.T) {
 	t.Run("skip skippable phase", func(t *testing.T) {
 		phase := newTestPhase("skippable", cfg)
 		phase.canSkip = true
-		orch.RegisterPhase(phase)
+		if err := orch.RegisterPhase(phase); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
 
 		err := orch.SkipPhase(phase)
 		if err != nil {
@@ -282,7 +306,9 @@ func TestOrchestratorSkipPhase(t *testing.T) {
 		orch2 := NewOrchestrator(cfg, "test.log")
 		phase := newTestPhase("non-skippable", cfg)
 		phase.canSkip = false
-		orch2.RegisterPhase(phase)
+		if err := orch2.RegisterPhase(phase); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
 
 		err := orch2.SkipPhase(phase)
 		if err == nil {
@@ -300,9 +326,15 @@ func TestOrchestratorProgress(t *testing.T) {
 	phase2 := newTestPhase("phase-2", cfg)
 	phase3 := newTestPhase("phase-3", cfg)
 
-	orch.RegisterPhase(phase1)
-	orch.RegisterPhase(phase2)
-	orch.RegisterPhase(phase3)
+	if err := orch.RegisterPhase(phase1); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if err := orch.RegisterPhase(phase2); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if err := orch.RegisterPhase(phase3); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	// Initially all pending
 	completed, total := orch.Progress()
@@ -317,7 +349,7 @@ func TestOrchestratorProgress(t *testing.T) {
 	phase1.SetStatus(StatusCompleted)
 	phase2.SetStatus(StatusSkipped)
 
-	completed, total = orch.Progress()
+	completed, _ = orch.Progress()
 	if completed != 2 {
 		t.Errorf("Completed = %d, want 2 (completed + skipped)", completed)
 	}
@@ -331,7 +363,9 @@ func TestOrchestratorIsComplete(t *testing.T) {
 		orch := NewOrchestrator(cfg, "test.log")
 		phase := newTestPhase("test", cfg)
 		phase.SetStatus(StatusCompleted)
-		orch.RegisterPhase(phase)
+		if err := orch.RegisterPhase(phase); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
 
 		if !orch.IsComplete() {
 			t.Error("IsComplete should be true when all phases completed")
@@ -342,7 +376,9 @@ func TestOrchestratorIsComplete(t *testing.T) {
 		orch := NewOrchestrator(cfg, "test.log")
 		phase := newTestPhase("test", cfg)
 		phase.SetStatus(StatusSkipped)
-		orch.RegisterPhase(phase)
+		if err := orch.RegisterPhase(phase); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
 
 		if !orch.IsComplete() {
 			t.Error("IsComplete should be true when all phases skipped")
@@ -352,7 +388,9 @@ func TestOrchestratorIsComplete(t *testing.T) {
 	t.Run("with pending", func(t *testing.T) {
 		orch := NewOrchestrator(cfg, "test.log")
 		phase := newTestPhase("test", cfg)
-		orch.RegisterPhase(phase)
+		if err := orch.RegisterPhase(phase); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
 
 		if orch.IsComplete() {
 			t.Error("IsComplete should be false with pending phases")
@@ -368,7 +406,9 @@ func TestOrchestratorHasFailed(t *testing.T) {
 		orch := NewOrchestrator(cfg, "test.log")
 		phase := newTestPhase("test", cfg)
 		phase.SetStatus(StatusCompleted)
-		orch.RegisterPhase(phase)
+		if err := orch.RegisterPhase(phase); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
 
 		if orch.HasFailed() {
 			t.Error("HasFailed should be false when no phases failed")
@@ -379,7 +419,9 @@ func TestOrchestratorHasFailed(t *testing.T) {
 		orch := NewOrchestrator(cfg, "test.log")
 		phase := newTestPhase("test", cfg)
 		phase.SetStatus(StatusFailed)
-		orch.RegisterPhase(phase)
+		if err := orch.RegisterPhase(phase); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
 
 		if !orch.HasFailed() {
 			t.Error("HasFailed should be true when phase failed")
@@ -398,11 +440,17 @@ func TestOrchestratorReset(t *testing.T) {
 	phase1.SetStatus(StatusCompleted)
 	phase2.SetStatus(StatusFailed)
 
-	orch.RegisterPhase(phase1)
-	orch.RegisterPhase(phase2)
+	if err := orch.RegisterPhase(phase1); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if err := orch.RegisterPhase(phase2); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	// Execute to set currentIdx
-	orch.ExecutePhase(phase1)
+	if err := orch.ExecutePhase(phase1); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	// Reset
 	orch.Reset()
@@ -430,9 +478,15 @@ func TestOrchestratorExecuteAll(t *testing.T) {
 	phase2 := newTestPhase("phase-2", cfg)
 	phase3 := newTestPhase("phase-3", cfg)
 
-	orch.RegisterPhase(phase1)
-	orch.RegisterPhase(phase2)
-	orch.RegisterPhase(phase3)
+	if err := orch.RegisterPhase(phase1); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if err := orch.RegisterPhase(phase2); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if err := orch.RegisterPhase(phase3); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	err := orch.ExecuteAll()
 	if err != nil {
@@ -463,9 +517,15 @@ func TestOrchestratorExecuteAllStopsOnFailure(t *testing.T) {
 	// Make phase-2 fail
 	phase2.executeErr = fmt.Errorf("execution failed")
 
-	orch.RegisterPhase(phase1)
-	orch.RegisterPhase(phase2)
-	orch.RegisterPhase(phase3)
+	if err := orch.RegisterPhase(phase1); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if err := orch.RegisterPhase(phase2); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if err := orch.RegisterPhase(phase3); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	err := orch.ExecuteAll()
 	if err == nil {
@@ -494,7 +554,9 @@ func TestOrchestratorExecuteNext(t *testing.T) {
 	orch := NewOrchestrator(cfg, "test.log")
 
 	phase := newTestPhase("test", cfg)
-	orch.RegisterPhase(phase)
+	if err := orch.RegisterPhase(phase); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	err := orch.ExecuteNext()
 	if err != nil {
@@ -513,7 +575,9 @@ func TestOrchestratorExecuteNextNoPending(t *testing.T) {
 
 	phase := newTestPhase("test", cfg)
 	phase.SetStatus(StatusCompleted)
-	orch.RegisterPhase(phase)
+	if err := orch.RegisterPhase(phase); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	err := orch.ExecuteNext()
 	if err == nil {
@@ -527,7 +591,9 @@ func TestOrchestratorPhaseDurations(t *testing.T) {
 	orch := NewOrchestrator(cfg, "test.log")
 
 	phase := newTestPhase("test", cfg)
-	orch.RegisterPhase(phase)
+	if err := orch.RegisterPhase(phase); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	err := orch.ExecutePhase(phase)
 	if err != nil {

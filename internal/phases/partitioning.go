@@ -91,10 +91,10 @@ func (p *PartitioningPhase) createPartitions(progressChan chan<- ProgressUpdate)
 
 	p.SendOutput(progressChan, "Creating GPT partition table...")
 
-	// Create partitions: 512MB EFI + remaining ROOT
+	// Create partitions: 4GB EFI + remaining ROOT (4GB recommended for limine-snapper-sync)
 	result = p.logger.ExecCommand("sgdisk",
 		"--clear",
-		"--new=1:0:+512M", "--typecode=1:ef00", "--change-name=1:EFI",
+		"--new=1:0:+4G", "--typecode=1:ef00", "--change-name=1:EFI",
 		"--new=2:0:0", "--typecode=2:8300", "--change-name=2:ROOT",
 		disk)
 
@@ -122,7 +122,7 @@ func (p *PartitioningPhase) createPartitions(progressChan chan<- ProgressUpdate)
 	p.config.EFIPartition = efiPart
 	p.config.RootPartition = rootPart
 
-	p.SendOutput(progressChan, fmt.Sprintf("[OK] EFI: %s (512MB)", efiPart))
+	p.SendOutput(progressChan, fmt.Sprintf("[OK] EFI: %s (4GB)", efiPart))
 	p.SendOutput(progressChan, fmt.Sprintf("[OK] Root: %s", rootPart))
 
 	return nil

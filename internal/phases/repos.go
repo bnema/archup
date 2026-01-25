@@ -225,7 +225,6 @@ func (p *ReposPhase) loadChaoticConfig() error {
 	if err != nil {
 		return fmt.Errorf("failed to open chaotic config: %w", err)
 	}
-	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
@@ -247,7 +246,12 @@ func (p *ReposPhase) loadChaoticConfig() error {
 	}
 
 	if err := scanner.Err(); err != nil {
+		_ = file.Close()
 		return fmt.Errorf("error reading chaotic config: %w", err)
+	}
+
+	if err := file.Close(); err != nil {
+		return fmt.Errorf("failed to close chaotic config: %w", err)
 	}
 
 	return nil
@@ -459,7 +463,6 @@ func (p *ReposPhase) loadExtraPackages() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open %s: %w", packageFile, err)
 	}
-	defer file.Close()
 
 	var packages []string
 	scanner := bufio.NewScanner(file)
@@ -479,7 +482,12 @@ func (p *ReposPhase) loadExtraPackages() ([]string, error) {
 	}
 
 	if err := scanner.Err(); err != nil {
+		_ = file.Close()
 		return nil, fmt.Errorf("error reading package file: %w", err)
+	}
+
+	if err := file.Close(); err != nil {
+		return nil, fmt.Errorf("failed to close %s: %w", packageFile, err)
 	}
 
 	return packages, nil

@@ -74,7 +74,6 @@ func TestBootloaderType_String(t *testing.T) {
 		want  string
 	}{
 		{BootloaderTypeLimine, "Limine"},
-		{BootloaderTypeSystemdBoot, "systemd-boot"},
 	}
 
 	for _, tt := range tests {
@@ -86,41 +85,18 @@ func TestBootloaderType_String(t *testing.T) {
 
 func TestBootloader_IsLimine(t *testing.T) {
 	limine, _ := NewBootloader(BootloaderTypeLimine, 0, "Test")
-	systemd, _ := NewBootloader(BootloaderTypeSystemdBoot, 0, "Test")
 
 	if !limine.IsLimine() {
 		t.Error("expected Limine")
-	}
-
-	if systemd.IsLimine() {
-		t.Error("expected not Limine")
-	}
-}
-
-func TestBootloader_IsSystemdBoot(t *testing.T) {
-	limine, _ := NewBootloader(BootloaderTypeLimine, 0, "Test")
-	systemd, _ := NewBootloader(BootloaderTypeSystemdBoot, 0, "Test")
-
-	if limine.IsSystemdBoot() {
-		t.Error("expected not systemd-boot")
-	}
-
-	if !systemd.IsSystemdBoot() {
-		t.Error("expected systemd-boot")
 	}
 }
 
 func TestBootloader_Equals(t *testing.T) {
 	b1, _ := NewBootloader(BootloaderTypeLimine, 0, "Test")
 	b2, _ := NewBootloader(BootloaderTypeLimine, 0, "Test")
-	b3, _ := NewBootloader(BootloaderTypeSystemdBoot, 0, "Test")
 
 	if !b1.Equals(b2) {
 		t.Error("expected equal bootloaders")
-	}
-
-	if b1.Equals(b3) {
-		t.Error("expected different bootloaders")
 	}
 
 	if b1.Equals(nil) {

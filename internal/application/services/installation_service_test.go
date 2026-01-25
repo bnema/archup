@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
 	"github.com/bnema/archup/internal/application/commands"
@@ -9,15 +10,25 @@ import (
 	"github.com/bnema/archup/internal/domain/bootloader"
 	"github.com/bnema/archup/internal/domain/disk"
 	"github.com/bnema/archup/internal/domain/packages"
+	"github.com/bnema/archup/internal/domain/ports"
 	"github.com/bnema/archup/internal/domain/ports/mocks"
 	"go.uber.org/mock/gomock"
 )
+
+func newMockResponse(ctrl *gomock.Controller, statusCode int, body []byte) ports.Response {
+	resp := mocks.NewMockResponse(ctrl)
+	resp.EXPECT().StatusCode().Return(statusCode).AnyTimes()
+	resp.EXPECT().Body().Return(body).AnyTimes()
+	resp.EXPECT().Close().Return(nil).AnyTimes()
+	return resp
+}
 
 func createTestService(ctrl *gomock.Controller) *InstallationService {
 	mockFS := mocks.NewMockFileSystem(ctrl)
 	mockExec := mocks.NewMockCommandExecutor(ctrl)
 	mockChrExec := mocks.NewMockChrootExecutor(ctrl)
 	mockScriptExec := mocks.NewMockScriptExecutor(ctrl)
+	mockHTTP := mocks.NewMockHTTPClient(ctrl)
 	mockRepo := mocks.NewMockInstallationRepository(ctrl)
 	mockLogger := mocks.NewMockLogger(ctrl)
 
@@ -25,16 +36,33 @@ func createTestService(ctrl *gomock.Controller) *InstallationService {
 	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
 	mockLogger.EXPECT().Warn(gomock.Any()).AnyTimes()
 	mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
-	mockExec.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
-	mockFS.EXPECT().Exists(gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().LogPath().Return("/var/log/archup-install.log").AnyTimes()
+	mockExec.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockExec.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockExec.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockExec.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockExec.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockExec.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockExec.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockFS.EXPECT().Exists(gomock.Any()).Return(true, nil).AnyTimes()
+	mockFS.EXPECT().ReadFile(gomock.Any()).Return([]byte("HOOKS=(base)\n"), nil).AnyTimes()
+	mockFS.EXPECT().WriteFile(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockFS.EXPECT().MkdirAll(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockFS.EXPECT().Chmod(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockHTTP.EXPECT().Get(gomock.Any()).Return(newMockResponse(ctrl, http.StatusOK, []byte("content")), nil).AnyTimes()
+	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockChrExec.EXPECT().ExecuteInChrootWithStdin(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 	preflightHandler := handlers.NewPreflightHandler(mockFS, mockExec, mockLogger)
 	partitionHandler := handlers.NewPartitionHandler(mockExec, mockLogger)
 	baseHandler := handlers.NewInstallBaseHandler(mockFS, mockExec, mockChrExec, mockLogger)
-	configHandler := handlers.NewConfigureSystemHandler(mockChrExec, mockLogger)
-	bootloaderHandler := handlers.NewBootloaderHandler(mockChrExec, mockLogger)
-	reposHandler := handlers.NewReposHandler(mockChrExec, mockLogger)
-	postInstallHandler := handlers.NewPostInstallHandler(mockChrExec, mockScriptExec, mockLogger)
+	configHandler := handlers.NewConfigureSystemHandler(mockFS, mockChrExec, mockLogger)
+	bootloaderHandler := handlers.NewBootloaderHandler(mockFS, mockExec, mockChrExec, mockLogger)
+	reposHandler := handlers.NewReposHandler(mockFS, mockChrExec, mockLogger)
+	postInstallHandler := handlers.NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger)
 
 	return NewInstallationService(
 		mockRepo,
@@ -54,7 +82,11 @@ func TestInstallationService_Start(t *testing.T) {
 	defer ctrl.Finish()
 
 	service := createTestService(ctrl)
-	defer service.Close()
+	defer func() {
+		if err := service.Close(); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+	}()
 
 	ctx := context.Background()
 	err := service.Start(ctx, "myarch", "testuser", "/dev/sda", "none")
@@ -80,23 +112,47 @@ func TestInstallationService_Start_InvalidHostname(t *testing.T) {
 	mockExec := mocks.NewMockCommandExecutor(ctrl)
 	mockChrExec := mocks.NewMockChrootExecutor(ctrl)
 	mockScriptExec := mocks.NewMockScriptExecutor(ctrl)
+	mockHTTP := mocks.NewMockHTTPClient(ctrl)
 	mockRepo := mocks.NewMockInstallationRepository(ctrl)
 	mockLogger := mocks.NewMockLogger(ctrl)
 
 	mockLogger.EXPECT().Info(gomock.Any()).AnyTimes()
 	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
 	mockLogger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
+	mockLogger.EXPECT().LogPath().Return("/var/log/archup-install.log").AnyTimes()
+	mockExec.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockExec.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockExec.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockExec.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockExec.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockExec.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockExec.EXPECT().Execute(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockFS.EXPECT().Exists(gomock.Any()).Return(true, nil).AnyTimes()
+	mockFS.EXPECT().ReadFile(gomock.Any()).Return([]byte("HOOKS=(base)\n"), nil).AnyTimes()
+	mockFS.EXPECT().WriteFile(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockFS.EXPECT().MkdirAll(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockFS.EXPECT().Chmod(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockHTTP.EXPECT().Get(gomock.Any()).Return(newMockResponse(ctrl, http.StatusOK, []byte("content")), nil).AnyTimes()
+	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockChrExec.EXPECT().ExecuteInChrootWithStdin(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 	preflightHandler := handlers.NewPreflightHandler(mockFS, mockExec, mockLogger)
 	partitionHandler := handlers.NewPartitionHandler(mockExec, mockLogger)
 	baseHandler := handlers.NewInstallBaseHandler(mockFS, mockExec, mockChrExec, mockLogger)
-	configHandler := handlers.NewConfigureSystemHandler(mockChrExec, mockLogger)
-	bootloaderHandler := handlers.NewBootloaderHandler(mockChrExec, mockLogger)
-	reposHandler := handlers.NewReposHandler(mockChrExec, mockLogger)
-	postInstallHandler := handlers.NewPostInstallHandler(mockChrExec, mockScriptExec, mockLogger)
+	configHandler := handlers.NewConfigureSystemHandler(mockFS, mockChrExec, mockLogger)
+	bootloaderHandler := handlers.NewBootloaderHandler(mockFS, mockExec, mockChrExec, mockLogger)
+	reposHandler := handlers.NewReposHandler(mockFS, mockChrExec, mockLogger)
+	postInstallHandler := handlers.NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger)
 
 	service := NewInstallationService(mockRepo, mockLogger, preflightHandler, partitionHandler, baseHandler, configHandler, bootloaderHandler, reposHandler, postInstallHandler)
-	defer service.Close()
+	defer func() {
+		if err := service.Close(); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+	}()
 
 	ctx := context.Background()
 	err := service.Start(ctx, "", "testuser", "/dev/sda", "none")
@@ -115,7 +171,11 @@ func TestInstallationService_GetStatus_NotStarted(t *testing.T) {
 	defer ctrl.Finish()
 
 	service := createTestService(ctrl)
-	defer service.Close()
+	defer func() {
+		if err := service.Close(); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+	}()
 
 	status := service.GetStatus()
 
@@ -129,10 +189,16 @@ func TestInstallationService_GetStatus_Started(t *testing.T) {
 	defer ctrl.Finish()
 
 	service := createTestService(ctrl)
-	defer service.Close()
+	defer func() {
+		if err := service.Close(); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+	}()
 
 	ctx := context.Background()
-	service.Start(ctx, "myarch", "testuser", "/dev/sda", "none")
+	if err := service.Start(ctx, "myarch", "testuser", "/dev/sda", "none"); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	status := service.GetStatus()
 
@@ -154,10 +220,16 @@ func TestInstallationService_RunPreflight_NotRoot(t *testing.T) {
 	defer ctrl.Finish()
 
 	service := createTestService(ctrl)
-	defer service.Close()
+	defer func() {
+		if err := service.Close(); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+	}()
 
 	ctx := context.Background()
-	service.Start(ctx, "myarch", "testuser", "/dev/sda", "none")
+	if err := service.Start(ctx, "myarch", "testuser", "/dev/sda", "none"); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	// We're probably not running as root, so preflight will fail
 	result, _ := service.RunPreflight(ctx)
@@ -174,10 +246,16 @@ func TestInstallationService_RunPartition(t *testing.T) {
 	defer ctrl.Finish()
 
 	service := createTestService(ctrl)
-	defer service.Close()
+	defer func() {
+		if err := service.Close(); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+	}()
 
 	ctx := context.Background()
-	service.Start(ctx, "myarch", "testuser", "/dev/sda", "none")
+	if err := service.Start(ctx, "myarch", "testuser", "/dev/sda", "none"); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	cmd := commands.PartitionDiskCommand{
 		TargetDisk:     "/dev/sda",
@@ -203,10 +281,16 @@ func TestInstallationService_RunBaseInstall(t *testing.T) {
 	defer ctrl.Finish()
 
 	service := createTestService(ctrl)
-	defer service.Close()
+	defer func() {
+		if err := service.Close(); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+	}()
 
 	ctx := context.Background()
-	service.Start(ctx, "myarch", "testuser", "/dev/sda", "none")
+	if err := service.Start(ctx, "myarch", "testuser", "/dev/sda", "none"); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	cmd := commands.InstallBaseCommand{
 		TargetDisk:       "/dev/sda",
@@ -232,10 +316,16 @@ func TestInstallationService_RunConfigSystem(t *testing.T) {
 	defer ctrl.Finish()
 
 	service := createTestService(ctrl)
-	defer service.Close()
+	defer func() {
+		if err := service.Close(); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+	}()
 
 	ctx := context.Background()
-	service.Start(ctx, "myarch", "testuser", "/dev/sda", "none")
+	if err := service.Start(ctx, "myarch", "testuser", "/dev/sda", "none"); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	cmd := commands.ConfigureSystemCommand{
 		MountPoint:   "/mnt",
@@ -265,16 +355,27 @@ func TestInstallationService_RunBootloaderSetup(t *testing.T) {
 	defer ctrl.Finish()
 
 	service := createTestService(ctrl)
-	defer service.Close()
+	defer func() {
+		if err := service.Close(); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+	}()
 
 	ctx := context.Background()
-	service.Start(ctx, "myarch", "testuser", "/dev/sda", "none")
+	if err := service.Start(ctx, "myarch", "testuser", "/dev/sda", "none"); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	cmd := commands.InstallBootloaderCommand{
 		MountPoint:     "/mnt",
 		BootloaderType: bootloader.BootloaderTypeLimine,
 		TimeoutSeconds: 5,
 		Branding:       "ArchUp",
+		KernelVariant:  packages.KernelStable,
+		RootPartition:  "/dev/sda2",
+		EncryptionType: disk.EncryptionTypeNone,
+		EFIPartition:   "/dev/sda1",
+		TargetDisk:     "/dev/sda",
 	}
 
 	result, err := service.RunBootloaderSetup(ctx, cmd)
@@ -293,10 +394,16 @@ func TestInstallationService_RunRepositorySetup(t *testing.T) {
 	defer ctrl.Finish()
 
 	service := createTestService(ctrl)
-	defer service.Close()
+	defer func() {
+		if err := service.Close(); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+	}()
 
 	ctx := context.Background()
-	service.Start(ctx, "myarch", "testuser", "/dev/sda", "none")
+	if err := service.Start(ctx, "myarch", "testuser", "/dev/sda", "none"); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	cmd := commands.SetupRepositoriesCommand{
 		MountPoint:      "/mnt",
@@ -322,10 +429,16 @@ func TestInstallationService_RunPostInstall(t *testing.T) {
 	defer ctrl.Finish()
 
 	service := createTestService(ctrl)
-	defer service.Close()
+	defer func() {
+		if err := service.Close(); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+	}()
 
 	ctx := context.Background()
-	service.Start(ctx, "myarch", "testuser", "/dev/sda", "none")
+	if err := service.Start(ctx, "myarch", "testuser", "/dev/sda", "none"); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	cmd := commands.PostInstallCommand{
 		MountPoint:         "/mnt",
@@ -350,7 +463,11 @@ func TestInstallationService_CompleteNotStarted(t *testing.T) {
 	defer ctrl.Finish()
 
 	service := createTestService(ctrl)
-	defer service.Close()
+	defer func() {
+		if err := service.Close(); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+	}()
 
 	ctx := context.Background()
 	// Don't start installation, try to complete it
@@ -367,7 +484,11 @@ func TestInstallationService_SubscribeProgress(t *testing.T) {
 	defer ctrl.Finish()
 
 	service := createTestService(ctrl)
-	defer service.Close()
+	defer func() {
+		if err := service.Close(); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+	}()
 
 	ch := service.SubscribeProgress()
 

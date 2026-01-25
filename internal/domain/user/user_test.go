@@ -92,7 +92,9 @@ func TestUser_AddGroup(t *testing.T) {
 func TestUser_AddGroup_Duplicate(t *testing.T) {
 	user, _ := NewUser("testuser", "/bin/bash")
 
-	user.AddGroup("wheel")
+	if err := user.AddGroup("wheel"); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 	err := user.AddGroup("wheel")
 
 	if err == nil {
@@ -117,7 +119,9 @@ func TestUser_HasGroup(t *testing.T) {
 		t.Error("expected user not in wheel group")
 	}
 
-	user.AddGroup("wheel")
+	if err := user.AddGroup("wheel"); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
 
 	if !user.HasGroup("wheel") {
 		t.Error("expected user in wheel group")
@@ -162,7 +166,7 @@ func TestNewCredentials_Valid(t *testing.T) {
 }
 
 func TestNewCredentials_WeakPassword(t *testing.T) {
-	_, err := NewCredentials("weak", "rootpass456")
+	_, err := NewCredentials("wee", "rootpass456")
 
 	if err == nil {
 		t.Error("expected error for weak password")
@@ -184,7 +188,7 @@ func TestValidatePassword(t *testing.T) {
 		shouldErr bool
 	}{
 		{"empty", "", true},
-		{"too short", "short", true},
+		{"too short", "sho", true},
 		{"valid", "validpass123", false},
 		{"long valid", "a" + string(make([]byte, 100)) + "x", false},
 		{"too long", "a" + string(make([]byte, 200)), true},

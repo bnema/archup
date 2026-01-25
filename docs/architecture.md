@@ -56,7 +56,6 @@ Dependencies: UI → App → Domain ← Infrastructure
 #### `domain/bootloader/`
 - **bootloader.go** - Bootloader value object (type, configuration)
 - **limine.go** - Limine-specific configuration and rules
-- **systemdboot.go** - systemd-boot specific configuration
 
 #### `domain/user/`
 - **user.go** - User entity (username, groups, shell)
@@ -154,6 +153,7 @@ UI/CLI layer. **Imports application/** but minimal domain access.
 #### `interfaces/tui/`
 BubbleTea terminal UI application:
 - **app.go** - Main TUI application
+ - **wizard/** - Post-boot wizard TUI (desktop setup)
 
 #### `interfaces/tui/models/`
 BubbleTea models (UI state only, no business logic):
@@ -177,9 +177,18 @@ CLI commands (e.g., using Cobra):
 - **root.go** - Root command
 - **install.go** - Install command
 
-### `/cmd/archup-installer/`
+### `/cmd/archup/`
 Application entry point with dependency injection:
 - **main.go** - Wire all dependencies (adapters, handlers, services, TUI)
+
+### Wizard Flow (post-boot)
+
+- Welcome → Compositor → SDDM → Optional → Confirm → Install → Monitors → Apply Config → Complete
+- Config outputs:
+  - Hyprland: `~/.config/hypr/archup.conf`, `~/.config/hypr/archup-monitors.conf`
+  - Niri: `~/.config/niri/archup.kdl`, `~/.config/niri/archup-monitors.kdl`
+  - Waybar: `~/.config/waybar/config`, `~/.config/waybar/style.css`
+  - Locks: `~/.config/hypr/hyprlock.conf`, `~/.config/hypr/hypridle.conf`
 
 ## Architecture Patterns
 
@@ -319,7 +328,7 @@ For each phase migrated from shell scripts:
 3. Create handler in `application/handlers/`
 4. Implement adapters in `infrastructure/*/`
 5. Add UI in `interfaces/tui/`
-6. Wire in `cmd/archup-installer/main.go`
+6. Wire in `cmd/archup/main.go`
 
 ### Fixing a Bug
 
@@ -331,7 +340,7 @@ For each phase migrated from shell scripts:
 ### Changing Infrastructure
 
 1. Create new adapter implementing port
-2. Update `cmd/archup-installer/main.go` wiring
+2. Update `cmd/archup/main.go` wiring
 3. Existing domain and application code unchanged
 4. No need to modify business logic
 
@@ -340,7 +349,7 @@ For each phase migrated from shell scripts:
 - **DDD_REFACTORING_PLAN.md** - Complete refactoring plan with detailed phases
 - **docs/script-migration.md** - Shell scripts categorization and migration strategy
 - **internal/domain/ports/** - All port interfaces (critical!)
-- **cmd/archup-installer/main.go** - Dependency injection wiring
+- **cmd/archup/main.go** - Dependency injection wiring
 
 ## References
 

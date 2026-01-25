@@ -159,7 +159,7 @@ func (c *SystemConfig) Equals(other *SystemConfig) bool {
 // Errors specific to SystemConfig
 var (
 	// ErrInvalidHostname is returned when hostname validation fails
-	ErrInvalidHostname = errors.New("invalid hostname")
+	ErrInvalidHostname = errors.New("invalid hostname: must be 1-63 chars, alphanumeric and hyphens, no leading/trailing hyphen")
 
 	// ErrInvalidTimezone is returned when timezone validation fails
 	ErrInvalidTimezone = errors.New("invalid timezone")
@@ -169,6 +169,12 @@ var (
 
 	// ErrInvalidKeymap is returned when keymap validation fails
 	ErrInvalidKeymap = errors.New("invalid keymap")
+
+	// ErrInvalidUsername is returned when username validation fails
+	ErrInvalidUsername = errors.New("invalid username: must be 1-32 chars, lowercase, start with letter")
+
+	// ErrInvalidPassword is returned when password validation fails
+	ErrInvalidPassword = errors.New("invalid password: must be at least 4 characters")
 )
 
 // ValidateHostname validates hostname according to RFC 1123
@@ -188,10 +194,7 @@ func ValidateHostname(hostname string) error {
 	}
 
 	for _, ch := range hostname {
-		if !((ch >= 'a' && ch <= 'z') ||
-			(ch >= 'A' && ch <= 'Z') ||
-			(ch >= '0' && ch <= '9') ||
-			ch == '-') {
+		if !isHostnameChar(ch) {
 			return ErrInvalidHostname
 		}
 	}
@@ -257,12 +260,66 @@ func ValidateKeymap(keymap string) error {
 
 	// Allow letters, digits, hyphens
 	for _, ch := range keymap {
-		if !((ch >= 'a' && ch <= 'z') ||
-			(ch >= '0' && ch <= '9') ||
-			ch == '-') {
+		if !isKeymapChar(ch) {
 			return ErrInvalidKeymap
 		}
 	}
 
+	return nil
+}
+
+func isHostnameChar(ch rune) bool {
+	return (ch >= 'a' && ch <= 'z') ||
+		(ch >= 'A' && ch <= 'Z') ||
+		(ch >= '0' && ch <= '9') ||
+		ch == '-'
+}
+
+func isKeymapChar(ch rune) bool {
+	return (ch >= 'a' && ch <= 'z') ||
+		(ch >= '0' && ch <= '9') ||
+		ch == '-'
+}
+
+// ValidateUsername validates Linux username
+// Must be 1-32 chars, lowercase, start with letter, alphanumeric and underscores
+func ValidateUsername(username string) error {
+	if username == "" || len(username) > 32 {
+		return ErrInvalidUsername
+	}
+
+	// Must start with lowercase letter
+	if username[0] < 'a' || username[0] > 'z' {
+		return ErrInvalidUsername
+	}
+
+	// Must be lowercase alphanumeric or underscore
+	for _, ch := range username {
+		if !isUsernameChar(ch) {
+			return ErrInvalidUsername
+		}
+	}
+
+	return nil
+}
+
+func isUsernameChar(ch rune) bool {
+	return (ch >= 'a' && ch <= 'z') ||
+		(ch >= '0' && ch <= '9') ||
+		ch == '_'
+}
+
+// ValidatePassword validates password using user domain validation
+// Must be at least 4 characters
+func ValidatePassword(password string) error {
+	if password == "" {
+		return ErrInvalidPassword
+	}
+	if len(password) < 4 {
+		return ErrInvalidPassword
+	}
+	if len(password) > 128 {
+		return ErrInvalidPassword
+	}
 	return nil
 }

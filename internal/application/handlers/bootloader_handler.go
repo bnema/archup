@@ -3,22 +3,32 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+	"regexp"
+	"strings"
 
 	"github.com/bnema/archup/internal/application/commands"
 	"github.com/bnema/archup/internal/application/dto"
+	"github.com/bnema/archup/internal/config"
 	"github.com/bnema/archup/internal/domain/bootloader"
+	"github.com/bnema/archup/internal/domain/disk"
+	"github.com/bnema/archup/internal/domain/packages"
 	"github.com/bnema/archup/internal/domain/ports"
 )
 
 // BootloaderHandler handles bootloader installation
 type BootloaderHandler struct {
+	fs      ports.FileSystem
+	cmdExec ports.CommandExecutor
 	chrExec ports.ChrootExecutor
 	logger  ports.Logger
 }
 
 // NewBootloaderHandler creates a new bootloader handler
-func NewBootloaderHandler(chrExec ports.ChrootExecutor, logger ports.Logger) *BootloaderHandler {
+func NewBootloaderHandler(fs ports.FileSystem, cmdExec ports.CommandExecutor, chrExec ports.ChrootExecutor, logger ports.Logger) *BootloaderHandler {
 	return &BootloaderHandler{
+		fs:      fs,
+		cmdExec: cmdExec,
 		chrExec: chrExec,
 		logger:  logger,
 	}
@@ -46,10 +56,32 @@ func (h *BootloaderHandler) Handle(ctx context.Context, cmd commands.InstallBoot
 
 	h.logger.Info("Bootloader configuration validated", "type", bl.Type())
 
-	// In a real implementation, this would configure and install the bootloader
-	h.logger.Info("Installing bootloader...", "type", bl.Type())
-	// For Limine: configure limine.cfg
-	// For systemd-boot: configure bootctl and entry files
+	kernel, err := packages.NewKernel(cmd.KernelVariant)
+	if err != nil {
+		h.logger.Error("Invalid kernel variant", "error", err)
+		result.ErrorDetail = fmt.Sprintf("Invalid kernel variant: %v", err)
+		return result, err
+	}
+
+	if err := h.configureMkinitcpio(ctx, cmd.MountPoint, cmd.EncryptionType); err != nil {
+		result.ErrorDetail = err.Error()
+		return result, err
+	}
+
+	if err := h.installLimine(ctx, cmd.MountPoint); err != nil {
+		result.ErrorDetail = err.Error()
+		return result, err
+	}
+
+	if err := h.configureLimine(ctx, cmd, kernel.PackageName()); err != nil {
+		result.ErrorDetail = err.Error()
+		return result, err
+	}
+
+	if err := h.createBootEntry(ctx, cmd.TargetDisk, cmd.EFIPartition, cmd.MountPoint); err != nil {
+		result.ErrorDetail = err.Error()
+		return result, err
+	}
 
 	result.Success = true
 	result.BootloaderType = bl.Type().String()
@@ -57,4 +89,133 @@ func (h *BootloaderHandler) Handle(ctx context.Context, cmd commands.InstallBoot
 
 	h.logger.Info("Bootloader installation completed successfully")
 	return result, nil
+}
+
+func (h *BootloaderHandler) configureMkinitcpio(ctx context.Context, mountPoint string, encType disk.EncryptionType) error {
+	confPath := filepath.Join(mountPoint, "etc", "mkinitcpio.conf")
+	content, err := h.fs.ReadFile(confPath)
+	if err != nil {
+		h.logger.Error("Failed to read mkinitcpio.conf", "error", err)
+		return fmt.Errorf("failed to read mkinitcpio.conf: %w", err)
+	}
+
+	hooks := config.MkinitcpioHooksPlymouth
+	if encType != disk.EncryptionTypeNone {
+		hooks = config.MkinitcpioHooksEncrypted
+	}
+
+	updated := replaceHooksLine(string(content), hooks)
+	if err := h.fs.WriteFile(confPath, []byte(updated), 0644); err != nil {
+		h.logger.Error("Failed to write mkinitcpio.conf", "error", err)
+		return fmt.Errorf("failed to write mkinitcpio.conf: %w", err)
+	}
+
+	if _, err := h.chrExec.ExecuteInChroot(ctx, mountPoint, "mkinitcpio", "-P"); err != nil {
+		h.logger.Error("Failed to regenerate initramfs", "error", err)
+		return fmt.Errorf("failed to regenerate initramfs: %w", err)
+	}
+
+	return nil
+}
+
+func (h *BootloaderHandler) installLimine(ctx context.Context, mountPoint string) error {
+	limineDir := filepath.Join(mountPoint, "boot", "EFI", "limine")
+	if err := h.fs.MkdirAll(limineDir, 0755); err != nil {
+		h.logger.Error("Failed to create Limine directory", "error", err)
+		return fmt.Errorf("failed to create Limine directory: %w", err)
+	}
+
+	src := filepath.Join(mountPoint, "usr", "share", "limine", "BOOTX64.EFI")
+	dst := filepath.Join(limineDir, "BOOTX64.EFI")
+	if _, err := h.cmdExec.Execute(ctx, "cp", src, dst); err != nil {
+		h.logger.Error("Failed to copy Limine EFI", "error", err)
+		return fmt.Errorf("failed to copy Limine EFI: %w", err)
+	}
+
+	return nil
+}
+
+func (h *BootloaderHandler) configureLimine(ctx context.Context, cmd commands.InstallBootloaderCommand, kernelName string) error {
+	rootUUIDBytes, err := h.cmdExec.Execute(ctx, "blkid", "-s", "UUID", "-o", "value", cmd.RootPartition)
+	if err != nil {
+		h.logger.Error("Failed to get root UUID", "error", err)
+		return fmt.Errorf("failed to get root UUID: %w", err)
+	}
+
+	rootUUID := strings.TrimSpace(string(rootUUIDBytes))
+	var kernelParams string
+	if cmd.EncryptionType != disk.EncryptionTypeNone {
+		kernelParams = fmt.Sprintf("cryptdevice=UUID=%s:cryptroot root=/dev/mapper/cryptroot rootflags=subvol=@ rw", rootUUID)
+	} else {
+		kernelParams = fmt.Sprintf("root=UUID=%s rootflags=subvol=@ rw", rootUUID)
+	}
+
+	kernelParams = fmt.Sprintf("%s %s", kernelParams, config.KernelParamsQuiet)
+
+	templatePath, err := h.resolveLimineTemplate()
+	if err != nil {
+		h.logger.Error("Failed to locate Limine template", "error", err)
+		return fmt.Errorf("failed to locate Limine template: %w", err)
+	}
+
+	templateBytes, err := h.fs.ReadFile(templatePath)
+	if err != nil {
+		h.logger.Error("Failed to read Limine template", "error", err)
+		return fmt.Errorf("failed to read Limine template: %w", err)
+	}
+
+	limineConfig := string(templateBytes)
+	limineConfig = strings.ReplaceAll(limineConfig, "{{TIMEOUT}}", fmt.Sprintf("%d", cmd.TimeoutSeconds))
+	limineConfig = strings.ReplaceAll(limineConfig, "{{BRANDING}}", cmd.Branding)
+	limineConfig = strings.ReplaceAll(limineConfig, "{{COLOR}}", config.LimineColor)
+	limineConfig = strings.ReplaceAll(limineConfig, "{{KERNEL}}", kernelName)
+	limineConfig = strings.ReplaceAll(limineConfig, "{{KERNEL_PARAMS}}", kernelParams)
+
+	limineConfigPath := filepath.Join(cmd.MountPoint, "boot", "limine.conf")
+	if err := h.fs.WriteFile(limineConfigPath, []byte(limineConfig), 0644); err != nil {
+		h.logger.Error("Failed to write Limine config", "error", err)
+		return fmt.Errorf("failed to write Limine config: %w", err)
+	}
+
+	return nil
+}
+
+func (h *BootloaderHandler) createBootEntry(ctx context.Context, targetDisk, efiPartition, mountPoint string) error {
+	partNum := extractPartitionNumber(efiPartition)
+	if partNum == "" {
+		return fmt.Errorf("failed to determine EFI partition number from %s", efiPartition)
+	}
+
+	if _, err := h.chrExec.ExecuteInChroot(ctx, mountPoint, "efibootmgr", "--create", "--disk", targetDisk, "--part", partNum, "--label", config.UEFIBootLabel, "--loader", config.UEFIBootLoader); err != nil {
+		h.logger.Error("Failed to create EFI boot entry", "error", err)
+		return fmt.Errorf("failed to create EFI boot entry: %w", err)
+	}
+
+	return nil
+}
+
+func replaceHooksLine(content string, hooks string) string {
+	re := regexp.MustCompile(`(?m)^HOOKS=.*$`)
+	return re.ReplaceAllString(content, hooks)
+}
+
+func extractPartitionNumber(partition string) string {
+	re := regexp.MustCompile(`[0-9]+$`)
+	return re.FindString(partition)
+}
+
+func (h *BootloaderHandler) resolveLimineTemplate() (string, error) {
+	candidates := []string{
+		filepath.Join(config.DefaultInstallDir, "configs", "limine.conf.template"),
+		filepath.Join("install", "configs", "limine.conf.template"),
+	}
+
+	for _, candidate := range candidates {
+		exists, err := h.fs.Exists(candidate)
+		if err == nil && exists {
+			return candidate, nil
+		}
+	}
+
+	return "", fmt.Errorf("limine.conf.template not found")
 }

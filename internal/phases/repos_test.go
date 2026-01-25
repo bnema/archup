@@ -157,6 +157,7 @@ Include = /etc/pacman.d/mirrorlist`,
 				lines := strings.Split(s, "\n")
 				var inMultilib bool
 				var foundInclude int
+				var commentedInclude int
 				for _, line := range lines {
 					trimmed := strings.TrimSpace(line)
 					if trimmed == "[multilib]" {
@@ -165,8 +166,10 @@ Include = /etc/pacman.d/mirrorlist`,
 						foundInclude++
 					} else if inMultilib && strings.HasPrefix(trimmed, "#Include") {
 						// Still commented - that's another Include
+						commentedInclude++
 					}
 				}
+				_ = commentedInclude
 				return foundInclude >= 1
 			},
 		},
@@ -286,7 +289,11 @@ func TestReposPhaseStructure(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Fatalf("failed to close log: %v", err)
+		}
+	}()
 
 	// Create config
 	cfg := config.NewConfig("test")
@@ -301,15 +308,15 @@ func TestReposPhaseStructure(t *testing.T) {
 
 	// Verify initialization
 	if phase == nil {
-		t.Error("ReposPhase is nil")
+		t.Fatal("ReposPhase is nil")
 	}
 
 	if phase.BasePhase == nil {
-		t.Error("BasePhase is nil")
+		t.Fatal("BasePhase is nil")
 	}
 
 	if len(phase.chaoticConfig) != 0 {
-		t.Error("chaoticConfig should be initialized as empty map")
+		t.Fatal("chaoticConfig should be initialized as empty map")
 	}
 }
 
@@ -494,7 +501,11 @@ func TestReposPhasePreCheckValidation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Fatalf("failed to close log: %v", err)
+		}
+	}()
 
 	tests := []struct {
 		name        string

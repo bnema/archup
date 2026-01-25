@@ -117,6 +117,17 @@ func (p *BootPhase) configureMkinitcpio(progressChan chan<- ProgressUpdate) erro
 		return fmt.Errorf("failed to write mkinitcpio.conf: %w", err)
 	}
 
+	// Enable fallback preset for the kernel (some kernels like linux-cachyos have it disabled by default)
+	presetPath := fmt.Sprintf("/etc/mkinitcpio.d/%s.preset", p.config.KernelChoice)
+	enableFallbackCmd := fmt.Sprintf(
+		"sed -i \"s/#PRESETS=('default' 'fallback')/PRESETS=('default' 'fallback')/\" %s && "+
+			"sed -i 's/#fallback_image/fallback_image/' %s && "+
+			"sed -i 's/#fallback_options/fallback_options/' %s",
+		presetPath, presetPath, presetPath)
+	if err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, enableFallbackCmd); err != nil {
+		p.SendOutput(progressChan, "[WARN] Could not enable fallback preset (may already be enabled)")
+	}
+
 	// Regenerate initramfs
 	p.SendOutput(progressChan, "Regenerating initramfs...")
 	if err := p.chrExec.ChrootExec(p.logger.LogPath(), config.PathMnt, "mkinitcpio -P"); err != nil {
@@ -218,7 +229,6 @@ func (p *BootPhase) configureLimine(progressChan chan<- ProgressUpdate) error {
 	// Replace template variables
 	limineConfig := string(templateContent)
 	limineConfig = strings.ReplaceAll(limineConfig, "{{TIMEOUT}}", config.LimineTimeout)
-	limineConfig = strings.ReplaceAll(limineConfig, "{{DEFAULT_ENTRY}}", config.LimineEntry)
 	limineConfig = strings.ReplaceAll(limineConfig, "{{BRANDING}}", config.LimineBranding)
 	limineConfig = strings.ReplaceAll(limineConfig, "{{COLOR}}", config.LimineColor)
 	limineConfig = strings.ReplaceAll(limineConfig, "{{KERNEL}}", p.config.KernelChoice)
@@ -283,13 +293,13 @@ func (p *BootPhase) PostCheck() error {
 	// Verify Limine bootloader exists
 	bootloaderPath := filepath.Join(config.PathMntBootEFILimine, config.FileLimineBootloader)
 	if _, err := p.fs.Stat(bootloaderPath); p.fs.IsNotExist(err) {
-		return fmt.Errorf("Limine bootloader was not installed")
+		return fmt.Errorf("limine bootloader was not installed")
 	}
 
 	// Verify Limine config exists
 	configPath := config.PathMntBootLimineConf
 	if _, err := p.fs.Stat(configPath); p.fs.IsNotExist(err) {
-		return fmt.Errorf("Limine config was not created")
+		return fmt.Errorf("limine config was not created")
 	}
 
 	return p.config.Save()

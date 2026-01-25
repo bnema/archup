@@ -110,7 +110,7 @@ curl -fsSL https://archup.run/install/bin | bash -s -- --version v0.15.3-dev
 ## Artifacts Generated
 
 Each release creates:
-- `archup-installer` - Standalone binary
+- `archup` - Standalone binary
 - `archup_VERSION_linux_x86_64.tar.gz` - Archive with binary + install scripts
 - `checksums.txt` - SHA256 checksums for verification
 

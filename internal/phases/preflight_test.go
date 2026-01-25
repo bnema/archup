@@ -120,7 +120,7 @@ func TestPreflightPhasePreCheck(t *testing.T) {
 				mockCmd.EXPECT().Execute("bootctl", "status").Return([]byte("Secure Boot: enabled\n"), nil).Times(1)
 			},
 			wantErr:     true,
-			errContains: "Secure Boot must be disabled",
+			errContains: "secure boot must be disabled",
 		},
 		{
 			name: "Secure Boot disabled - all checks pass",
@@ -172,7 +172,11 @@ func TestPreflightPhasePreCheck(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create logger: %v", err)
 			}
-			defer log.Close()
+			defer func() {
+				if err := log.Close(); err != nil {
+					t.Fatalf("failed to close log: %v", err)
+				}
+			}()
 
 			cfg := config.NewConfig("test")
 			phase := NewPreflightPhase(cfg, log, mockFS, mockCmd)
@@ -249,7 +253,11 @@ func TestPreflightPhaseSetDefaults(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create logger: %v", err)
 			}
-			defer log.Close()
+			defer func() {
+				if err := log.Close(); err != nil {
+					t.Fatalf("failed to close log: %v", err)
+				}
+			}()
 
 			cfg := config.NewConfig("test")
 			cfg.Hostname = tt.initialHostname
@@ -336,7 +344,11 @@ func TestPreflightPhasePostCheck(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create logger: %v", err)
 			}
-			defer log.Close()
+			defer func() {
+				if err := log.Close(); err != nil {
+					t.Fatalf("failed to close log: %v", err)
+				}
+			}()
 
 			cfg := config.NewConfig("test")
 			cfg.Username = tt.username
@@ -374,7 +386,11 @@ func TestPreflightPhaseExecute(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Fatalf("failed to close log: %v", err)
+		}
+	}()
 
 	cfg := config.NewConfig("test")
 	phase := NewPreflightPhase(cfg, log, mockFS, mockCmd)
@@ -415,7 +431,11 @@ func TestPreflightPhaseRollback(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Fatalf("failed to close log: %v", err)
+		}
+	}()
 
 	cfg := config.NewConfig("test")
 	phase := NewPreflightPhase(cfg, log, mockFS, mockCmd)
@@ -440,7 +460,11 @@ func TestPreflightPhaseCanSkip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Fatalf("failed to close log: %v", err)
+		}
+	}()
 
 	cfg := config.NewConfig("test")
 	phase := NewPreflightPhase(cfg, log, mockFS, mockCmd)

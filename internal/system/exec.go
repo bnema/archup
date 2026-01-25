@@ -1,3 +1,4 @@
+//nolint:errcheck
 package system
 
 import (
@@ -88,8 +89,12 @@ func Run(cfg RunConfig) CommandResult {
 			line := scanner.Text()
 			output.WriteString(line + "\n")
 			if logFile != nil {
-				fmt.Fprintln(logFile, line)
-				logFile.Sync() // Flush to disk immediately
+				if _, err := fmt.Fprintln(logFile, line); err != nil {
+					fmt.Fprintf(os.Stderr, "failed to write log file: %v\n", err)
+				}
+				if err := logFile.Sync(); err != nil {
+					fmt.Fprintf(os.Stderr, "failed to sync log file: %v\n", err)
+				} // Flush to disk immediately
 			}
 		}
 	}()
@@ -103,8 +108,12 @@ func Run(cfg RunConfig) CommandResult {
 			line := scanner.Text()
 			output.WriteString(line + "\n")
 			if logFile != nil {
-				fmt.Fprintln(logFile, line)
-				logFile.Sync() // Flush to disk immediately
+				if _, err := fmt.Fprintln(logFile, line); err != nil {
+					fmt.Fprintf(os.Stderr, "failed to write log file: %v\n", err)
+				}
+				if err := logFile.Sync(); err != nil {
+					fmt.Fprintf(os.Stderr, "failed to sync log file: %v\n", err)
+				} // Flush to disk immediately
 			}
 		}
 	}()

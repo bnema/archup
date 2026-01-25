@@ -14,12 +14,13 @@ func TestReposHandler_Handle_Minimal(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	mockFS := mocks.NewMockFileSystem(ctrl)
 	mockChrExec := mocks.NewMockChrootExecutor(ctrl)
 	mockLogger := mocks.NewMockLogger(ctrl)
 
 	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
 
-	handler := NewReposHandler(mockChrExec, mockLogger)
+	handler := NewReposHandler(mockFS, mockChrExec, mockLogger)
 
 	cmd := commands.SetupRepositoriesCommand{
 		MountPoint:      "/mnt",
@@ -56,12 +57,20 @@ func TestReposHandler_Handle_AllEnabled(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	mockFS := mocks.NewMockFileSystem(ctrl)
 	mockChrExec := mocks.NewMockChrootExecutor(ctrl)
 	mockLogger := mocks.NewMockLogger(ctrl)
 
 	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockFS.EXPECT().ReadFile(gomock.Any()).Return([]byte("[core]\n#[multilib]\n#Include = /etc/pacman.d/mirrorlist\n"), nil).AnyTimes()
+	mockFS.EXPECT().WriteFile(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), "pacman-key", "--recv-key", gomock.Any(), "--keyserver", gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), "pacman-key", "--lsign-key", gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), "pacman", "-U", "--noconfirm", gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), "pacman", "-Sy", "--noconfirm").Return([]byte{}, nil).AnyTimes()
+	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), "pacman", "-S", "--noconfirm", gomock.Any()).Return([]byte{}, nil).AnyTimes()
 
-	handler := NewReposHandler(mockChrExec, mockLogger)
+	handler := NewReposHandler(mockFS, mockChrExec, mockLogger)
 
 	cmd := commands.SetupRepositoriesCommand{
 		MountPoint:      "/mnt",
@@ -98,12 +107,13 @@ func TestReposHandler_Handle_WithAdditionalRepos(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	mockFS := mocks.NewMockFileSystem(ctrl)
 	mockChrExec := mocks.NewMockChrootExecutor(ctrl)
 	mockLogger := mocks.NewMockLogger(ctrl)
 
 	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
 
-	handler := NewReposHandler(mockChrExec, mockLogger)
+	handler := NewReposHandler(mockFS, mockChrExec, mockLogger)
 
 	additionalRepos := []string{
 		"https://example.com/archup",

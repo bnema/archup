@@ -2,12 +2,9 @@ package tui
 
 import "errors"
 
-// TUI validation and runtime errors
+// TUI-specific errors (validation errors are in domain/system package)
 var (
-	ErrInvalidHostname = errors.New("hostname is required and must be valid")
-	ErrInvalidUsername = errors.New("username is required")
-	ErrInvalidDisk     = errors.New("target disk is required")
-	ErrInvalidPassword = errors.New("password must be at least 3 characters")
-	ErrDiskNotFound    = errors.New("target disk not found")
-	ErrFormIncomplete  = errors.New("form is incomplete, please fill all required fields")
+	ErrInvalidDisk    = errors.New("target disk is required")
+	ErrDiskNotFound   = errors.New("target disk not found")
+	ErrFormIncomplete = errors.New("form is incomplete, please fill all required fields")
 )

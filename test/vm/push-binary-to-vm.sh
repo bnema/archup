@@ -6,7 +6,7 @@ set -eo pipefail
 
 if [ $# -eq 0 ]; then
     echo "Usage: $0 /path/to/binary"
-    echo "Example: $0 ../../../dist/archup-installer_linux_amd64_v1/archup-installer"
+    echo "Example: $0 ../../../dist/archup_linux_amd64_v1/archup"
     exit 1
 fi
 

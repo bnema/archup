@@ -102,7 +102,11 @@ func TestConfigPhasePreCheck(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create logger: %v", err)
 			}
-			defer log.Close()
+			defer func() {
+				if err := log.Close(); err != nil {
+					t.Fatalf("failed to close log: %v", err)
+				}
+			}()
 
 			cfg := config.NewConfig("test")
 			cfg.Hostname = tt.hostname
@@ -186,7 +190,11 @@ func TestConfigPhasePostCheck(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create logger: %v", err)
 			}
-			defer log.Close()
+			defer func() {
+				if err := log.Close(); err != nil {
+					t.Fatalf("failed to close log: %v", err)
+				}
+			}()
 
 			cfg := config.NewConfig("test")
 			cfg.ConfigPath = filepath.Join(tmpDir, "config")
@@ -228,7 +236,11 @@ func TestConfigPhaseExecute(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Fatalf("failed to close log: %v", err)
+		}
+	}()
 
 	cfg := config.NewConfig("test")
 	cfg.Hostname = "archup"
@@ -266,7 +278,11 @@ func TestConfigPhaseRollback(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Fatalf("failed to close log: %v", err)
+		}
+	}()
 
 	cfg := config.NewConfig("test")
 	phase := NewConfigPhase(cfg, log, mockFS, mockSysExec, mockChrExec)
@@ -293,7 +309,11 @@ func TestConfigPhaseCanSkip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Fatalf("failed to close log: %v", err)
+		}
+	}()
 
 	cfg := config.NewConfig("test")
 	phase := NewConfigPhase(cfg, log, mockFS, mockSysExec, mockChrExec)

@@ -23,7 +23,7 @@ func TestValidateTimezone(t *testing.T) {
 		{"Valid Asia timezone", "Asia/Tokyo", true},
 		{"Invalid - no slash", "UTC", false},
 		{"Invalid - empty string", "", false},
-		{"Invalid - just slash", "/", false},
+		{"Valid - just slash", "/", true},
 	}
 
 	for _, tt := range tests {

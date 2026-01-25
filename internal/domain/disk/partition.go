@@ -148,11 +148,3 @@ func validateFilesystemMountPoint(fs FilesystemType, mountPoint string) error {
 
 	return nil
 }
-
-func sizeToGB(bytes int64) int64 {
-	return bytes / (1024 * 1024 * 1024)
-}
-
-func sizeBytes(gb int64) int64 {
-	return gb * 1024 * 1024 * 1024
-}

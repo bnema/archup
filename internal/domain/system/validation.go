@@ -30,11 +30,6 @@ func (r *SystemValidationRules) ValidateCombination(config *SystemConfig, cpuInf
 	// Rule: certain timezones may have locale implications
 	// This is more of a guideline/warning in practice
 
-	// Rule: AMD systems may need special handling
-	if cpuInfo.Vendor() == CPUVendorAMD {
-		// This will be used in higher layers for P-State configuration
-	}
-
 	return nil
 }
 
@@ -257,7 +252,7 @@ func (r *SystemValidationRules) ValidateSecureBootDisabled(ctx context.Context, 
 		return errors.New("failed to detect Secure Boot status: " + err.Error())
 	}
 	if enabled {
-		return errors.New("Secure Boot must be disabled")
+		return errors.New("secure boot must be disabled")
 	}
 	return nil
 }

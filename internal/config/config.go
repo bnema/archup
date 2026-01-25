@@ -13,6 +13,7 @@ const (
 
 	// Install paths
 	DefaultInstallDir      = "/tmp/archup-install"
+	DefaultInstallRepoDir  = "/tmp/archup-install/repo"
 	DefaultInstallPath     = ".local/share/archup/install"
 	BasePackagesFile       = "base.packages"
 	ExtraPackagesFile      = "extra.packages"
@@ -36,8 +37,7 @@ const (
 
 // Bootloader types
 const (
-	BootloaderLimine      = "limine"
-	BootloaderSystemdBoot = "systemd-boot"
+	BootloaderLimine = "limine"
 )
 
 // Kernel choices
@@ -139,7 +139,6 @@ const (
 // Limine configuration
 const (
 	LimineTimeout  = "0"
-	LimineEntry    = "0"
 	LimineBranding = "ArchUp"
 	LimineColor    = "6"
 )
@@ -210,7 +209,7 @@ type Config struct {
 	Keymap          string
 	Timezone        string
 	Locale          string
-	Bootloader      string // "limine" or "systemd-boot"
+	Bootloader      string // "limine" (only supported bootloader)
 	EncryptionType  string // "none", "luks", or "luks-lvm"
 	EncryptPassword string // Separate encryption password if different from user password
 
@@ -295,7 +294,6 @@ func Load(path string, version string) (*Config, error) {
 		}
 		return nil, fmt.Errorf("failed to open config: %w", err)
 	}
-	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
@@ -322,6 +320,10 @@ func Load(path string, version string) (*Config, error) {
 		return nil, fmt.Errorf("failed to read config: %w", err)
 	}
 
+	if err := file.Close(); err != nil {
+		return nil, fmt.Errorf("failed to close config file: %w", err)
+	}
+
 	return cfg, nil
 }
 
@@ -331,19 +333,23 @@ func (c *Config) Save() error {
 	if err != nil {
 		return fmt.Errorf("failed to create config: %w", err)
 	}
-	defer file.Close()
 	// Set restrictive permissions (600) since config contains passwords
 	if err := os.Chmod(c.ConfigPath, 0600); err != nil {
 		return fmt.Errorf("failed to set config permissions: %w", err)
 	}
 
 	writer := bufio.NewWriter(file)
-	defer writer.Flush()
 
 	// Write header
-	fmt.Fprintln(writer, "# ArchUp Installation Configuration")
-	fmt.Fprintln(writer, "# This file is compatible with shell scripts")
-	fmt.Fprintln(writer)
+	if _, err := fmt.Fprintln(writer, "# ArchUp Installation Configuration"); err != nil {
+		return fmt.Errorf("failed to write config header: %w", err)
+	}
+	if _, err := fmt.Fprintln(writer, "# This file is compatible with shell scripts"); err != nil {
+		return fmt.Errorf("failed to write config header: %w", err)
+	}
+	if _, err := fmt.Fprintln(writer); err != nil {
+		return fmt.Errorf("failed to write config header: %w", err)
+	}
 
 	// Write all values
 	entries := []struct {
@@ -375,8 +381,18 @@ func (c *Config) Save() error {
 
 	for _, entry := range entries {
 		if entry.value != "" {
-			fmt.Fprintf(writer, "%s=\"%s\"\n", entry.key, entry.value)
+			if _, err := fmt.Fprintf(writer, "%s=\"%s\"\n", entry.key, entry.value); err != nil {
+				return fmt.Errorf("failed to write config entry: %w", err)
+			}
 		}
+	}
+
+	if err := writer.Flush(); err != nil {
+		return fmt.Errorf("failed to flush config writer: %w", err)
+	}
+
+	if err := file.Close(); err != nil {
+		return fmt.Errorf("failed to close config file: %w", err)
 	}
 
 	return nil

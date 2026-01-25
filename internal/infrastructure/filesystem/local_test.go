@@ -118,7 +118,11 @@ func TestLocalFileSystem_Create(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			t.Fatalf("failed to close file: %v", err)
+		}
+	}()
 
 	n, err := file.Write([]byte("test content"))
 	if err != nil {
@@ -151,7 +155,9 @@ func TestLocalFileSystem_CreateTruncates(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	file.Close()
+	if err := file.Close(); err != nil {
+		t.Fatalf("failed to close file: %v", err)
+	}
 
 	// Verify file is empty
 	info, _ := os.Stat(testFile)

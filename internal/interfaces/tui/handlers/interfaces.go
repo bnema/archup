@@ -5,6 +5,7 @@ import (
 
 	"github.com/bnema/archup/internal/application/services"
 	"github.com/bnema/archup/internal/domain/ports"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 // AppContext defines the interface for accessing app resources from handlers
@@ -21,4 +22,7 @@ type AppContext interface {
 
 	// GetContext returns the app context
 	GetContext() context.Context
+
+	// GetProgram returns the tea.Program for sending messages from goroutines
+	GetProgram() *tea.Program
 }

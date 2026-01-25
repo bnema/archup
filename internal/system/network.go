@@ -20,10 +20,16 @@ func CheckNetworkConnectivity() error {
 	if err != nil {
 		return fmt.Errorf("network connectivity check failed: %w", err)
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		if err := resp.Body.Close(); err != nil {
+			return fmt.Errorf("failed to close network response: %w", err)
+		}
 		return fmt.Errorf("network check returned HTTP %d", resp.StatusCode)
+	}
+
+	if err := resp.Body.Close(); err != nil {
+		return fmt.Errorf("failed to close network response: %w", err)
 	}
 
 	return nil

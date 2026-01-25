@@ -21,9 +21,8 @@ func RenderForm(fm *models.FormModelImpl) string {
 	labels := []string{
 		"Hostname:",
 		"Username:",
-		"User Password:",
-		"Root Password:",
-		"Target Disk:",
+		"Email(opt):",
+		"Password:",
 		"Timezone:",
 		"Locale:",
 		"Keymap:",

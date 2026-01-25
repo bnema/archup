@@ -162,7 +162,7 @@ func (h *PartitionHandler) wipeDisks(ctx context.Context, diskPath string) error
 	return nil
 }
 
-// createGPTPartitions creates GPT partition table with EFI (512MB) and ROOT partitions
+// createGPTPartitions creates GPT partition table with EFI (4GB) and ROOT partitions
 func (h *PartitionHandler) createGPTPartitions(ctx context.Context, diskPath string) (string, string, error) {
 	h.logger.Info("Creating GPT partition table", "disk", diskPath)
 
@@ -172,11 +172,11 @@ func (h *PartitionHandler) createGPTPartitions(ctx context.Context, diskPath str
 	}
 
 	// Create partitions using sgdisk
-	// Partition 1: 512MB EFI (type ef00)
+	// Partition 1: 4GB EFI (type ef00) - recommended for limine-snapper-sync
 	// Partition 2: Remaining space ROOT (type 8300)
 	if _, err := h.cmdExec.Execute(ctx, "sgdisk",
 		"--clear",
-		"--new=1:0:+512M", "--typecode=1:ef00", "--change-name=1:EFI",
+		"--new=1:0:+4G", "--typecode=1:ef00", "--change-name=1:EFI",
 		"--new=2:0:0", "--typecode=2:8300", "--change-name=2:ROOT",
 		diskPath); err != nil {
 		return "", "", fmt.Errorf("sgdisk partition creation failed: %w", err)

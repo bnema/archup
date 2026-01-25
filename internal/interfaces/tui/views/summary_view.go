@@ -15,9 +15,7 @@ func RenderSummary(im *models.InstallationModelImpl) string {
 		return RenderError(err)
 	}
 
-	if !im.IsComplete() {
-		return RenderStatus(im)
-	}
+	_ = im.IsComplete() // keep for potential future use
 
 	var b strings.Builder
 

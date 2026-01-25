@@ -18,7 +18,7 @@ Domain Layer (aggregates, ports, value objects)
 Infrastructure Layer (adapters) implements domain ports
 ```
 
-## Wiring in cmd/archup-installer/main.go
+## Wiring in cmd/archup/main.go
 
 ### 1. Infrastructure Adapters (Lowest Layer)
 

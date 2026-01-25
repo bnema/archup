@@ -30,17 +30,26 @@ func FetchChaoticMirrorlist() ([]MirrorlistEntry, error) {
 	if err != nil {
 		return nil, fmt.Errorf("network request failed to %s (timeout: %v): %w", ChaoticMirrorlistURL, HTTPTimeout, err)
 	}
-	defer resp.Body.Close()
 
 	// Check HTTP response status
 	if resp.StatusCode != http.StatusOK {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			return nil, fmt.Errorf("failed to close mirrorlist response: %w", closeErr)
+		}
 		return nil, fmt.Errorf("failed to fetch mirrorlist from %s: HTTP %d %s", ChaoticMirrorlistURL, resp.StatusCode, http.StatusText(resp.StatusCode))
 	}
 
 	// Parse the mirrorlist content
 	mirrors, err := ParseMirrorlist(resp.Body)
 	if err != nil {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			return nil, fmt.Errorf("failed to close mirrorlist response: %w", closeErr)
+		}
 		return nil, fmt.Errorf("failed to parse mirrorlist from %s: %w", ChaoticMirrorlistURL, err)
+	}
+
+	if err := resp.Body.Close(); err != nil {
+		return nil, fmt.Errorf("failed to close mirrorlist response: %w", err)
 	}
 
 	return mirrors, nil

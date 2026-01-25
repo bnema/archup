@@ -315,9 +315,9 @@ func (m *MockChrootExecutor) EXPECT() *MockChrootExecutorMockRecorder {
 }
 
 // ChrootSystemctl mocks base method.
-func (m *MockChrootExecutor) ChrootSystemctl(logPath, chrootPath string, args ...string) error {
+func (m *MockChrootExecutor) ChrootSystemctl(ctx context.Context, logPath, chrootPath string, args ...string) error {
 	m.ctrl.T.Helper()
-	varargs := []any{logPath, chrootPath}
+	varargs := []any{ctx, logPath, chrootPath}
 	for _, a := range args {
 		varargs = append(varargs, a)
 	}
@@ -327,9 +327,9 @@ func (m *MockChrootExecutor) ChrootSystemctl(logPath, chrootPath string, args ..
 }
 
 // ChrootSystemctl indicates an expected call of ChrootSystemctl.
-func (mr *MockChrootExecutorMockRecorder) ChrootSystemctl(logPath, chrootPath any, args ...any) *gomock.Call {
+func (mr *MockChrootExecutorMockRecorder) ChrootSystemctl(ctx, logPath, chrootPath any, args ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{logPath, chrootPath}, args...)
+	varargs := append([]any{ctx, logPath, chrootPath}, args...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChrootSystemctl", reflect.TypeOf((*MockChrootExecutor)(nil).ChrootSystemctl), varargs...)
 }
 
@@ -351,6 +351,25 @@ func (mr *MockChrootExecutorMockRecorder) ExecuteInChroot(ctx, chrootPath, comma
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{ctx, chrootPath, command}, args...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteInChroot", reflect.TypeOf((*MockChrootExecutor)(nil).ExecuteInChroot), varargs...)
+}
+
+// ExecuteInChrootWithStdin mocks base method.
+func (m *MockChrootExecutor) ExecuteInChrootWithStdin(ctx context.Context, chrootPath, stdin, command string, args ...string) error {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, chrootPath, stdin, command}
+	for _, a := range args {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ExecuteInChrootWithStdin", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ExecuteInChrootWithStdin indicates an expected call of ExecuteInChrootWithStdin.
+func (mr *MockChrootExecutorMockRecorder) ExecuteInChrootWithStdin(ctx, chrootPath, stdin, command any, args ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, chrootPath, stdin, command}, args...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteInChrootWithStdin", reflect.TypeOf((*MockChrootExecutor)(nil).ExecuteInChrootWithStdin), varargs...)
 }
 
 // MockScriptExecutor is a mock of ScriptExecutor interface.

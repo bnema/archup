@@ -67,7 +67,11 @@ func TestBootstrapPhasePreCheck(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create logger: %v", err)
 			}
-			defer log.Close()
+			defer func() {
+				if err := log.Close(); err != nil {
+					t.Fatalf("failed to close log: %v", err)
+				}
+			}()
 
 			cfg := config.NewConfig("test")
 			phase := NewBootstrapPhase(cfg, log, mockHTTP, mockFS)
@@ -201,7 +205,11 @@ func TestBootstrapPhaseDownloadFile(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create logger: %v", err)
 			}
-			defer log.Close()
+			defer func() {
+				if err := log.Close(); err != nil {
+					t.Fatalf("failed to close log: %v", err)
+				}
+			}()
 
 			cfg := config.NewConfig("test")
 			phase := NewBootstrapPhase(cfg, log, mockHTTP, mockFS)
@@ -252,9 +260,14 @@ func TestBootstrapPhaseExecute(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create logger: %v", err)
 	}
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Fatalf("failed to close log: %v", err)
+		}
+	}()
 
 	cfg := config.NewConfig("test")
+	cfg.RepoURL = ""
 	cfg.RawURL = "https://example.com"
 	phase := NewBootstrapPhase(cfg, log, mockHTTP, mockFS)
 
@@ -310,7 +323,11 @@ func TestBootstrapPhaseRollback(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create logger: %v", err)
 			}
-			defer log.Close()
+			defer func() {
+				if err := log.Close(); err != nil {
+					t.Fatalf("failed to close log: %v", err)
+				}
+			}()
 
 			cfg := config.NewConfig("test")
 			phase := NewBootstrapPhase(cfg, log, mockHTTP, mockFS)

@@ -9,20 +9,22 @@ type Credentials struct {
 }
 
 // NewCredentials creates new credentials with validation
+// rootPassword can be empty (root account will be locked, user uses sudo)
 func NewCredentials(userPassword, rootPassword string) (*Credentials, error) {
-	// Validate user password
+	// Validate user password (required)
 	if err := ValidatePassword(userPassword); err != nil {
 		return nil, err
 	}
 
-	// Validate root password
-	if err := ValidatePassword(rootPassword); err != nil {
-		return nil, err
-	}
-
-	// Business rule: passwords must differ
-	if userPassword == rootPassword {
-		return nil, errors.New("user and root passwords must differ")
+	// Root password is optional - empty means root account locked
+	if rootPassword != "" {
+		if err := ValidatePassword(rootPassword); err != nil {
+			return nil, err
+		}
+		// Business rule: if root password set, it must differ from user password
+		if userPassword == rootPassword {
+			return nil, errors.New("user and root passwords must differ")
+		}
 	}
 
 	return &Credentials{
@@ -47,9 +49,9 @@ func ValidatePassword(password string) error {
 		return errors.New("password cannot be empty")
 	}
 
-	// Minimum 8 characters (reduced from 12 to be more user-friendly)
-	if len(password) < 8 {
-		return errors.New("password must be at least 8 characters")
+	// Minimum 4 characters
+	if len(password) < 4 {
+		return errors.New("password must be at least 4 characters")
 	}
 
 	// Maximum 128 characters (reasonable limit)

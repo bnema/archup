@@ -3,22 +3,29 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+	"regexp"
 
 	"github.com/bnema/archup/internal/application/commands"
 	"github.com/bnema/archup/internal/application/dto"
+	"github.com/bnema/archup/internal/config"
 	"github.com/bnema/archup/internal/domain/ports"
 )
 
 // PostInstallHandler handles post-installation tasks
 type PostInstallHandler struct {
+	fs         ports.FileSystem
+	httpClient ports.HTTPClient
 	chrExec    ports.ChrootExecutor
 	scriptExec ports.ScriptExecutor
 	logger     ports.Logger
 }
 
 // NewPostInstallHandler creates a new post-installation handler
-func NewPostInstallHandler(chrExec ports.ChrootExecutor, scriptExec ports.ScriptExecutor, logger ports.Logger) *PostInstallHandler {
+func NewPostInstallHandler(fs ports.FileSystem, httpClient ports.HTTPClient, chrExec ports.ChrootExecutor, scriptExec ports.ScriptExecutor, logger ports.Logger) *PostInstallHandler {
 	return &PostInstallHandler{
+		fs:         fs,
+		httpClient: httpClient,
 		chrExec:    chrExec,
 		scriptExec: scriptExec,
 		logger:     logger,
@@ -40,23 +47,50 @@ func (h *PostInstallHandler) Handle(ctx context.Context, cmd commands.PostInstal
 		h.logger.Info("Running post-boot scripts")
 		result.TasksRun = append(result.TasksRun, "post-boot-scripts")
 
-		// In a real implementation, this would execute the mandatory post-boot scripts:
-		// - install/mandatory/post-boot/all.sh
-		// - install/mandatory/post-boot/snapper.sh
-		// - install/mandatory/post-boot/ufw.sh
-		// - install/mandatory/post-boot/ssh-keygen.sh
-		// - install/mandatory/post-boot/archup-cli.sh
-		// - install/mandatory/post-boot/blesh.sh
-		// - install/mandatory/post-boot/archup-first-boot.service
+		if err := h.setupPostBoot(ctx, cmd.MountPoint, cmd.Username); err != nil {
+			h.logger.Error("Failed to setup post-boot scripts", "error", err)
+			result.ErrorDetail = fmt.Sprintf("Failed to setup post-boot scripts: %v", err)
+			return result, err
+		}
 
-		h.logger.Info("Post-boot scripts executed")
+		h.logger.Info("Post-boot scripts prepared")
 	}
 
 	// Install Plymouth theme if specified
 	if cmd.PlymouthTheme != "" {
 		h.logger.Info("Installing Plymouth theme", "theme", cmd.PlymouthTheme)
+
+		themeDir := filepath.Join(cmd.MountPoint, "usr", "share", "plymouth", "themes", cmd.PlymouthTheme)
+		if err := h.fs.MkdirAll(themeDir, 0755); err != nil {
+			return result, fmt.Errorf("failed to create Plymouth theme directory: %w", err)
+		}
+
+		for _, file := range config.PlymouthFiles {
+			content, err := h.downloadTemplate(filepath.Join("assets", "plymouth", file))
+			if err != nil {
+				return result, fmt.Errorf("failed to download Plymouth file %s: %w", file, err)
+			}
+			if err := h.fs.WriteFile(filepath.Join(themeDir, file), content, 0644); err != nil {
+				return result, fmt.Errorf("failed to write Plymouth file %s: %w", file, err)
+			}
+		}
+
+		if _, err := h.chrExec.ExecuteInChroot(ctx, cmd.MountPoint, "plymouth-set-default-theme", cmd.PlymouthTheme); err != nil {
+			return result, fmt.Errorf("failed to set Plymouth theme: %w", err)
+		}
+
 		result.TasksRun = append(result.TasksRun, fmt.Sprintf("plymouth-theme-%s", cmd.PlymouthTheme))
 		h.logger.Info("Plymouth theme installed")
+	}
+
+	if err := h.installLimineLogo(cmd.MountPoint); err != nil {
+		h.logger.Warn("Failed to install Limine logo", "error", err)
+	}
+
+	if err := h.chrExec.ChrootSystemctl(ctx, h.logger.LogPath(), cmd.MountPoint, "enable", "bluetooth"); err != nil {
+		h.logger.Error("Failed to enable bluetooth", "error", err)
+		result.ErrorDetail = fmt.Sprintf("Failed to enable bluetooth: %v", err)
+		return result, err
 	}
 
 	// Final cleanup and verification
@@ -64,4 +98,140 @@ func (h *PostInstallHandler) Handle(ctx context.Context, cmd commands.PostInstal
 	result.Success = true
 
 	return result, nil
+}
+
+func (h *PostInstallHandler) setupPostBoot(ctx context.Context, mountPoint, username string) error {
+	postBootPath := filepath.Join(mountPoint, "usr", "local", "share", "archup", "post-boot")
+	if err := h.fs.MkdirAll(postBootPath, 0755); err != nil {
+		return fmt.Errorf("failed to create post-boot directory: %w", err)
+	}
+
+	serviceDest := filepath.Join(mountPoint, "etc", "systemd", "system", "archup-first-boot.service")
+	if err := h.writeFromTemplate("install/mandatory/post-boot/archup-first-boot.service", serviceDest); err != nil {
+		return fmt.Errorf("failed to write service file: %w", err)
+	}
+
+	for _, script := range config.PostBootScripts {
+		src := filepath.Join("install", "mandatory", "post-boot", script)
+		dst := filepath.Join(postBootPath, script)
+		if err := h.writeFromTemplate(src, dst); err != nil {
+			return fmt.Errorf("failed to write %s: %w", script, err)
+		}
+		if err := h.fs.Chmod(dst, 0755); err != nil {
+			return fmt.Errorf("failed to set permissions for %s: %w", script, err)
+		}
+	}
+
+	if err := h.copyShellConfigs(mountPoint, username); err != nil {
+		return fmt.Errorf("failed to copy shell configs: %w", err)
+	}
+
+	if _, err := h.chrExec.ExecuteInChroot(ctx, mountPoint, "chown", "-R", fmt.Sprintf("%s:%s", username, username), filepath.Join("/home", username, ".config")); err != nil {
+		return fmt.Errorf("failed to set shell config ownership: %w", err)
+	}
+
+	if err := h.chrExec.ChrootSystemctl(ctx, h.logger.LogPath(), mountPoint, "enable", config.PostBootServiceName); err != nil {
+		return fmt.Errorf("failed to enable first-boot service: %w", err)
+	}
+
+	return nil
+}
+
+func (h *PostInstallHandler) installLimineLogo(mountPoint string) error {
+	logoContent, err := h.downloadTemplate(config.ArchLogoURL)
+	if err != nil {
+		return err
+	}
+
+	logoPath := filepath.Join(mountPoint, "boot", "arch-logo.png")
+	if err := h.fs.WriteFile(logoPath, logoContent, 0644); err != nil {
+		return fmt.Errorf("failed to write Limine logo: %w", err)
+	}
+
+	limineConf := filepath.Join(mountPoint, "boot", "limine.conf")
+	content, err := h.fs.ReadFile(limineConf)
+	if err != nil {
+		return fmt.Errorf("failed to read limine.conf: %w", err)
+	}
+
+	contentStr := string(content)
+	graphicsRegex := regexp.MustCompile(`(?m)^graphics: yes$`)
+	if graphicsRegex.MatchString(contentStr) {
+		wallpaperSettings := "\nwallpaper: boot():/arch-logo.png\nwallpaper_style: centered\nbackdrop: 000000"
+		contentStr = graphicsRegex.ReplaceAllString(contentStr, "graphics: yes"+wallpaperSettings)
+		if err := h.fs.WriteFile(limineConf, []byte(contentStr), 0644); err != nil {
+			return fmt.Errorf("failed to update limine.conf: %w", err)
+		}
+		return nil
+	}
+
+	h.logger.Warn("graphics: yes not found in limine.conf")
+	return nil
+}
+
+func (h *PostInstallHandler) copyShellConfigs(mountPoint, username string) error {
+	configDir := filepath.Join(mountPoint, "home", username, ".config")
+	if err := h.fs.MkdirAll(configDir, 0755); err != nil {
+		return fmt.Errorf("failed to create user config dir: %w", err)
+	}
+
+	files := []string{
+		"install/configs/shell/aliases",
+		"install/configs/shell/envs",
+		"install/configs/shell/init",
+		"install/configs/shell/rc",
+		"install/configs/shell/shell",
+		"install/configs/shell/starship.toml",
+		"install/configs/shell/bashrc",
+	}
+
+	for _, src := range files {
+		_, name := filepath.Split(src)
+		dst := filepath.Join(configDir, name)
+		if err := h.writeFromTemplate(src, dst); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (h *PostInstallHandler) writeFromTemplate(src string, dst string) error {
+	content, err := h.tryReadLocal(src)
+	if err != nil {
+		content, err = h.downloadTemplate(src)
+		if err != nil {
+			return err
+		}
+	}
+
+	return h.fs.WriteFile(dst, content, 0644)
+}
+
+func (h *PostInstallHandler) tryReadLocal(path string) ([]byte, error) {
+	localPath := filepath.Join(config.DefaultInstallDir, path)
+	if exists, err := h.fs.Exists(localPath); err == nil && exists {
+		return h.fs.ReadFile(localPath)
+	}
+	if exists, err := h.fs.Exists(path); err == nil && exists {
+		return h.fs.ReadFile(path)
+	}
+	return nil, fmt.Errorf("local template not found")
+}
+
+func (h *PostInstallHandler) downloadTemplate(path string) ([]byte, error) {
+	url := fmt.Sprintf("https://raw.githubusercontent.com/bnema/archup/main/%s", path)
+	resp, err := h.httpClient.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if closeErr := resp.Close(); closeErr != nil {
+			h.logger.Warn("Failed to close HTTP response", "error", closeErr)
+		}
+	}()
+	if resp.StatusCode() < 200 || resp.StatusCode() > 299 {
+		return nil, fmt.Errorf("unexpected status %d", resp.StatusCode())
+	}
+	return resp.Body(), nil
 }

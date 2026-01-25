@@ -76,7 +76,7 @@ success "Architecture: $ARCH"
 # GitHub repository details
 REPO_OWNER="bnema"
 REPO_NAME="archup"
-BINARY_NAME="archup-installer"
+BINARY_NAME="archup"
 
 # Determine which version to download
 if [ -n "$SPECIFIC_VERSION" ]; then
@@ -128,4 +128,4 @@ chmod +x "$BINARY_PATH"
 # Run installer
 info "Launching ArchUp installer..."
 echo ""
-exec "$BINARY_PATH"
+exec "$BINARY_PATH" install
