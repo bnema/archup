@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"path/filepath"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/bnema/archup/internal/application/commands"
 	"github.com/bnema/archup/internal/application/dto"
+	"github.com/bnema/archup/internal/config"
 	"github.com/bnema/archup/internal/domain/packages"
 	"github.com/bnema/archup/internal/domain/ports"
 )
@@ -60,25 +62,20 @@ func (h *ReposHandler) Handle(ctx context.Context, cmd commands.SetupRepositorie
 		"aurHelper", repo.AURHelper())
 
 	pacmanConfPath := filepath.Join(cmd.MountPoint, "etc", "pacman.conf")
-	if repo.EnableMultilib() || repo.EnableChaotic() {
+
+	// Enable multilib first (doesn't require external files)
+	if repo.EnableMultilib() {
 		confBytes, err := h.fs.ReadFile(pacmanConfPath)
 		if err != nil {
 			return fail("Failed to read pacman.conf", err)
 		}
-
-		conf := string(confBytes)
-		if repo.EnableMultilib() {
-			conf = enableMultilibSection(conf)
-		}
-		if repo.EnableChaotic() {
-			conf = ensureChaoticRepo(conf)
-		}
-
+		conf := enableMultilibSection(string(confBytes))
 		if err := h.fs.WriteFile(pacmanConfPath, []byte(conf), 0644); err != nil {
 			return fail("Failed to write pacman.conf", err)
 		}
 	}
 
+	// For chaotic-aur: install keyring and mirrorlist BEFORE adding to pacman.conf
 	if repo.EnableChaotic() {
 		if _, err := h.chrExec.ExecuteInChroot(ctx, cmd.MountPoint, "pacman-key", "--recv-key", "3056513887B78AEB", "--keyserver", "keyserver.ubuntu.com"); err != nil {
 			return fail("Failed to receive Chaotic-AUR key", err)
@@ -93,8 +90,19 @@ func (h *ReposHandler) Handle(ctx context.Context, cmd commands.SetupRepositorie
 			"https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst"); err != nil {
 			return fail("Failed to install Chaotic-AUR keyring", err)
 		}
+
+		// Now that mirrorlist exists, add chaotic-aur to pacman.conf
+		confBytes, err := h.fs.ReadFile(pacmanConfPath)
+		if err != nil {
+			return fail("Failed to read pacman.conf", err)
+		}
+		conf := ensureChaoticRepo(string(confBytes))
+		if err := h.fs.WriteFile(pacmanConfPath, []byte(conf), 0644); err != nil {
+			return fail("Failed to write pacman.conf", err)
+		}
 	}
 
+	// Sync repos after all config changes
 	if repo.EnableMultilib() || repo.EnableChaotic() {
 		if _, err := h.chrExec.ExecuteInChroot(ctx, cmd.MountPoint, "pacman", "-Sy", "--noconfirm"); err != nil {
 			return fail("Failed to sync pacman repositories", err)
@@ -107,11 +115,55 @@ func (h *ReposHandler) Handle(ctx context.Context, cmd commands.SetupRepositorie
 		}
 	}
 
+	// Install extra packages from extra.packages file
+	extraPkgs, err := h.loadExtraPackages()
+	if err != nil {
+		h.logger.Warn("Could not load extra.packages", "error", err)
+	} else if len(extraPkgs) > 0 {
+		h.logger.Info("Installing extra packages", "count", len(extraPkgs))
+		args := append([]string{"-S", "--noconfirm", "--needed"}, extraPkgs...)
+		if _, err := h.chrExec.ExecuteInChroot(ctx, cmd.MountPoint, "pacman", args...); err != nil {
+			return fail("Failed to install extra packages", err)
+		}
+		h.logger.Info("Extra packages installed successfully")
+	}
+
 	result.Success = true
 	result.AURHelper = repo.AURHelper().String()
 
 	h.logger.Info("Repository configuration completed successfully")
 	return result, nil
+}
+
+// loadExtraPackages reads the extra package list from file
+func (h *ReposHandler) loadExtraPackages() ([]string, error) {
+	packageFile := filepath.Join(config.DefaultInstallDir, config.ExtraPackagesFile)
+
+	content, err := h.fs.ReadFile(packageFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read %s: %w", packageFile, err)
+	}
+
+	var pkgs []string
+	scanner := bufio.NewScanner(strings.NewReader(string(content)))
+
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+
+		// Skip comments and empty lines
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		pkgs = append(pkgs, line)
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error reading package file: %w", err)
+	}
+
+	h.logger.Info("Loaded extra packages from file", "file", packageFile, "count", len(pkgs))
+	return pkgs, nil
 }
 
 func enableMultilibSection(conf string) string {
