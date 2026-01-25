@@ -33,3 +33,6 @@ cmd/*/[a-z]*
 
 *.qcow2
 *.iso
+
+# Compiled binaries in root
+/archup-installer
