@@ -18,6 +18,7 @@ type InstallationService struct {
 	installAgg *installation.Installation
 
 	// Handlers
+	bootstrapHandler   *handlers.BootstrapHandler
 	preflightHandler   *handlers.PreflightHandler
 	partitionHandler   *handlers.PartitionHandler
 	baseHandler        *handlers.InstallBaseHandler
@@ -41,6 +42,7 @@ type InstallationService struct {
 func NewInstallationService(
 	repo ports.InstallationRepository,
 	logger ports.Logger,
+	bootstrapHandler *handlers.BootstrapHandler,
 	preflightHandler *handlers.PreflightHandler,
 	partitionHandler *handlers.PartitionHandler,
 	baseHandler *handlers.InstallBaseHandler,
@@ -52,6 +54,7 @@ func NewInstallationService(
 	return &InstallationService{
 		repo:               repo,
 		logger:             logger,
+		bootstrapHandler:   bootstrapHandler,
 		preflightHandler:   preflightHandler,
 		partitionHandler:   partitionHandler,
 		baseHandler:        baseHandler,
@@ -112,6 +115,20 @@ func (s *InstallationService) RunPreflight(ctx context.Context) (*dto.PreflightR
 	}
 
 	s.tracker.EmitPhaseCompleted("Preflight Checks", 1, 8)
+	return result, nil
+}
+
+// RunBootstrap downloads/clones install files
+func (s *InstallationService) RunBootstrap(ctx context.Context) (*dto.BootstrapResult, error) {
+	s.logger.Info("Running bootstrap to prepare install files")
+
+	result, err := s.bootstrapHandler.Handle(ctx)
+	if err != nil {
+		s.logger.Error("Bootstrap failed", "error", err)
+		return result, err
+	}
+
+	s.logger.Info("Bootstrap completed", "method", result.Method)
 	return result, nil
 }
 

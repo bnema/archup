@@ -56,17 +56,19 @@ func createTestService(ctrl *gomock.Controller) *InstallationService {
 	mockChrExec.EXPECT().ExecuteInChrootWithStdin(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
+	bootstrapHandler := handlers.NewBootstrapHandler(mockFS, mockHTTP, mockLogger, "https://github.com/bnema/archup", "https://raw.githubusercontent.com/bnema/archup/dev")
 	preflightHandler := handlers.NewPreflightHandler(mockFS, mockExec, mockLogger)
 	partitionHandler := handlers.NewPartitionHandler(mockExec, mockLogger)
 	baseHandler := handlers.NewInstallBaseHandler(mockFS, mockExec, mockChrExec, mockLogger)
 	configHandler := handlers.NewConfigureSystemHandler(mockFS, mockChrExec, mockLogger)
-	bootloaderHandler := handlers.NewBootloaderHandler(mockFS, mockExec, mockChrExec, mockLogger)
+	bootloaderHandler := handlers.NewBootloaderHandler(mockChrExec, mockLogger)
 	reposHandler := handlers.NewReposHandler(mockFS, mockChrExec, mockLogger)
-	postInstallHandler := handlers.NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger)
+	postInstallHandler := handlers.NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger, "https://raw.githubusercontent.com/bnema/archup/dev")
 
 	return NewInstallationService(
 		mockRepo,
 		mockLogger,
+		bootstrapHandler,
 		preflightHandler,
 		partitionHandler,
 		baseHandler,
@@ -139,15 +141,16 @@ func TestInstallationService_Start_InvalidHostname(t *testing.T) {
 	mockChrExec.EXPECT().ExecuteInChrootWithStdin(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
+	bootstrapHandler := handlers.NewBootstrapHandler(mockFS, mockHTTP, mockLogger, "https://github.com/bnema/archup", "https://raw.githubusercontent.com/bnema/archup/dev")
 	preflightHandler := handlers.NewPreflightHandler(mockFS, mockExec, mockLogger)
 	partitionHandler := handlers.NewPartitionHandler(mockExec, mockLogger)
 	baseHandler := handlers.NewInstallBaseHandler(mockFS, mockExec, mockChrExec, mockLogger)
 	configHandler := handlers.NewConfigureSystemHandler(mockFS, mockChrExec, mockLogger)
-	bootloaderHandler := handlers.NewBootloaderHandler(mockFS, mockExec, mockChrExec, mockLogger)
+	bootloaderHandler := handlers.NewBootloaderHandler(mockChrExec, mockLogger)
 	reposHandler := handlers.NewReposHandler(mockFS, mockChrExec, mockLogger)
-	postInstallHandler := handlers.NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger)
+	postInstallHandler := handlers.NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger, "https://raw.githubusercontent.com/bnema/archup/dev")
 
-	service := NewInstallationService(mockRepo, mockLogger, preflightHandler, partitionHandler, baseHandler, configHandler, bootloaderHandler, reposHandler, postInstallHandler)
+	service := NewInstallationService(mockRepo, mockLogger, bootstrapHandler, preflightHandler, partitionHandler, baseHandler, configHandler, bootloaderHandler, reposHandler, postInstallHandler)
 	defer func() {
 		if err := service.Close(); err != nil {
 			t.Fatalf("expected no error, got %v", err)

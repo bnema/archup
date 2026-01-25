@@ -1,12 +1,15 @@
 package handlers
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/bnema/archup/internal/application/commands"
 	"github.com/bnema/archup/internal/application/dto"
+	"github.com/bnema/archup/internal/config"
 	"github.com/bnema/archup/internal/domain/packages"
 	"github.com/bnema/archup/internal/domain/ports"
 )
@@ -47,12 +50,17 @@ func (h *InstallBaseHandler) Handle(ctx context.Context, cmd commands.InstallBas
 		return result, err
 	}
 
-	// Build base packages list
-	basePackages := []string{
-		"base",
-		"linux-firmware",
-		kernel.PackageName(),
+	// Load base packages from file (downloaded during bootstrap)
+	basePackages, err := h.loadBasePackages()
+	if err != nil {
+		h.logger.Error("Failed to load base.packages", "error", err)
+		result.ErrorDetail = fmt.Sprintf("Failed to load base.packages: %v - run bootstrap first", err)
+		return result, err
 	}
+
+	// Add kernel (not in base.packages, selected dynamically)
+	basePackages = append(basePackages, kernel.PackageName())
+	h.logger.Info("Adding kernel", "kernel", kernel.PackageName())
 
 	// Add microcode if requested
 	if cmd.IncludeMicrocode {
@@ -60,8 +68,11 @@ func (h *InstallBaseHandler) Handle(ctx context.Context, cmd commands.InstallBas
 		h.logger.Info("Adding CPU microcode packages")
 	}
 
-	// Add custom packages
-	basePackages = append(basePackages, cmd.Packages...)
+	// Add any additional packages from command
+	if len(cmd.Packages) > 0 {
+		basePackages = append(basePackages, cmd.Packages...)
+		h.logger.Info("Adding additional packages", "count", len(cmd.Packages))
+	}
 
 	h.logger.Info("Installing base packages", "count", len(basePackages))
 	args := append([]string{cmd.MountPoint}, basePackages...)
@@ -90,4 +101,36 @@ func (h *InstallBaseHandler) Handle(ctx context.Context, cmd commands.InstallBas
 
 	h.logger.Info("Base system installation completed", "packages", len(basePackages))
 	return result, nil
+}
+
+// loadBasePackages reads the base package list from file
+func (h *InstallBaseHandler) loadBasePackages() ([]string, error) {
+	// Read from install directory (downloaded during bootstrap)
+	packageFile := filepath.Join(config.DefaultInstallDir, config.BasePackagesFile)
+
+	content, err := h.fs.ReadFile(packageFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read %s: %w", packageFile, err)
+	}
+
+	var packages []string
+	scanner := bufio.NewScanner(strings.NewReader(string(content)))
+
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+
+		// Skip comments and empty lines
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		packages = append(packages, line)
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error reading package file: %w", err)
+	}
+
+	h.logger.Info("Loaded packages from file", "file", packageFile, "count", len(packages))
+	return packages, nil
 }

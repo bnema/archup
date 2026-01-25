@@ -184,7 +184,12 @@ func (p *ConfigPhase) createUser(progressChan chan<- ProgressUpdate) error {
 		return fmt.Errorf("failed to set user password: %w", err)
 	}
 
-	// Enable sudo for wheel group (passwordless for convenience)
+	// Enable sudo for wheel group
+	// Create sudoers.d directory if it doesn't exist
+	sudoersDir := filepath.Dir(config.PathMntEtcSudoersD)
+	if err := p.fs.MkdirAll(sudoersDir, 0755); err != nil {
+		return fmt.Errorf("failed to create sudoers.d directory: %w", err)
+	}
 	if err := p.fs.WriteFile(config.PathMntEtcSudoersD, []byte(config.SudoersWheelContent), config.SudoersWheelPerms); err != nil {
 		return fmt.Errorf("failed to write sudoers config: %w", err)
 	}

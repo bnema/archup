@@ -103,6 +103,15 @@ func CreateInstallationCommand(app AppContext, formData models.FormData) tea.Cmd
 				return
 			}
 
+			// Phase 1.5: Bootstrap (clone repo / download files)
+			if _, err := svc.RunBootstrap(ctx); err != nil {
+				logger.Error("Bootstrap failed", "error", err)
+				if program != nil {
+					program.Send(InstallationErrorMsg{Err: err})
+				}
+				return
+			}
+
 			// Phase 2: Partition disk with chosen encryption using user password
 			partitionCmd := commands.PartitionDiskCommand{
 				TargetDisk:         formData.TargetDisk,
@@ -196,6 +205,7 @@ func CreateInstallationCommand(app AppContext, formData models.FormData) tea.Cmd
 			postCmd := commands.PostInstallCommand{
 				MountPoint:         "/mnt",
 				Username:           formData.Username,
+				UserEmail:          formData.UserEmail,
 				PlymouthTheme:      config.PlymouthThemeName,
 				RunPostBootScripts: true,
 			}

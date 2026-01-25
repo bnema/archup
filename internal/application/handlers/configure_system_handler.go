@@ -159,7 +159,13 @@ func (h *ConfigureSystemHandler) Handle(ctx context.Context, cmd commands.Config
 		}
 	}
 
-	if err := h.fs.WriteFile(filepath.Join(cmd.MountPoint, "etc", "sudoers.d", "wheel"), []byte("%wheel ALL=(ALL:ALL) ALL\n"), 0440); err != nil {
+	sudoersDir := filepath.Join(cmd.MountPoint, "etc", "sudoers.d")
+	if err := h.fs.MkdirAll(sudoersDir, 0755); err != nil {
+		h.logger.Error("Failed to create sudoers.d directory", "error", err)
+		result.ErrorDetail = fmt.Sprintf("Failed to create sudoers.d directory: %v", err)
+		return result, err
+	}
+	if err := h.fs.WriteFile(filepath.Join(sudoersDir, "wheel"), []byte("%wheel ALL=(ALL:ALL) ALL\n"), 0440); err != nil {
 		h.logger.Error("Failed to write sudoers", "error", err)
 		result.ErrorDetail = fmt.Sprintf("Failed to write sudoers: %v", err)
 		return result, err
