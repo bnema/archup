@@ -214,7 +214,10 @@ func (a *App) handleFormInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (a *App) handleProgressUpdate(msg handlers.ProgressUpdateMsg) (tea.Model, tea.Cmd) {
 	updatedProgress, cmd := handlers.HandleProgressUpdate(a, msg, a.progressModel)
 	a.progressModel = updatedProgress
-	a.currentScreen = ScreenProgress
+	// Don't override summary or error screens with late progress messages
+	if a.currentScreen != ScreenSummary && a.currentScreen != ScreenError {
+		a.currentScreen = ScreenProgress
+	}
 	return a, cmd
 }
 

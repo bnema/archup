@@ -61,8 +61,14 @@ func RenderSummary(im *models.InstallationModelImpl) string {
 
 	b.WriteString("\n")
 	b.WriteString(lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("14")).
+		Render("You can now reboot into your new system!"))
+	b.WriteString("\n\n")
+
+	b.WriteString(lipgloss.NewStyle().
 		Faint(true).
-		Render("Press 'q' to exit"))
+		Render("Press 'q' to exit, then run: reboot"))
 
 	return b.String()
 }
