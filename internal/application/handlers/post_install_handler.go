@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/bnema/archup/internal/application/commands"
 	"github.com/bnema/archup/internal/application/dto"
@@ -19,16 +20,18 @@ type PostInstallHandler struct {
 	chrExec    ports.ChrootExecutor
 	scriptExec ports.ScriptExecutor
 	logger     ports.Logger
+	rawURL     string
 }
 
 // NewPostInstallHandler creates a new post-installation handler
-func NewPostInstallHandler(fs ports.FileSystem, httpClient ports.HTTPClient, chrExec ports.ChrootExecutor, scriptExec ports.ScriptExecutor, logger ports.Logger) *PostInstallHandler {
+func NewPostInstallHandler(fs ports.FileSystem, httpClient ports.HTTPClient, chrExec ports.ChrootExecutor, scriptExec ports.ScriptExecutor, logger ports.Logger, rawURL string) *PostInstallHandler {
 	return &PostInstallHandler{
 		fs:         fs,
 		httpClient: httpClient,
 		chrExec:    chrExec,
 		scriptExec: scriptExec,
 		logger:     logger,
+		rawURL:     rawURL,
 	}
 }
 
@@ -47,7 +50,7 @@ func (h *PostInstallHandler) Handle(ctx context.Context, cmd commands.PostInstal
 		h.logger.Info("Running post-boot scripts")
 		result.TasksRun = append(result.TasksRun, "post-boot-scripts")
 
-		if err := h.setupPostBoot(ctx, cmd.MountPoint, cmd.Username); err != nil {
+		if err := h.setupPostBoot(ctx, cmd.MountPoint, cmd.Username, cmd.UserEmail); err != nil {
 			h.logger.Error("Failed to setup post-boot scripts", "error", err)
 			result.ErrorDetail = fmt.Sprintf("Failed to setup post-boot scripts: %v", err)
 			return result, err
@@ -87,12 +90,6 @@ func (h *PostInstallHandler) Handle(ctx context.Context, cmd commands.PostInstal
 		h.logger.Warn("Failed to install Limine logo", "error", err)
 	}
 
-	if err := h.chrExec.ChrootSystemctl(ctx, h.logger.LogPath(), cmd.MountPoint, "enable", "bluetooth"); err != nil {
-		h.logger.Error("Failed to enable bluetooth", "error", err)
-		result.ErrorDetail = fmt.Sprintf("Failed to enable bluetooth: %v", err)
-		return result, err
-	}
-
 	// Final cleanup and verification
 	h.logger.Info("Post-installation tasks completed")
 	result.Success = true
@@ -100,14 +97,15 @@ func (h *PostInstallHandler) Handle(ctx context.Context, cmd commands.PostInstal
 	return result, nil
 }
 
-func (h *PostInstallHandler) setupPostBoot(ctx context.Context, mountPoint, username string) error {
+func (h *PostInstallHandler) setupPostBoot(ctx context.Context, mountPoint, username, email string) error {
 	postBootPath := filepath.Join(mountPoint, "usr", "local", "share", "archup", "post-boot")
 	if err := h.fs.MkdirAll(postBootPath, 0755); err != nil {
 		return fmt.Errorf("failed to create post-boot directory: %w", err)
 	}
 
+	// Write service file with placeholder replacement for email and username
 	serviceDest := filepath.Join(mountPoint, "etc", "systemd", "system", "archup-first-boot.service")
-	if err := h.writeFromTemplate("install/mandatory/post-boot/archup-first-boot.service", serviceDest); err != nil {
+	if err := h.writeServiceFile("install/mandatory/post-boot/archup-first-boot.service", serviceDest, username, email); err != nil {
 		return fmt.Errorf("failed to write service file: %w", err)
 	}
 
@@ -208,6 +206,24 @@ func (h *PostInstallHandler) writeFromTemplate(src string, dst string) error {
 	return h.fs.WriteFile(dst, content, 0644)
 }
 
+// writeServiceFile writes the systemd service file with placeholder replacement
+func (h *PostInstallHandler) writeServiceFile(src, dst, username, email string) error {
+	content, err := h.tryReadLocal(src)
+	if err != nil {
+		content, err = h.downloadTemplate(src)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Replace placeholders with actual values
+	serviceContent := string(content)
+	serviceContent = strings.ReplaceAll(serviceContent, "__ARCHUP_USERNAME__", username)
+	serviceContent = strings.ReplaceAll(serviceContent, "__ARCHUP_EMAIL__", email)
+
+	return h.fs.WriteFile(dst, []byte(serviceContent), 0644)
+}
+
 func (h *PostInstallHandler) tryReadLocal(path string) ([]byte, error) {
 	localPath := filepath.Join(config.DefaultInstallDir, path)
 	if exists, err := h.fs.Exists(localPath); err == nil && exists {
@@ -220,7 +236,8 @@ func (h *PostInstallHandler) tryReadLocal(path string) ([]byte, error) {
 }
 
 func (h *PostInstallHandler) downloadTemplate(path string) ([]byte, error) {
-	url := fmt.Sprintf("https://raw.githubusercontent.com/bnema/archup/main/%s", path)
+	url := fmt.Sprintf("%s/%s", h.rawURL, path)
+	h.logger.Info("Downloading template", "url", url)
 	resp, err := h.httpClient.Get(url)
 	if err != nil {
 		return nil, err
@@ -231,7 +248,7 @@ func (h *PostInstallHandler) downloadTemplate(path string) ([]byte, error) {
 		}
 	}()
 	if resp.StatusCode() < 200 || resp.StatusCode() > 299 {
-		return nil, fmt.Errorf("unexpected status %d", resp.StatusCode())
+		return nil, fmt.Errorf("unexpected status %d from %s", resp.StatusCode(), url)
 	}
 	return resp.Body(), nil
 }

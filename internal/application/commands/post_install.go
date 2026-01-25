@@ -4,6 +4,7 @@ package commands
 type PostInstallCommand struct {
 	MountPoint         string // Root mount point
 	Username           string // Standard user username
+	UserEmail          string // User email for git config and SSH key (optional)
 	RunPostBootScripts bool   // Whether to run post-boot scripts
 	PlymouthTheme      string // Plymouth theme to install (optional)
 }

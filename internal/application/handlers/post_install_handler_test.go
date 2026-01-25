@@ -39,7 +39,7 @@ func TestPostInstallHandler_Handle_NoScripts(t *testing.T) {
 	mockHTTP.EXPECT().Get(gomock.Any()).Return(newMockResponse(ctrl, http.StatusOK, []byte("content")), nil).AnyTimes()
 	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
-	handler := NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger)
+	handler := NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger, "https://raw.githubusercontent.com/bnema/archup/dev")
 
 	cmd := commands.PostInstallCommand{
 		MountPoint:         "/mnt",
@@ -85,7 +85,7 @@ func TestPostInstallHandler_Handle_WithScripts(t *testing.T) {
 	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
 	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
-	handler := NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger)
+	handler := NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger, "https://raw.githubusercontent.com/bnema/archup/dev")
 
 	cmd := commands.PostInstallCommand{
 		MountPoint:         "/mnt",
@@ -134,7 +134,7 @@ func TestPostInstallHandler_Handle_WithPlymouth(t *testing.T) {
 	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
 	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
-	handler := NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger)
+	handler := NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger, "https://raw.githubusercontent.com/bnema/archup/dev")
 
 	cmd := commands.PostInstallCommand{
 		MountPoint:         "/mnt",
@@ -184,7 +184,7 @@ func TestPostInstallHandler_Handle_Everything(t *testing.T) {
 	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
 	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
-	handler := NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger)
+	handler := NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger, "https://raw.githubusercontent.com/bnema/archup/dev")
 
 	cmd := commands.PostInstallCommand{
 		MountPoint:         "/mnt",
