@@ -21,7 +21,6 @@ ttf-jetbrains-mono-nerd
 
 # Networking
 networkmanager
-broadcom-wl
 openssh
 
 # Essential Tools

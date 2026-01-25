@@ -21,10 +21,10 @@ if [ -f /usr/local/share/archup/post-boot/snapper.sh ]; then
   fi
 fi
 
-# Configure UFW firewall
-if [ -f /usr/local/share/archup/post-boot/ufw.sh ]; then
+# Configure firewalld
+if [ -f /usr/local/share/archup/post-boot/firewalld.sh ]; then
   echo "Configuring firewall..." >> "$LOG_FILE"
-  if bash /usr/local/share/archup/post-boot/ufw.sh >> "$LOG_FILE" 2>&1; then
+  if bash /usr/local/share/archup/post-boot/firewalld.sh >> "$LOG_FILE" 2>&1; then
     echo "Firewall configured successfully" >> "$LOG_FILE"
   else
     echo "Firewall configuration failed (non-critical)" >> "$LOG_FILE"

@@ -20,14 +20,29 @@ unzip
 tlp
 
 # Security
-ufw
+firewalld
+
+# Audio (Pipewire stack)
+pipewire
+pipewire-alsa
+pipewire-jack
+pipewire-pulse
+wireplumber
+gst-plugin-pipewire
+libpulse
+pamixer
+playerctl
 
 # Bluetooth
 bluez
 bluez-utils
+bluetui
 
-# Alternative WiFi
+# WiFi
 iwd
+wireless-regdb
+impala
+broadcom-wl-dkms
 
 # Shell enhancements
 bash-completion
