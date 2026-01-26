@@ -30,6 +30,7 @@ type App struct {
 	// UI models (using concrete types for compatibility with views/handlers)
 	formModel         *models.FormModelImpl
 	diskModel         *models.DiskModelImpl
+	kernelModel       *models.KernelModelImpl
 	amdPstateModel    *models.AMDPStateModelImpl
 	gpuModel          *models.GPUModelImpl
 	installationModel *models.InstallationModelImpl
@@ -53,6 +54,7 @@ type Screen string
 const (
 	ScreenForm       Screen = "form"
 	ScreenDisk       Screen = "disk"
+	ScreenKernel     Screen = "kernel"
 	ScreenAMDPState  Screen = "amd-pstate"
 	ScreenGPU        Screen = "gpu"
 	ScreenInstalling Screen = "installing"
@@ -77,6 +79,7 @@ func NewApp(
 		logger:            logger,
 		formModel:         models.NewFormModel(),
 		diskModel:         models.NewDiskModel(),
+		kernelModel:       models.NewKernelModel(),
 		amdPstateModel:    models.NewAMDPStateModel(),
 		gpuModel:          models.NewGPUModel(),
 		installationModel: models.NewInstallationModel(),
@@ -149,6 +152,8 @@ func (a *App) View() string {
 		return views.RenderForm(a.formModel)
 	case ScreenDisk:
 		return views.RenderDiskSelection(a.diskModel)
+	case ScreenKernel:
+		return views.RenderKernelSelection(a.kernelModel)
 	case ScreenAMDPState:
 		return views.RenderAMDPStateSelection(a.amdPstateModel)
 	case ScreenGPU:
@@ -171,6 +176,8 @@ func (a *App) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return a.handleFormInput(msg)
 	case ScreenDisk:
 		return a.handleDiskInput(msg)
+	case ScreenKernel:
+		return a.handleKernelInput(msg)
 	case ScreenAMDPState:
 		return a.handleAMDPStateInput(msg)
 	case ScreenGPU:
@@ -309,6 +316,27 @@ func (a *App) handleGPUInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return a, nil
 }
 
+func (a *App) handleKernelInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "ctrl+c":
+		return a, tea.Quit
+	case "esc", "backspace":
+		return a.startDiskSelection()
+	case "up", "shift+tab":
+		a.kernelModel.MoveUp()
+		return a, nil
+	case "down", "tab":
+		a.kernelModel.MoveDown()
+		return a, nil
+	case "enter":
+		selected := a.kernelModel.SelectedOption()
+		a.formData.KernelVariant = selected.Package
+		return a.startAMDPStateSelection()
+	}
+
+	return a, nil
+}
+
 func (a *App) handleCPUDetected(msg CPUDetectedMsg) (tea.Model, tea.Cmd) {
 	if msg.Err != nil {
 		a.logger.Warn("CPU detection reported error", "error", msg.Err)
@@ -330,7 +358,7 @@ func (a *App) handleAMDPStateInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "ctrl+c":
 		return a, tea.Quit
 	case "esc", "backspace":
-		return a.startDiskSelection()
+		return a.startKernelSelection()
 	case "up", "shift+tab":
 		a.amdPstateModel.MoveUp()
 		return a, nil
@@ -408,6 +436,12 @@ func (a *App) startAMDPStateSelection() (tea.Model, tea.Cmd) {
 	return a, a.detectCPUCmd()
 }
 
+func (a *App) startKernelSelection() (tea.Model, tea.Cmd) {
+	a.currentScreen = ScreenKernel
+	a.kernelModel.SetSelectedPackage(a.formData.KernelVariant)
+	return a, nil
+}
+
 func (a *App) detectCPUCmd() tea.Cmd {
 	return func() tea.Msg {
 		info, err := legacysystem.DetectCPUInfo()
@@ -472,7 +506,7 @@ func (a *App) handleDiskInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		// Update stored form data directly
 		a.formData.TargetDisk = selected.Path
-		return a.startAMDPStateSelection()
+		return a.startKernelSelection()
 	}
 	return a, nil
 }
