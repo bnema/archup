@@ -16,6 +16,7 @@ type InstallationModelImpl struct {
 
 	status   *dto.InstallationStatus
 	err      string
+	notice   string
 	complete bool
 }
 
@@ -24,6 +25,7 @@ func NewInstallationModel() *InstallationModelImpl {
 	return &InstallationModelImpl{
 		status:   &dto.InstallationStatus{},
 		err:      "",
+		notice:   "",
 		complete: false,
 	}
 }
@@ -87,6 +89,10 @@ func (im *InstallationModelImpl) SetError(message string) {
 	im.err = message
 }
 
+func (im *InstallationModelImpl) SetNotice(message string) {
+	im.notice = message
+}
+
 // SetComplete marks installation as complete
 func (im *InstallationModelImpl) SetComplete() {
 	im.complete = true
@@ -100,6 +106,10 @@ func (im *InstallationModelImpl) SetStatus(status *dto.InstallationStatus) {
 // GetError returns the error message if any
 func (im *InstallationModelImpl) GetError() string {
 	return im.err
+}
+
+func (im *InstallationModelImpl) GetNotice() string {
+	return im.notice
 }
 
 // IsComplete returns whether the installation is complete
@@ -195,7 +205,7 @@ func (im *InstallationModelImpl) renderSummary() string {
 	b.WriteString("\n")
 	b.WriteString(lipgloss.NewStyle().
 		Faint(true).
-		Render("Press 'q' to exit"))
+		Render("Press 'r' to unmount and reboot, or 'q' to exit"))
 
 	return b.String()
 }

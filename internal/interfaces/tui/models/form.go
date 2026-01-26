@@ -22,21 +22,23 @@ func (bm *BaseModel) SetSize(width, height int) {
 
 // FormData contains the data from the form
 type FormData struct {
-	Hostname       string
-	Username       string
-	UserEmail      string
-	UserPassword   string
-	RootPassword   string
-	TargetDisk     string
-	EncryptionType string
-	GPUVendor      string
-	GPUDrivers     []string
-	Timezone       string
-	Locale         string
-	Keymap         string
-	KernelVariant  string
-	AURHelper      string
-	Microcode      bool
+	Hostname          string
+	Username          string
+	UserEmail         string
+	UserPassword      string
+	RootPassword      string
+	TargetDisk        string
+	EncryptionType    string
+	AMDPState         string
+	KernelParamsExtra string
+	GPUVendor         string
+	GPUDrivers        []string
+	Timezone          string
+	Locale            string
+	Keymap            string
+	KernelVariant     string
+	AURHelper         string
+	Microcode         bool
 }
 
 // FormModelImpl implements FormModel interface
@@ -296,16 +298,18 @@ func (fm *FormModelImpl) extractData() {
 	// Use fm.fields slice values, not the original fields (which are copies)
 	// Field order: hostname(0), username(1), email(2), password(3), timezone(4), locale(5), keymap(6)
 	fm.data = FormData{
-		Hostname:       fm.fields[0].Value(),
-		Username:       fm.fields[1].Value(),
-		UserEmail:      fm.fields[2].Value(), // Optional - for git config
-		UserPassword:   fm.fields[3].Value(),
-		RootPassword:   "", // No root password - root account locked, user is sudoer
-		TargetDisk:     fm.targetDisk.Value(),
-		EncryptionType: fm.data.EncryptionType,
-		Timezone:       fm.fields[4].Value(),
-		Locale:         fm.fields[5].Value(),
-		Keymap:         fm.fields[6].Value(),
+		Hostname:          fm.fields[0].Value(),
+		Username:          fm.fields[1].Value(),
+		UserEmail:         fm.fields[2].Value(), // Optional - for git config
+		UserPassword:      fm.fields[3].Value(),
+		RootPassword:      "", // No root password - root account locked, user is sudoer
+		TargetDisk:        fm.targetDisk.Value(),
+		EncryptionType:    fm.data.EncryptionType,
+		AMDPState:         fm.data.AMDPState,
+		KernelParamsExtra: fm.data.KernelParamsExtra,
+		Timezone:          fm.fields[4].Value(),
+		Locale:            fm.fields[5].Value(),
+		Keymap:            fm.fields[6].Value(),
 	}
 }
 

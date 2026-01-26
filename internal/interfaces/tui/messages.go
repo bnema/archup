@@ -23,6 +23,12 @@ type GPUDetectedMsg struct {
 	GPU *system.GPU
 }
 
+// CPUDetectedMsg is sent when CPU detection completes
+type CPUDetectedMsg struct {
+	CPU *legacysystem.CPUInfo
+	Err error
+}
+
 // TimezoneDetectedMsg is sent when timezone detection completes
 type TimezoneDetectedMsg struct {
 	Timezone string

@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"os"
 
 	apphandlers "github.com/bnema/archup/internal/application/handlers"
 	"github.com/bnema/archup/internal/application/services"
@@ -29,6 +30,7 @@ type App struct {
 	// UI models (using concrete types for compatibility with views/handlers)
 	formModel         *models.FormModelImpl
 	diskModel         *models.DiskModelImpl
+	amdPstateModel    *models.AMDPStateModelImpl
 	gpuModel          *models.GPUModelImpl
 	installationModel *models.InstallationModelImpl
 	progressModel     *models.ProgressModelImpl
@@ -51,6 +53,7 @@ type Screen string
 const (
 	ScreenForm       Screen = "form"
 	ScreenDisk       Screen = "disk"
+	ScreenAMDPState  Screen = "amd-pstate"
 	ScreenGPU        Screen = "gpu"
 	ScreenInstalling Screen = "installing"
 	ScreenProgress   Screen = "progress"
@@ -74,6 +77,7 @@ func NewApp(
 		logger:            logger,
 		formModel:         models.NewFormModel(),
 		diskModel:         models.NewDiskModel(),
+		amdPstateModel:    models.NewAMDPStateModel(),
 		gpuModel:          models.NewGPUModel(),
 		installationModel: models.NewInstallationModel(),
 		progressModel:     models.NewProgressModel(),
@@ -125,6 +129,8 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a.handleInstallationError(msg)
 	case handlers.InstallationCompleteMsg:
 		return a.handleInstallationComplete(msg)
+	case CPUDetectedMsg:
+		return a.handleCPUDetected(msg)
 	case GPUDetectedMsg:
 		return a.handleGPUDetected(msg)
 	case TimezoneDetectedMsg:
@@ -143,6 +149,8 @@ func (a *App) View() string {
 		return views.RenderForm(a.formModel)
 	case ScreenDisk:
 		return views.RenderDiskSelection(a.diskModel)
+	case ScreenAMDPState:
+		return views.RenderAMDPStateSelection(a.amdPstateModel)
 	case ScreenGPU:
 		return views.RenderGPUSelection(a.gpuModel)
 	case ScreenInstalling, ScreenProgress:
@@ -163,6 +171,8 @@ func (a *App) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return a.handleFormInput(msg)
 	case ScreenDisk:
 		return a.handleDiskInput(msg)
+	case ScreenAMDPState:
+		return a.handleAMDPStateInput(msg)
 	case ScreenGPU:
 		return a.handleGPUInput(msg)
 	case ScreenProgress:
@@ -171,8 +181,12 @@ func (a *App) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return a.handleCancel()
 		}
 	case ScreenSummary:
-		if msg.String() == "q" || msg.String() == "ctrl+c" {
+		switch msg.String() {
+		case "q", "ctrl+c":
 			return a, tea.Quit
+		case "r":
+			a.unmountAndReboot()
+			return a, nil
 		}
 	case ScreenError:
 		if msg.String() == "q" || msg.String() == "ctrl+c" {
@@ -252,6 +266,28 @@ func (a *App) handleCancel() (tea.Model, tea.Cmd) {
 	return a, nil
 }
 
+func (a *App) unmountAndReboot() {
+	mountPoint := "/mnt"
+	check := legacysystem.RunSimple("mountpoint", "-q", mountPoint)
+	if check.ExitCode == 0 {
+		if err := legacysystem.Unmount(a.logger.LogPath(), mountPoint); err != nil {
+			a.logger.Warn("Failed to unmount before reboot", "error", err)
+			a.installationModel.SetNotice("Failed to unmount /mnt. Please run: umount -R /mnt")
+			return
+		}
+	}
+
+	if _, err := os.Stat("/dev/mapper/cryptroot"); err == nil {
+		result := legacysystem.RunLogged(a.logger.LogPath(), "cryptsetup", "close", "cryptroot")
+		if result.Error != nil {
+			a.logger.Warn("Failed to close encrypted volume", "error", result.Error)
+		}
+	}
+
+	a.logger.Info("Rebooting system")
+	_ = legacysystem.RunLogged(a.logger.LogPath(), "reboot")
+}
+
 func (a *App) handleGPUInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "ctrl+c":
@@ -268,6 +304,56 @@ func (a *App) handleGPUInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		a.formData.GPUVendor = string(selected.Vendor)
 		a.formData.GPUDrivers = append([]string{}, selected.Drivers...)
 		return a.startInstallation()
+	}
+
+	return a, nil
+}
+
+func (a *App) handleCPUDetected(msg CPUDetectedMsg) (tea.Model, tea.Cmd) {
+	if msg.Err != nil {
+		a.logger.Warn("CPU detection reported error", "error", msg.Err)
+	}
+
+	a.amdPstateModel.SetCPUInfo(msg.CPU)
+
+	if !a.amdPstateModel.ShouldPrompt() {
+		a.formData.AMDPState = ""
+		a.formData.KernelParamsExtra = ""
+		return a.startGPUSelection()
+	}
+
+	return a, nil
+}
+
+func (a *App) handleAMDPStateInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "ctrl+c":
+		return a, tea.Quit
+	case "esc", "backspace":
+		return a.startDiskSelection()
+	case "up", "shift+tab":
+		a.amdPstateModel.MoveUp()
+		return a, nil
+	case "down", "tab":
+		a.amdPstateModel.MoveDown()
+		return a, nil
+	case "enter":
+		selected := a.amdPstateModel.SelectedOption()
+		mode := string(selected.Mode)
+		a.formData.AMDPState = mode
+		a.formData.KernelParamsExtra = ""
+
+		cpuInfo := a.amdPstateModel.CPUInfo()
+		switch {
+		case mode == "":
+			// No selection
+		case cpuInfo != nil && cpuInfo.AMDZenGen != nil:
+			a.formData.KernelParamsExtra = legacysystem.GetAMDPStateKernelParams(cpuInfo.AMDZenGen, selected.Mode)
+		default:
+			a.formData.KernelParamsExtra = "amd_pstate=" + mode
+		}
+
+		return a.startGPUSelection()
 	}
 
 	return a, nil
@@ -315,6 +401,21 @@ func (a *App) startInstallation() (tea.Model, tea.Cmd) {
 	cmd := handlers.CreateInstallationCommand(a, a.formData)
 
 	return a, tea.Batch(cmd)
+}
+
+func (a *App) startAMDPStateSelection() (tea.Model, tea.Cmd) {
+	a.currentScreen = ScreenAMDPState
+	return a, a.detectCPUCmd()
+}
+
+func (a *App) detectCPUCmd() tea.Cmd {
+	return func() tea.Msg {
+		info, err := legacysystem.DetectCPUInfo()
+		if err != nil {
+			a.logger.Warn("CPU detection failed", "error", err)
+		}
+		return CPUDetectedMsg{CPU: info, Err: err}
+	}
 }
 
 func (a *App) startGPUSelection() (tea.Model, tea.Cmd) {
@@ -371,7 +472,7 @@ func (a *App) handleDiskInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		// Update stored form data directly
 		a.formData.TargetDisk = selected.Path
-		return a.startGPUSelection()
+		return a.startAMDPStateSelection()
 	}
 	return a, nil
 }

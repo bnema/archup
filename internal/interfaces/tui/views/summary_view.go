@@ -66,9 +66,16 @@ func RenderSummary(im *models.InstallationModelImpl) string {
 		Render("You can now reboot into your new system!"))
 	b.WriteString("\n\n")
 
+	if notice := im.GetNotice(); notice != "" {
+		b.WriteString(lipgloss.NewStyle().
+			Foreground(lipgloss.Color("3")).
+			Render(notice))
+		b.WriteString("\n\n")
+	}
+
 	b.WriteString(lipgloss.NewStyle().
 		Faint(true).
-		Render("Press 'q' to exit, then run: reboot"))
+		Render("Press 'r' to unmount and reboot, or 'q' to exit"))
 
 	return b.String()
 }

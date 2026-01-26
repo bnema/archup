@@ -255,19 +255,68 @@ func GetRecommendedPStateMode(zenGen *AMDZenGen) AMDPStateMode {
 
 // GetAvailablePStateModes returns available P-State modes for a given Zen generation
 func GetAvailablePStateModes(zenGen *AMDZenGen) []AMDPStateMode {
+	hasActive := kernelVersionAtLeast(6, 3)
+	hasGuided := kernelVersionAtLeast(6, 4)
+
 	switch zenGen.Generation {
 	case "1", "1+":
 		// Zen 1 and Zen+: No CPPC support, use acpi-cpufreq
 		return []AMDPStateMode{}
 	case "2":
 		// Zen 2: Basic CPPC support, passive and active modes
-		return []AMDPStateMode{AMDPStateModePassive, AMDPStateModeActive}
+		modes := []AMDPStateMode{}
+		if hasActive {
+			modes = append(modes, AMDPStateModeActive)
+		}
+		modes = append(modes, AMDPStateModePassive)
+		return modes
 	case "3", "3+", "4", "5":
 		// Zen 3+: Full CPPC support for all modes
-		return []AMDPStateMode{AMDPStateModeActive, AMDPStateModeGuided, AMDPStateModePassive}
+		modes := []AMDPStateMode{}
+		if hasActive {
+			modes = append(modes, AMDPStateModeActive)
+		}
+		if hasGuided {
+			modes = append(modes, AMDPStateModeGuided)
+		}
+		modes = append(modes, AMDPStateModePassive)
+		return modes
 	default:
 		return []AMDPStateMode{AMDPStateModePassive}
 	}
+}
+
+func kernelVersionAtLeast(major, minor int) bool {
+	curMajor, curMinor := detectKernelVersion()
+	if curMajor == 0 && curMinor == 0 {
+		return false
+	}
+	if curMajor > major {
+		return true
+	}
+	if curMajor < major {
+		return false
+	}
+	return curMinor >= minor
+}
+
+func detectKernelVersion() (int, int) {
+	data, err := os.ReadFile("/proc/sys/kernel/osrelease")
+	if err != nil {
+		return 0, 0
+	}
+
+	version := strings.TrimSpace(string(data))
+	parts := strings.Split(version, ".")
+	if len(parts) < 2 {
+		return 0, 0
+	}
+
+	major, _ := strconv.Atoi(parts[0])
+	minorPart := strings.Split(parts[1], "-")[0]
+	minor, _ := strconv.Atoi(minorPart)
+
+	return major, minor
 }
 
 // GetPStateModeDescription returns human-readable description for P-State mode

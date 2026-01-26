@@ -1,6 +1,10 @@
 package models
 
-import "github.com/bnema/archup/internal/domain/system"
+import (
+	"strings"
+
+	"github.com/bnema/archup/internal/domain/system"
+)
 
 // GPUOption represents a selectable GPU driver option.
 type GPUOption struct {
@@ -35,7 +39,7 @@ func NewGPUModel() *GPUModelImpl {
 			Drivers: []string{"nvidia-open", "nvidia-utils", "libva-nvidia-driver"},
 		},
 		{
-			Label:   "Skip GPU drivers",
+			Label:   "None / VM",
 			Vendor:  system.GPUVendorUnknown,
 			Drivers: []string{},
 		},
@@ -53,12 +57,45 @@ func (gm *GPUModelImpl) SetDetectedGPU(gpu *system.GPU) {
 	if gpu == nil {
 		return
 	}
+	if isVirtualGPUModel(gpu.Model()) || gpu.Vendor() == system.GPUVendorUnknown {
+		gm.selectUnknown()
+		return
+	}
 	for i, option := range gm.options {
 		if option.Vendor == gpu.Vendor() {
 			gm.selected = i
 			return
 		}
 	}
+}
+
+func (gm *GPUModelImpl) selectUnknown() {
+	for i, option := range gm.options {
+		if option.Vendor == system.GPUVendorUnknown {
+			gm.selected = i
+			return
+		}
+	}
+}
+
+func isVirtualGPUModel(model string) bool {
+	lower := strings.ToLower(model)
+	virtualMarkers := []string{
+		"virtualbox",
+		"vmware",
+		"qxl",
+		"virtio",
+		"bochs",
+		"hyper-v",
+		"microsoft",
+		"svga",
+	}
+	for _, marker := range virtualMarkers {
+		if strings.Contains(lower, marker) {
+			return true
+		}
+	}
+	return false
 }
 
 // DetectedGPU returns the detected GPU.

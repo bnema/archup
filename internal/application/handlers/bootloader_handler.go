@@ -132,6 +132,18 @@ func (h *BootloaderHandler) installLimine(ctx context.Context, mountPoint string
 		return fmt.Errorf("failed to copy Limine EFI: %w", err)
 	}
 
+	// Also copy to default/fallback boot path for UEFI firmwares that don't honor boot entries
+	fallbackDir := filepath.Join(mountPoint, "boot", "EFI", "BOOT")
+	if err := h.fs.MkdirAll(fallbackDir, 0755); err != nil {
+		h.logger.Error("Failed to create fallback EFI directory", "error", err)
+		return fmt.Errorf("failed to create fallback EFI directory: %w", err)
+	}
+	fallbackDst := filepath.Join(fallbackDir, "BOOTX64.EFI")
+	if _, err := h.cmdExec.Execute(ctx, "cp", src, fallbackDst); err != nil {
+		h.logger.Error("Failed to copy Limine EFI to fallback path", "error", err)
+		return fmt.Errorf("failed to copy Limine EFI to fallback path: %w", err)
+	}
+
 	return nil
 }
 
@@ -150,7 +162,10 @@ func (h *BootloaderHandler) configureLimine(ctx context.Context, cmd commands.In
 		kernelParams = fmt.Sprintf("root=UUID=%s rootflags=subvol=@ rw", rootUUID)
 	}
 
-	kernelParams = fmt.Sprintf("%s %s", kernelParams, config.KernelParamsQuiet)
+	kernelParams = strings.TrimSpace(fmt.Sprintf("%s %s", kernelParams, config.KernelParamsQuiet))
+	if extra := strings.TrimSpace(cmd.KernelParamsExtra); extra != "" {
+		kernelParams = strings.TrimSpace(kernelParams + " " + extra)
+	}
 
 	templatePath, err := h.resolveLimineTemplate()
 	if err != nil {
@@ -186,7 +201,7 @@ func (h *BootloaderHandler) createBootEntry(ctx context.Context, targetDisk, efi
 		return fmt.Errorf("failed to determine EFI partition number from %s", efiPartition)
 	}
 
-	if _, err := h.chrExec.ExecuteInChroot(ctx, mountPoint, "efibootmgr", "--create", "--disk", targetDisk, "--part", partNum, "--label", config.UEFIBootLabel, "--loader", config.UEFIBootLoader); err != nil {
+	if _, err := h.chrExec.ExecuteInChroot(ctx, mountPoint, "efibootmgr", "--create", "--disk", targetDisk, "--part", partNum, "--label", config.UEFIBootLabel, "--loader", config.UEFIBootLoader, "--unicode"); err != nil {
 		h.logger.Error("Failed to create EFI boot entry", "error", err)
 		return fmt.Errorf("failed to create EFI boot entry: %w", err)
 	}

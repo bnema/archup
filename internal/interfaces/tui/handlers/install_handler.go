@@ -53,6 +53,10 @@ func HandleInstallationError(app AppContext, msg interface{}, installModel *mode
 func HandleInstallationComplete(app AppContext, msg interface{}, installModel *models.InstallationModelImpl) (*models.InstallationModelImpl, tea.Cmd) {
 	app.GetLogger().Info("Installation completed successfully")
 	installModel.SetComplete()
+	// Update status with final timestamps for duration display
+	if svc := app.GetInstallService(); svc != nil {
+		installModel.SetStatus(svc.GetStatus())
+	}
 	return installModel, nil
 }
 
@@ -168,15 +172,16 @@ func CreateInstallationCommand(app AppContext, formData models.FormData) tea.Cmd
 
 			// Phase 5: Bootloader
 			bootCmd := commands.InstallBootloaderCommand{
-				MountPoint:     "/mnt",
-				BootloaderType: bootloader.BootloaderTypeLimine,
-				TimeoutSeconds: 5,
-				Branding:       "ArchUp",
-				KernelVariant:  parseKernelVariant(formData.KernelVariant),
-				RootPartition:  partitionResult.RootPartition,
-				EncryptionType: partitionCmd.EncryptionType,
-				EFIPartition:   partitionResult.EFIPartition,
-				TargetDisk:     formData.TargetDisk,
+				MountPoint:        "/mnt",
+				BootloaderType:    bootloader.BootloaderTypeLimine,
+				TimeoutSeconds:    5,
+				Branding:          "ArchUp",
+				KernelVariant:     parseKernelVariant(formData.KernelVariant),
+				RootPartition:     partitionResult.RootPartition,
+				EncryptionType:    partitionCmd.EncryptionType,
+				EFIPartition:      partitionResult.EFIPartition,
+				TargetDisk:        formData.TargetDisk,
+				KernelParamsExtra: formData.KernelParamsExtra,
 			}
 			if _, err := svc.RunBootloaderSetup(ctx, bootCmd); err != nil {
 				logger.Error("Bootloader setup failed", "error", err)

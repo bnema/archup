@@ -34,11 +34,11 @@ func TestRenderSummary(t *testing.T) {
 
 	// Verify key content is present
 	checks := []string{
-		"Installation Complete!", // Title
-		"test-host",              // Hostname
-		"testuser",               // Username
-		"/dev/sda",               // Disk
-		"Press 'q' to exit",      // Instructions
+		"Installation Complete!",          // Title
+		"test-host",                       // Hostname
+		"testuser",                        // Username
+		"/dev/sda",                        // Disk
+		"Press 'r' to unmount and reboot", // Instructions
 	}
 
 	for _, check := range checks {

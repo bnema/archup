@@ -146,7 +146,7 @@ const (
 // UEFI boot entry
 const (
 	UEFIBootLabel  = "ArchUp"
-	UEFIBootLoader = "\\\\EFI\\\\limine\\\\BOOTX64.EFI"
+	UEFIBootLoader = "\\EFI\\limine\\BOOTX64.EFI"
 )
 
 // Repository paths
