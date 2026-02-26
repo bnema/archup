@@ -120,14 +120,6 @@ func (h *PostInstallHandler) setupPostBoot(ctx context.Context, mountPoint, user
 		}
 	}
 
-	if err := h.copyShellConfigs(mountPoint, username); err != nil {
-		return fmt.Errorf("failed to copy shell configs: %w", err)
-	}
-
-	if _, err := h.chrExec.ExecuteInChroot(ctx, mountPoint, "chown", "-R", fmt.Sprintf("%s:%s", username, username), filepath.Join("/home", username, ".config")); err != nil {
-		return fmt.Errorf("failed to set shell config ownership: %w", err)
-	}
-
 	if err := h.chrExec.ChrootSystemctl(ctx, h.logger.LogPath(), mountPoint, "enable", config.PostBootServiceName); err != nil {
 		return fmt.Errorf("failed to enable first-boot service: %w", err)
 	}
@@ -167,30 +159,9 @@ func (h *PostInstallHandler) installLimineLogo(mountPoint string) error {
 	return nil
 }
 
+// copyShellConfigs is a no-op: shell configuration is handled by
+// cli-tools.sh on first boot. No config files are copied at install time.
 func (h *PostInstallHandler) copyShellConfigs(mountPoint, username string) error {
-	configDir := filepath.Join(mountPoint, "home", username, ".config")
-	if err := h.fs.MkdirAll(configDir, 0755); err != nil {
-		return fmt.Errorf("failed to create user config dir: %w", err)
-	}
-
-	files := []string{
-		"install/configs/shell/aliases",
-		"install/configs/shell/envs",
-		"install/configs/shell/init",
-		"install/configs/shell/rc",
-		"install/configs/shell/shell",
-		"install/configs/shell/starship.toml",
-		"install/configs/shell/bashrc",
-	}
-
-	for _, src := range files {
-		_, name := filepath.Split(src)
-		dst := filepath.Join(configDir, name)
-		if err := h.writeFromTemplate(src, dst); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
