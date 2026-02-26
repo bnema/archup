@@ -27,7 +27,9 @@ echo "    - Auto-theming, notifications, app launcher,"
 echo "      lock screen, system tray, search — all"
 echo "      integrated. One install. Everything works."
 echo ""
-echo "  Install: curl -fsSL https://install.danklinux.com | sh"
+  echo "  Install: curl -fsSL https://install.danklinux.com | sh"
+echo "  Note: This runs the official Dank Linux installer. Review at:"
+echo "  https://github.com/AvengeMedia/DankMaterialShell"
 echo ""
 
 read -r -p "  Do you want to run the Dank Linux installer? [y/N] " REPLY || true

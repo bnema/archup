@@ -1,11 +1,5 @@
 package shell
 
-import (
-	"github.com/bnema/archup/internal/config"
-	"github.com/bnema/archup/internal/interfaces"
-	"github.com/bnema/archup/internal/logger"
-)
-
 // ConfigResult holds the result of shell configuration
 type ConfigResult struct {
 	ThemesApplied int
@@ -14,29 +8,11 @@ type ConfigResult struct {
 }
 
 // Configurator handles shell and bash configuration setup
-type Configurator struct {
-	fs      interfaces.FileSystem
-	http    interfaces.HTTPClient
-	chrExec interfaces.ChrootExecutor
-	config  *config.Config
-	logger  *logger.Logger
-}
+type Configurator struct{}
 
 // NewConfigurator creates a new shell configurator
-func NewConfigurator(
-	fs interfaces.FileSystem,
-	http interfaces.HTTPClient,
-	chrExec interfaces.ChrootExecutor,
-	cfg *config.Config,
-	log *logger.Logger,
-) *Configurator {
-	return &Configurator{
-		fs:      fs,
-		http:    http,
-		chrExec: chrExec,
-		config:  cfg,
-		logger:  log,
-	}
+func NewConfigurator() *Configurator {
+	return &Configurator{}
 }
 
 // Configure is a no-op. Shell configuration is handled by cli-tools.sh at first boot.

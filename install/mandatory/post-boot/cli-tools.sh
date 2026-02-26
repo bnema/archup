@@ -3,8 +3,8 @@
 set -euo pipefail
 
 LOG_FILE="/var/log/archup-first-boot.log"
-USERNAME=$(getent passwd | awk -F: '$3 >= 1000 && $3 < 65534 {print $1; exit}')
-USER_HOME="/home/$USERNAME"
+USERNAME=$(getent passwd | awk -F: '$3 >= 1000 && $3 < 65534 && $1 != "nobody" {print $1; exit}')
+USER_HOME=$(getent passwd "$USERNAME" | cut -d: -f6)
 
 log() { echo "[cli-tools] $*" | tee -a "$LOG_FILE"; }
 
@@ -15,21 +15,24 @@ fi
 
 log "Installing modern CLI toolkit for $USERNAME..."
 
+log "Refreshing package databases..."
+pacman -Sy --noconfirm
+
 pacman -S --needed --noconfirm \
   eza bat fd ripgrep fzf zoxide starship \
   btop yazi git-delta gdu procs tealdeer \
   lazygit atuin man-db neovim wget curl git
 
-log "Writing ~/.bashrc for $USERNAME..."
+log "Configuring shell environment for $USERNAME..."
 
-# Back up existing .bashrc if present
+# Remove any previous archup block (idempotent re-run)
 if [ -f "$USER_HOME/.bashrc" ]; then
-  cp "$USER_HOME/.bashrc" "$USER_HOME/.bashrc.bak"
-  log "Backed up existing .bashrc to .bashrc.bak"
+  sed -i '/# BEGIN archup cli tools/,/# END archup cli tools/d' "$USER_HOME/.bashrc"
 fi
 
-cat > "$USER_HOME/.bashrc" << 'BASHRC'
-# ArchUp barebone bash — modern CLI tools
+# Append archup block
+cat >> "$USER_HOME/.bashrc" << 'BASHRC'
+# BEGIN archup cli tools
 # Aliases
 alias ls='eza --icons'
 alias ll='eza -la --icons --git'
@@ -63,6 +66,7 @@ eval "$(starship init bash)"
 
 # ble.sh (Bash Line Editor) — must be sourced last
 [[ $- == *i* ]] && source -- ~/.local/share/blesh/ble.sh 2>/dev/null || true
+# END archup cli tools
 BASHRC
 
 chown "$USERNAME:$USERNAME" "$USER_HOME/.bashrc"
