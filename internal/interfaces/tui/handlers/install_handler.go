@@ -184,6 +184,7 @@ func CreateInstallationCommand(app AppContext, formData models.FormData) tea.Cmd
 				EFIPartition:      partitionResult.EFIPartition,
 				TargetDisk:        formData.TargetDisk,
 				KernelParamsExtra: formData.KernelParamsExtra,
+				GPUVendor:         formData.GPUVendor,
 			}
 			if _, err := svc.RunBootloaderSetup(ctx, bootCmd); err != nil {
 				logger.Error("Bootloader setup failed", "error", err)

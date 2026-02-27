@@ -98,8 +98,13 @@ func (h *PostInstallHandler) Handle(ctx context.Context, cmd commands.PostInstal
 			return result, fmt.Errorf("failed to set Plymouth theme: %w", err)
 		}
 
+		// Rebuild initramfs so the Plymouth theme takes effect at boot
+		if _, err := h.chrExec.ExecuteInChroot(ctx, cmd.MountPoint, "mkinitcpio", "-P"); err != nil {
+			return result, fmt.Errorf("failed to rebuild initramfs after Plymouth theme: %w", err)
+		}
+
 		result.TasksRun = append(result.TasksRun, fmt.Sprintf("plymouth-theme-%s", cmd.PlymouthTheme))
-		h.logger.Info("Plymouth theme installed")
+		h.logger.Info("Plymouth theme installed and initramfs rebuilt")
 	}
 
 	if err := h.installLimineLogo(cmd.MountPoint); err != nil {

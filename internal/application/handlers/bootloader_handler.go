@@ -63,7 +63,7 @@ func (h *BootloaderHandler) Handle(ctx context.Context, cmd commands.InstallBoot
 		return result, err
 	}
 
-	if err := h.configureMkinitcpio(ctx, cmd.MountPoint, cmd.EncryptionType); err != nil {
+	if err := h.configureMkinitcpio(ctx, cmd.MountPoint, cmd.EncryptionType, cmd.GPUVendor); err != nil {
 		result.ErrorDetail = err.Error()
 		return result, err
 	}
@@ -91,7 +91,7 @@ func (h *BootloaderHandler) Handle(ctx context.Context, cmd commands.InstallBoot
 	return result, nil
 }
 
-func (h *BootloaderHandler) configureMkinitcpio(ctx context.Context, mountPoint string, encType disk.EncryptionType) error {
+func (h *BootloaderHandler) configureMkinitcpio(ctx context.Context, mountPoint string, encType disk.EncryptionType, gpuVendor string) error {
 	confPath := filepath.Join(mountPoint, "etc", "mkinitcpio.conf")
 	content, err := h.fs.ReadFile(confPath)
 	if err != nil {
@@ -105,6 +105,12 @@ func (h *BootloaderHandler) configureMkinitcpio(ctx context.Context, mountPoint 
 	}
 
 	updated := replaceHooksLine(string(content), hooks)
+
+	// Set the KMS module for early framebuffer so Plymouth loads cleanly.
+	// Without this, the kms hook has nothing to load and Plymouth appears late.
+	kmsModule := kmsModuleForGPU(gpuVendor)
+	updated = replaceModulesLine(updated, kmsModule)
+
 	if err := h.fs.WriteFile(confPath, []byte(updated), 0644); err != nil {
 		h.logger.Error("Failed to write mkinitcpio.conf", "error", err)
 		return fmt.Errorf("failed to write mkinitcpio.conf: %w", err)
@@ -116,6 +122,29 @@ func (h *BootloaderHandler) configureMkinitcpio(ctx context.Context, mountPoint 
 	}
 
 	return nil
+}
+
+// kmsModuleForGPU returns the kernel module name required for early KMS on the given GPU vendor.
+// Returns an empty string for NVIDIA (uses proprietary driver, no early KMS) or unknown GPUs.
+func kmsModuleForGPU(vendor string) string {
+	switch vendor {
+	case "amd":
+		return "amdgpu"
+	case "intel":
+		return "i915"
+	default:
+		return ""
+	}
+}
+
+// replaceModulesLine replaces the MODULES=(...) line in mkinitcpio.conf.
+// If module is empty, MODULES=() is left unchanged (or set to empty).
+func replaceModulesLine(content, module string) string {
+	re := regexp.MustCompile(`(?m)^MODULES=\(.*\)$`)
+	if module == "" {
+		return re.ReplaceAllString(content, "MODULES=()")
+	}
+	return re.ReplaceAllString(content, fmt.Sprintf("MODULES=(%s)", module))
 }
 
 func (h *BootloaderHandler) installLimine(ctx context.Context, mountPoint string) error {

@@ -18,4 +18,5 @@ type InstallBootloaderCommand struct {
 	EFIPartition      string                    // EFI partition device path
 	TargetDisk        string                    // Target disk device path
 	KernelParamsExtra string                    // Additional kernel parameters
+	GPUVendor         string                    // "amd", "intel", "nvidia", "unknown" — used for early KMS module
 }

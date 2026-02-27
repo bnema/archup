@@ -180,6 +180,11 @@ func (h *ConfigureSystemHandler) Handle(ctx context.Context, cmd commands.Config
 		return result, err
 	}
 
+	// Mask NetworkManager-wait-online to prevent boot delays when no network is immediately available.
+	if err := h.chrExec.ChrootSystemctl(ctx, h.logger.LogPath(), cmd.MountPoint, "mask", "NetworkManager-wait-online.service"); err != nil {
+		h.logger.Warn("Failed to mask NetworkManager-wait-online.service", "error", err)
+	}
+
 	// Migrate iwd WiFi credentials from live ISO to NetworkManager profiles in the installed system.
 	if err := h.migrateIWDProfiles(cmd.MountPoint); err != nil {
 		// Non-fatal: log and continue. User can configure WiFi manually after boot.
