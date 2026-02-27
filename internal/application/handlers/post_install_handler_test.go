@@ -38,6 +38,7 @@ func TestPostInstallHandler_Handle_NoScripts(t *testing.T) {
 	mockFS.EXPECT().WriteFile(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	mockFS.EXPECT().MkdirAll(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	mockHTTP.EXPECT().Get(gomock.Any()).Return(newMockResponse(ctrl, http.StatusOK, []byte("content")), nil).AnyTimes()
+	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
 	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 	handler := NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger, "https://raw.githubusercontent.com/bnema/archup/dev")
@@ -182,6 +183,7 @@ func TestPostInstallHandler_Handle_WithDankLinux(t *testing.T) {
 	mockFS.EXPECT().WriteFile(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	mockFS.EXPECT().MkdirAll(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	mockHTTP.EXPECT().Get(gomock.Any()).Return(newMockResponse(ctrl, http.StatusOK, []byte("content")), nil).AnyTimes()
+	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
 	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 	handler := NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger, "https://raw.githubusercontent.com/bnema/archup/dev")
@@ -231,6 +233,7 @@ func TestPostInstallHandler_Handle_TunesPacman(t *testing.T) {
 	mockFS.EXPECT().Exists(gomock.Any()).Return(false, nil).AnyTimes()
 	mockFS.EXPECT().MkdirAll(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	mockHTTP.EXPECT().Get(gomock.Any()).Return(newMockResponse(ctrl, http.StatusOK, []byte("content")), nil).AnyTimes()
+	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
 	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 	// ReadFile for pacman.conf returns commented options; other reads return generic content
@@ -300,6 +303,7 @@ func TestPostInstallHandler_Handle_InstallsLimineHook(t *testing.T) {
 	mockFS.EXPECT().ReadFile(gomock.Any()).Return([]byte("graphics: yes"), nil).AnyTimes()
 	mockFS.EXPECT().MkdirAll(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	mockHTTP.EXPECT().Get(gomock.Any()).Return(newMockResponse(ctrl, http.StatusOK, []byte(hookTemplate)), nil).AnyTimes()
+	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
 	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 	hookWritten := false
@@ -340,6 +344,77 @@ func TestPostInstallHandler_Handle_InstallsLimineHook(t *testing.T) {
 
 	if !hookWritten {
 		t.Error("expected limine hook file to be written")
+	}
+}
+
+func TestPostInstallHandler_Handle_EnablesSnapperSync(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockFS := mocks.NewMockFileSystem(ctrl)
+	mockHTTP := mocks.NewMockHTTPClient(ctrl)
+	mockChrExec := mocks.NewMockChrootExecutor(ctrl)
+	mockScriptExec := mocks.NewMockScriptExecutor(ctrl)
+	mockLogger := mocks.NewMockLogger(ctrl)
+
+	pacmanInstalled := false
+	snapperTimerEnabled := false
+
+	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().LogPath().Return("/var/log/archup-install.log").AnyTimes()
+	mockFS.EXPECT().Exists(gomock.Any()).Return(false, nil).AnyTimes()
+	mockFS.EXPECT().ReadFile(gomock.Any()).Return([]byte("graphics: yes"), nil).AnyTimes()
+	mockFS.EXPECT().WriteFile(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockFS.EXPECT().MkdirAll(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockHTTP.EXPECT().Get(gomock.Any()).Return(newMockResponse(ctrl, http.StatusOK, []byte("content")), nil).AnyTimes()
+
+	// Track pacman install of limine-snapper-sync (specific expectation first)
+	mockChrExec.EXPECT().ExecuteInChroot(
+		gomock.Any(), gomock.Eq("/mnt"), gomock.Eq("pacman"),
+		gomock.Eq("-S"), gomock.Eq("--noconfirm"), gomock.Eq("--needed"), gomock.Eq("limine-snapper-sync"),
+	).DoAndReturn(func(ctx context.Context, mountPoint, command string, args ...string) ([]byte, error) {
+		pacmanInstalled = true
+		return []byte{}, nil
+	}).AnyTimes()
+	// Catch-all for any other ExecuteInChroot calls
+	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+
+	// Track systemctl enable for limine-snapper-sync.timer (specific expectation first)
+	mockChrExec.EXPECT().ChrootSystemctl(
+		gomock.Any(), gomock.Any(), gomock.Eq("/mnt"), gomock.Eq("enable"), gomock.Eq("limine-snapper-sync.timer"),
+	).DoAndReturn(func(ctx context.Context, logPath, chrootPath string, args ...string) error {
+		snapperTimerEnabled = true
+		return nil
+	}).AnyTimes()
+	// Catch-all for any other ChrootSystemctl calls
+	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+	handler := NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger, "https://raw.githubusercontent.com/bnema/archup/dev")
+
+	cmd := commands.PostInstallCommand{
+		MountPoint:         "/mnt",
+		Username:           "testuser",
+		RunPostBootScripts: false,
+		PlymouthTheme:      "",
+	}
+
+	result, err := handler.Handle(context.Background(), cmd)
+
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if !result.Success {
+		t.Error("expected success")
+	}
+
+	if !pacmanInstalled {
+		t.Error("expected pacman to install limine-snapper-sync")
+	}
+
+	if !snapperTimerEnabled {
+		t.Error("expected limine-snapper-sync.timer to be enabled via systemctl")
 	}
 }
 

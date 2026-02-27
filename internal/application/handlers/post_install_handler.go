@@ -69,6 +69,11 @@ func (h *PostInstallHandler) Handle(ctx context.Context, cmd commands.PostInstal
 		h.logger.Info("Dank Linux flag file written")
 	}
 
+	// Setup limine-snapper-sync for btrfs snapshot bootability
+	if err := h.setupSnapperSync(ctx, cmd.MountPoint); err != nil {
+		h.logger.Warn("Failed to setup limine-snapper-sync", "error", err)
+	}
+
 	// Install Plymouth theme if specified
 	if cmd.PlymouthTheme != "" {
 		h.logger.Info("Installing Plymouth theme", "theme", cmd.PlymouthTheme)
@@ -232,6 +237,16 @@ func (h *PostInstallHandler) writeDankLinuxFlag(mountPoint string) error {
 	}
 	flagPath := filepath.Join(mountPoint, "var", "lib", "archup-install-danklinux")
 	return h.fs.WriteFile(flagPath, []byte(""), 0644)
+}
+
+func (h *PostInstallHandler) setupSnapperSync(ctx context.Context, mountPoint string) error {
+	if _, err := h.chrExec.ExecuteInChroot(ctx, mountPoint, "pacman", "-S", "--noconfirm", "--needed", "limine-snapper-sync"); err != nil {
+		return fmt.Errorf("failed to install limine-snapper-sync: %w", err)
+	}
+	if err := h.chrExec.ChrootSystemctl(ctx, h.logger.LogPath(), mountPoint, "enable", "limine-snapper-sync.timer"); err != nil {
+		return fmt.Errorf("failed to enable limine-snapper-sync.timer: %w", err)
+	}
+	return nil
 }
 
 func (h *PostInstallHandler) installLimineHook(mountPoint, targetDisk string) error {
