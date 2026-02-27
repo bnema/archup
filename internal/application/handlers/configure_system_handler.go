@@ -133,6 +133,12 @@ func (h *ConfigureSystemHandler) Handle(ctx context.Context, cmd commands.Config
 		return result, err
 	}
 
+	// Write X11/Wayland keyboard layout so GUI sessions use the same keymap as the console.
+	if err := h.writeX11KeyboardConf(cmd.MountPoint, sysConfig.Keymap()); err != nil {
+		// Non-fatal: log and continue. Console keymap is already set via vconsole.conf.
+		h.logger.Warn("Failed to write X11 keyboard config", "error", err)
+	}
+
 	groups := strings.Join(usr.Groups(), ",")
 	if _, err := h.chrExec.ExecuteInChroot(ctx, cmd.MountPoint, "useradd", "-m", "-G", groups, "-s", usr.Shell(), usr.Username()); err != nil {
 		h.logger.Error("Failed to create user", "error", err)
@@ -198,6 +204,49 @@ func (h *ConfigureSystemHandler) Handle(ctx context.Context, cmd commands.Config
 	result.Username = usr.Username()
 
 	return result, nil
+}
+
+// writeX11KeyboardConf writes /etc/X11/xorg.conf.d/00-keyboard.conf so that
+// X11 and Wayland sessions use the same keyboard layout as the console.
+// The XKB layout is derived from the keymap by stripping any variant suffix
+// (e.g. "de-nodeadkeys" → "de", "fr" → "fr").
+func (h *ConfigureSystemHandler) writeX11KeyboardConf(mountPoint, keymap string) error {
+	xkbLayout := xkbLayoutFromKeymap(keymap)
+	if xkbLayout == "" {
+		return nil
+	}
+
+	xorgDir := filepath.Join(mountPoint, "etc", "X11", "xorg.conf.d")
+	if err := h.fs.MkdirAll(xorgDir, 0755); err != nil {
+		return fmt.Errorf("failed to create xorg.conf.d directory: %w", err)
+	}
+
+	content := fmt.Sprintf(`Section "InputClass"
+        Identifier "system-keyboard"
+        MatchIsKeyboard "on"
+        Option "XkbLayout" "%s"
+EndSection
+`, xkbLayout)
+
+	confPath := filepath.Join(xorgDir, "00-keyboard.conf")
+	if err := h.fs.WriteFile(confPath, []byte(content), 0644); err != nil {
+		return fmt.Errorf("failed to write 00-keyboard.conf: %w", err)
+	}
+
+	return nil
+}
+
+// xkbLayoutFromKeymap extracts the XKB layout from a vconsole keymap name.
+// Keymap variants use hyphens (e.g. "de-nodeadkeys"), XKB uses the base part.
+func xkbLayoutFromKeymap(keymap string) string {
+	if keymap == "" {
+		return ""
+	}
+	// Strip variant suffix: "de-nodeadkeys" → "de", "fr" → "fr"
+	if idx := strings.Index(keymap, "-"); idx != -1 {
+		return keymap[:idx]
+	}
+	return keymap
 }
 
 // migrateIWDProfiles reads *.psk files from the live ISO's /var/lib/iwd and
