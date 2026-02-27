@@ -198,6 +198,7 @@ func CreateInstallationCommand(app AppContext, formData models.FormData) tea.Cmd
 				EnableMultilib: true,
 				EnableChaotic:  true,
 				AURHelper:      parseAURHelper(formData.AURHelper),
+				KernelVariant:  parseKernelVariant(formData.KernelVariant),
 			}
 			if _, err := svc.RunRepositorySetup(ctx, repoCmd); err != nil {
 				logger.Error("Repository setup failed", "error", err)

@@ -75,6 +75,13 @@ func (h *ReposHandler) Handle(ctx context.Context, cmd commands.SetupRepositorie
 		}
 	}
 
+	// For CachyOS kernel: setup CachyOS repo BEFORE sync
+	if cmd.KernelVariant == packages.KernelCachyOS {
+		if err := h.setupCachyOSRepo(ctx, cmd.MountPoint); err != nil {
+			return fail("Failed to setup CachyOS repository", err)
+		}
+	}
+
 	// For chaotic-aur: install keyring and mirrorlist BEFORE adding to pacman.conf
 	if repo.EnableChaotic() {
 		if _, err := h.chrExec.ExecuteInChroot(ctx, cmd.MountPoint, "pacman-key", "--recv-key", "3056513887B78AEB", "--keyserver", "keyserver.ubuntu.com"); err != nil {
@@ -194,4 +201,37 @@ func ensureChaoticRepo(conf string) string {
 	conf = strings.TrimRight(conf, "\n")
 	chaotic := "\n[chaotic-aur]\nInclude = /etc/pacman.d/chaotic-mirrorlist\n"
 	return conf + chaotic
+}
+
+func (h *ReposHandler) setupCachyOSRepo(ctx context.Context, mountPoint string) error {
+	if _, err := h.chrExec.ExecuteInChroot(ctx, mountPoint, "pacman-key", "--recv-key",
+		"F3B607488DB35A47", "--keyserver", "keyserver.ubuntu.com"); err != nil {
+		return fmt.Errorf("failed to receive CachyOS key: %w", err)
+	}
+	if _, err := h.chrExec.ExecuteInChroot(ctx, mountPoint, "pacman-key", "--lsign-key",
+		"F3B607488DB35A47"); err != nil {
+		return fmt.Errorf("failed to sign CachyOS key: %w", err)
+	}
+	if _, err := h.chrExec.ExecuteInChroot(ctx, mountPoint, "pacman", "-U", "--noconfirm",
+		"https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-keyring-20240331-1-any.pkg.tar.zst",
+		"https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-mirrorlist-18-1-any.pkg.tar.zst",
+		"https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v3-mirrorlist-18-1-any.pkg.tar.zst",
+		"https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v4-mirrorlist-6-1-any.pkg.tar.zst"); err != nil {
+		return fmt.Errorf("failed to install CachyOS packages: %w", err)
+	}
+	pacmanConfPath := filepath.Join(mountPoint, "etc", "pacman.conf")
+	confBytes, err := h.fs.ReadFile(pacmanConfPath)
+	if err != nil {
+		return fmt.Errorf("failed to read pacman.conf: %w", err)
+	}
+	conf := ensureCachyOSRepo(string(confBytes))
+	return h.fs.WriteFile(pacmanConfPath, []byte(conf), 0644)
+}
+
+func ensureCachyOSRepo(conf string) string {
+	if strings.Contains(conf, "[cachyos]") {
+		return conf
+	}
+	conf = strings.TrimRight(conf, "\n")
+	return conf + "\n[cachyos]\nInclude = /etc/pacman.d/cachyos-mirrorlist\n"
 }
