@@ -8,12 +8,30 @@ LOG_FILE="/var/log/archup-first-boot.log"
 
 log() { echo "[dms-opt-in] $*" | tee -a "$LOG_FILE"; }
 
+FLAG_FILE="/var/lib/archup-install-danklinux"
+
+# Auto-install if flag was set during installation
+if [ -f "$FLAG_FILE" ]; then
+  log "Dank Linux install flag detected — running installer automatically."
+  echo ""
+  echo "Installing Dank Linux (selected during system installation)..."
+  if curl -fsSL https://install.danklinux.com | sh; then
+    rm -f "$FLAG_FILE"
+    log "Dank Linux installation complete."
+  else
+    log "Dank Linux installer failed — flag preserved at $FLAG_FILE for retry."
+    exit 1
+  fi
+  exit 0
+fi
+
 # Skip if not running in an interactive terminal
 if [ ! -t 0 ]; then
   log "Not running in interactive terminal — skipping Dank Linux opt-in."
   exit 0
 fi
 
+# Manual prompt fallback (for reinstall / re-run scenarios)
 echo ""
 echo "=============================================="
 echo "       Dank Linux — Optional Install"
@@ -27,7 +45,7 @@ echo "    - Auto-theming, notifications, app launcher,"
 echo "      lock screen, system tray, search — all"
 echo "      integrated. One install. Everything works."
 echo ""
-  echo "  Install: curl -fsSL https://install.danklinux.com | sh"
+echo "  Install: curl -fsSL https://install.danklinux.com | sh"
 echo "  Note: This runs the official Dank Linux installer. Review at:"
 echo "  https://github.com/AvengeMedia/DankMaterialShell"
 echo ""

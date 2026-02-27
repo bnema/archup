@@ -33,6 +33,7 @@ type App struct {
 	kernelModel       *models.KernelModelImpl
 	amdPstateModel    *models.AMDPStateModelImpl
 	gpuModel          *models.GPUModelImpl
+	dankLinuxModel    *models.DankLinuxModelImpl
 	installationModel *models.InstallationModelImpl
 	progressModel     *models.ProgressModelImpl
 
@@ -57,6 +58,7 @@ const (
 	ScreenKernel     Screen = "kernel"
 	ScreenAMDPState  Screen = "amd-pstate"
 	ScreenGPU        Screen = "gpu"
+	ScreenDankLinux  Screen = "danklinux"
 	ScreenInstalling Screen = "installing"
 	ScreenProgress   Screen = "progress"
 	ScreenSummary    Screen = "summary"
@@ -82,6 +84,7 @@ func NewApp(
 		kernelModel:       models.NewKernelModel(),
 		amdPstateModel:    models.NewAMDPStateModel(),
 		gpuModel:          models.NewGPUModel(),
+		dankLinuxModel:    models.NewDankLinuxModel(),
 		installationModel: models.NewInstallationModel(),
 		progressModel:     models.NewProgressModel(),
 		currentScreen:     ScreenForm,
@@ -158,6 +161,8 @@ func (a *App) View() string {
 		return views.RenderAMDPStateSelection(a.amdPstateModel)
 	case ScreenGPU:
 		return views.RenderGPUSelection(a.gpuModel)
+	case ScreenDankLinux:
+		return views.RenderDankLinuxSelection(a.dankLinuxModel)
 	case ScreenInstalling, ScreenProgress:
 		return views.RenderProgress(a.progressModel)
 	case ScreenSummary:
@@ -182,6 +187,8 @@ func (a *App) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return a.handleAMDPStateInput(msg)
 	case ScreenGPU:
 		return a.handleGPUInput(msg)
+	case ScreenDankLinux:
+		return a.handleDankLinuxInput(msg)
 	case ScreenProgress:
 		// Limited input during installation
 		if msg.String() == "ctrl+c" {
@@ -310,9 +317,25 @@ func (a *App) handleGPUInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		// Update stored form data directly
 		a.formData.GPUVendor = string(selected.Vendor)
 		a.formData.GPUDrivers = append([]string{}, selected.Drivers...)
-		return a.startInstallation()
+		a.currentScreen = ScreenDankLinux
+		return a, nil
 	}
 
+	return a, nil
+}
+
+func (a *App) handleDankLinuxInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "up", "shift+tab":
+		a.dankLinuxModel.MoveUp()
+	case "down", "tab":
+		a.dankLinuxModel.MoveDown()
+	case "enter":
+		a.formData.InstallDankLinux = a.dankLinuxModel.SelectedOption().Value
+		return a.startInstallation()
+	case "q", "ctrl+c":
+		return a, tea.Quit
+	}
 	return a, nil
 }
 

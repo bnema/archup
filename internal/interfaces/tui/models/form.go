@@ -39,6 +39,7 @@ type FormData struct {
 	KernelVariant     string
 	AURHelper         string
 	Microcode         bool
+	InstallDankLinux  bool
 }
 
 // FormModelImpl implements FormModel interface

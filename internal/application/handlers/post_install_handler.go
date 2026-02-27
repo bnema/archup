@@ -59,6 +59,15 @@ func (h *PostInstallHandler) Handle(ctx context.Context, cmd commands.PostInstal
 		h.logger.Info("Post-boot scripts prepared")
 	}
 
+	// Write Dank Linux flag file if user opted in
+	if cmd.InstallDankLinux {
+		if err := h.writeDankLinuxFlag(cmd.MountPoint); err != nil {
+			return result, fmt.Errorf("failed to write dank linux flag: %w", err)
+		}
+		result.TasksRun = append(result.TasksRun, "dank-linux-flag")
+		h.logger.Info("Dank Linux flag file written")
+	}
+
 	// Install Plymouth theme if specified
 	if cmd.PlymouthTheme != "" {
 		h.logger.Info("Installing Plymouth theme", "theme", cmd.PlymouthTheme)
@@ -204,6 +213,16 @@ func (h *PostInstallHandler) tryReadLocal(path string) ([]byte, error) {
 		return h.fs.ReadFile(path)
 	}
 	return nil, fmt.Errorf("local template not found")
+}
+
+// writeDankLinuxFlag writes a flag file to the installed system so that
+// dms-opt-in.sh auto-runs without prompting on first boot.
+func (h *PostInstallHandler) writeDankLinuxFlag(mountPoint string) error {
+	if err := h.fs.MkdirAll(filepath.Join(mountPoint, "var", "lib"), 0755); err != nil {
+		return fmt.Errorf("failed to create /var/lib: %w", err)
+	}
+	flagPath := filepath.Join(mountPoint, "var", "lib", "archup-install-danklinux")
+	return h.fs.WriteFile(flagPath, []byte(""), 0644)
 }
 
 func (h *PostInstallHandler) downloadTemplate(path string) ([]byte, error) {
