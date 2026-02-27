@@ -192,6 +192,8 @@ var PostBootScripts = []string{
 	"ssh-keygen.sh",
 	"archup-cli.sh",
 	"blesh.sh",
+	"cli-tools.sh",
+	"dms-opt-in.sh",
 }
 
 // Post-boot service template URL path
