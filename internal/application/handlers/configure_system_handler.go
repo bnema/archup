@@ -1,8 +1,11 @@
 package handlers
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -177,6 +180,12 @@ func (h *ConfigureSystemHandler) Handle(ctx context.Context, cmd commands.Config
 		return result, err
 	}
 
+	// Migrate iwd WiFi credentials from live ISO to NetworkManager profiles in the installed system.
+	if err := h.migrateIWDProfiles(cmd.MountPoint); err != nil {
+		// Non-fatal: log and continue. User can configure WiFi manually after boot.
+		h.logger.Warn("Failed to migrate iwd WiFi profiles", "error", err)
+	}
+
 	h.logger.Info("System configuration completed successfully")
 
 	result.Success = true
@@ -184,4 +193,143 @@ func (h *ConfigureSystemHandler) Handle(ctx context.Context, cmd commands.Config
 	result.Username = usr.Username()
 
 	return result, nil
+}
+
+// migrateIWDProfiles reads *.psk files from the live ISO's /var/lib/iwd and
+// writes equivalent NetworkManager keyfile profiles into the installed system.
+// This ensures the system has WiFi connectivity on first boot without manual setup.
+func (h *ConfigureSystemHandler) migrateIWDProfiles(mountPoint string) error {
+	const iwdDir = "/var/lib/iwd"
+
+	entries, err := os.ReadDir(iwdDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			h.logger.Info("No iwd profiles found (probably ethernet install), skipping WiFi migration")
+			return nil
+		}
+		return fmt.Errorf("failed to read iwd directory: %w", err)
+	}
+
+	nmConnDir := filepath.Join(mountPoint, "etc", "NetworkManager", "system-connections")
+	if err := h.fs.MkdirAll(nmConnDir, 0700); err != nil {
+		return fmt.Errorf("failed to create NM connections directory: %w", err)
+	}
+
+	migrated := 0
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".psk") {
+			continue
+		}
+
+		data, err := os.ReadFile(filepath.Join(iwdDir, entry.Name()))
+		if err != nil {
+			h.logger.Warn("Failed to read iwd profile", "file", entry.Name(), "error", err)
+			continue
+		}
+
+		// SSID is the filename without the .psk extension.
+		ssid := strings.TrimSuffix(entry.Name(), ".psk")
+		// iwd hex-encodes SSIDs containing non-alphanumeric chars as =<hex>.
+		if strings.HasPrefix(ssid, "=") {
+			decoded, err := decodeIWDHexSSID(ssid[1:])
+			if err == nil {
+				ssid = decoded
+			}
+		}
+
+		psk := extractIWDValue(data, "PreSharedKey")
+		passphrase := extractIWDValue(data, "Passphrase")
+
+		// Prefer the raw passphrase for NM; fall back to PreSharedKey (hex PSK).
+		password := passphrase
+		if password == "" {
+			password = psk
+		}
+		if password == "" {
+			h.logger.Warn("iwd profile has no usable password, skipping", "ssid", ssid)
+			continue
+		}
+
+		profile := buildNMWiFiProfile(ssid, password)
+		profilePath := filepath.Join(nmConnDir, ssid+".nmconnection")
+		if err := h.fs.WriteFile(profilePath, []byte(profile), 0600); err != nil {
+			h.logger.Warn("Failed to write NM WiFi profile", "ssid", ssid, "error", err)
+			continue
+		}
+
+		h.logger.Info("Migrated WiFi profile", "ssid", ssid)
+		migrated++
+	}
+
+	if migrated > 0 {
+		h.logger.Info("WiFi profiles migrated to NetworkManager", "count", migrated)
+	}
+	return nil
+}
+
+// extractIWDValue parses a key=value line from an iwd .psk file.
+func extractIWDValue(data []byte, key string) string {
+	scanner := bufio.NewScanner(bytes.NewReader(data))
+	prefix := key + "="
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if strings.HasPrefix(line, prefix) {
+			return strings.TrimPrefix(line, prefix)
+		}
+	}
+	return ""
+}
+
+// decodeIWDHexSSID decodes an iwd hex-encoded SSID (used when SSID contains
+// non-alphanumeric characters). Format: lowercase hex pairs.
+func decodeIWDHexSSID(hex string) (string, error) {
+	if len(hex)%2 != 0 {
+		return "", fmt.Errorf("odd hex length")
+	}
+	b := make([]byte, len(hex)/2)
+	for i := 0; i < len(hex); i += 2 {
+		hi := hexNibble(hex[i])
+		lo := hexNibble(hex[i+1])
+		if hi < 0 || lo < 0 {
+			return "", fmt.Errorf("invalid hex char")
+		}
+		b[i/2] = byte(hi<<4 | lo)
+	}
+	return string(b), nil
+}
+
+func hexNibble(c byte) int {
+	switch {
+	case c >= '0' && c <= '9':
+		return int(c - '0')
+	case c >= 'a' && c <= 'f':
+		return int(c-'a') + 10
+	case c >= 'A' && c <= 'F':
+		return int(c-'A') + 10
+	}
+	return -1
+}
+
+// buildNMWiFiProfile generates a NetworkManager keyfile for a WPA-PSK network.
+func buildNMWiFiProfile(ssid, psk string) string {
+	return fmt.Sprintf(`[connection]
+id=%s
+type=wifi
+autoconnect=true
+
+[wifi]
+ssid=%s
+mode=infrastructure
+
+[wifi-security]
+auth-alg=open
+key-mgmt=wpa-psk
+psk=%s
+
+[ipv4]
+method=auto
+
+[ipv6]
+method=auto
+`, ssid, ssid, psk)
 }
