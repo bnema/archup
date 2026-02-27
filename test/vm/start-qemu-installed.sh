@@ -14,7 +14,7 @@ while [[ $# -gt 0 ]]; do
     --profile) PROFILE="$2"; shift 2 ;;
     --secure-boot) SECURE_BOOT="$2"; shift 2 ;;
     --ssh-port) SSH_PORT="$2"; shift 2 ;;
-    *) echo "Unknown flag: $1"; exit 1 ;;
+    *) echo "Unknown flag: $1" >&2; exit 1 ;;
   esac
 done
 

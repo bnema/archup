@@ -12,7 +12,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo "Checking LUKS volume on $DISK..."
-cryptsetup luksDump "$DISK"
+cryptsetup luksDump "$DISK" || { echo "luksDump failed — is $DISK a LUKS volume?" >&2; exit 1; }
 
 echo ""
 echo "Trying to open with 'test' password..."
