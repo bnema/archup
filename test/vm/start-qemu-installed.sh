@@ -1,16 +1,24 @@
 #!/bin/bash
-# Start installed Arch system in QEMU with UEFI support and SSH access
+# Start installed Arch system in QEMU with realistic hardware profile
+# Usage: ./start-qemu-installed.sh [--profile desktop|laptop] [--secure-boot on|off] [--ssh-port PORT]
+set -euo pipefail
 
-# Get test directory
 TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-qemu-system-x86_64 \
-  -enable-kvm \
-  -m 2048 \
-  -smp 2 \
-  -bios /usr/share/edk2/x64/OVMF.4m.fd \
-  -drive file="$TEST_DIR/arch-test.qcow2",format=qcow2,if=virtio \
-  -display gtk \
-  -vga virtio \
-  -net nic,model=virtio \
-  -net user,hostfwd=tcp::2222-:22
+PROFILE="desktop"
+SECURE_BOOT="off"
+SSH_PORT="2222"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --profile) PROFILE="$2"; shift 2 ;;
+    --secure-boot) SECURE_BOOT="$2"; shift 2 ;;
+    --ssh-port) SSH_PORT="$2"; shift 2 ;;
+    *) echo "Unknown flag: $1"; exit 1 ;;
+  esac
+done
+
+source "$TEST_DIR/lib/qemu-profile.sh"
+build_qemu_args "$PROFILE" "$SECURE_BOOT" "$SSH_PORT" "$TEST_DIR"
+
+exec qemu-system-x86_64 "${QEMU_ARGS[@]}"
