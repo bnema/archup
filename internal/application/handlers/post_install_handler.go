@@ -62,6 +62,7 @@ func (h *PostInstallHandler) Handle(ctx context.Context, cmd commands.PostInstal
 	// Write Dank Linux flag file if user opted in
 	if cmd.InstallDankLinux {
 		if err := h.writeDankLinuxFlag(cmd.MountPoint); err != nil {
+			result.ErrorDetail = fmt.Sprintf("Failed to write Dank Linux flag: %v", err)
 			return result, fmt.Errorf("failed to write dank linux flag: %w", err)
 		}
 		result.TasksRun = append(result.TasksRun, "dank-linux-flag")

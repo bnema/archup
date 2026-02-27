@@ -328,8 +328,10 @@ func (a *App) handleDankLinuxInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "up", "shift+tab":
 		a.dankLinuxModel.MoveUp()
+		return a, nil
 	case "down", "tab":
 		a.dankLinuxModel.MoveDown()
+		return a, nil
 	case "enter":
 		a.formData.InstallDankLinux = a.dankLinuxModel.SelectedOption().Value
 		return a.startInstallation()

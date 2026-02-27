@@ -20,6 +20,6 @@ func (c *Configurator) Configure(username, userHome string) (ConfigResult, error
 	return ConfigResult{
 		ThemesApplied: 0,
 		ThemesFailed:  []string{},
-		Warnings:      []string{},
+		Warnings:      []string{"Shell configuration deferred to cli-tools.sh on first boot"},
 	}, nil
 }

@@ -311,6 +311,7 @@ func (fm *FormModelImpl) extractData() {
 		Timezone:          fm.fields[4].Value(),
 		Locale:            fm.fields[5].Value(),
 		Keymap:            fm.fields[6].Value(),
+		InstallDankLinux:  fm.data.InstallDankLinux,
 	}
 }
 

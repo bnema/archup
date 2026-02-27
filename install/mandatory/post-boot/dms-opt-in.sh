@@ -57,8 +57,12 @@ case "$REPLY" in
   [yY][eE][sS]|[yY])
     log "User opted in — starting Dank Linux installer."
     echo "Starting Dank Linux installer..."
-    curl -fsSL https://install.danklinux.com | sh
-    log "Dank Linux installation complete."
+    if curl -fsSL https://install.danklinux.com | sh; then
+      log "Dank Linux installation complete."
+    else
+      log "ERROR: Dank Linux installer failed (exit code $?)."
+      exit 1
+    fi
     ;;
   *)
     log "User skipped Dank Linux installation."

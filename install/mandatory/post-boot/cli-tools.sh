@@ -9,14 +9,14 @@ USER_HOME=$(getent passwd "$USERNAME" | cut -d: -f6)
 log() { echo "[cli-tools] $*" | tee -a "$LOG_FILE"; }
 
 if [[ -z "$USERNAME" ]]; then
-  log "ERROR: Could not detect user in /home"
+  log "ERROR: Could not detect user via getent passwd"
   exit 1
 fi
 
 log "Installing modern CLI toolkit for $USERNAME..."
 
-log "Refreshing package databases..."
-pacman -Sy --noconfirm
+log "Upgrading system and refreshing package databases..."
+pacman -Syu --noconfirm
 
 pacman -S --needed --noconfirm \
   eza bat fd ripgrep fzf zoxide starship \

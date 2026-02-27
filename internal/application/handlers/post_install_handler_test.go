@@ -177,6 +177,7 @@ func TestPostInstallHandler_Handle_WithDankLinux(t *testing.T) {
 	mockLogger.EXPECT().LogPath().Return("/var/log/archup-install.log").AnyTimes()
 	mockFS.EXPECT().Exists(gomock.Any()).Return(false, nil).AnyTimes()
 	mockFS.EXPECT().ReadFile(gomock.Any()).Return([]byte("graphics: yes"), nil).AnyTimes()
+	mockFS.EXPECT().WriteFile(gomock.Eq("/mnt/var/lib/archup-install-danklinux"), gomock.Any(), gomock.Any()).Return(nil)
 	mockFS.EXPECT().WriteFile(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	mockFS.EXPECT().MkdirAll(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	mockHTTP.EXPECT().Get(gomock.Any()).Return(newMockResponse(ctrl, http.StatusOK, []byte("content")), nil).AnyTimes()
