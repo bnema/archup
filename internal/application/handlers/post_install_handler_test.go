@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/bnema/archup/internal/application/commands"
@@ -209,6 +210,71 @@ func TestPostInstallHandler_Handle_WithDankLinux(t *testing.T) {
 
 	if result.TasksRun[0] != "dank-linux-flag" {
 		t.Errorf("expected task 'dank-linux-flag', got %s", result.TasksRun[0])
+	}
+}
+
+func TestPostInstallHandler_Handle_TunesPacman(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockFS := mocks.NewMockFileSystem(ctrl)
+	mockHTTP := mocks.NewMockHTTPClient(ctrl)
+	mockChrExec := mocks.NewMockChrootExecutor(ctrl)
+	mockScriptExec := mocks.NewMockScriptExecutor(ctrl)
+	mockLogger := mocks.NewMockLogger(ctrl)
+
+	pacmanContent := "#Color\n#ParallelDownloads = 5\n#ILoveCandy\n"
+
+	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().LogPath().Return("/var/log/archup-install.log").AnyTimes()
+	mockFS.EXPECT().Exists(gomock.Any()).Return(false, nil).AnyTimes()
+	mockFS.EXPECT().MkdirAll(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockHTTP.EXPECT().Get(gomock.Any()).Return(newMockResponse(ctrl, http.StatusOK, []byte("content")), nil).AnyTimes()
+	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+	// ReadFile for pacman.conf returns commented options; other reads return generic content
+	mockFS.EXPECT().ReadFile(gomock.Eq("/mnt/etc/pacman.conf")).Return([]byte(pacmanContent), nil).AnyTimes()
+	mockFS.EXPECT().ReadFile(gomock.Any()).Return([]byte("graphics: yes"), nil).AnyTimes()
+
+	// Capture the WriteFile call for pacman.conf and assert content
+	mockFS.EXPECT().WriteFile(gomock.Eq("/mnt/etc/pacman.conf"), gomock.Any(), gomock.Any()).DoAndReturn(
+		func(path string, data []byte, perm interface{}) error {
+			content := string(data)
+			if !strings.Contains(content, "Color") {
+				t.Errorf("expected tuned pacman.conf to contain 'Color', got: %s", content)
+			}
+			if strings.Contains(content, "#Color") {
+				t.Errorf("expected '#Color' to be uncommented in pacman.conf")
+			}
+			if !strings.Contains(content, "ParallelDownloads = 5") {
+				t.Errorf("expected tuned pacman.conf to contain 'ParallelDownloads = 5'")
+			}
+			if !strings.Contains(content, "ILoveCandy") {
+				t.Errorf("expected tuned pacman.conf to contain 'ILoveCandy'")
+			}
+			return nil
+		},
+	).AnyTimes()
+	mockFS.EXPECT().WriteFile(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+	handler := NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger, "https://raw.githubusercontent.com/bnema/archup/dev")
+
+	cmd := commands.PostInstallCommand{
+		MountPoint:         "/mnt",
+		Username:           "testuser",
+		RunPostBootScripts: false,
+		PlymouthTheme:      "",
+	}
+
+	result, err := handler.Handle(context.Background(), cmd)
+
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if !result.Success {
+		t.Error("expected success")
 	}
 }
 

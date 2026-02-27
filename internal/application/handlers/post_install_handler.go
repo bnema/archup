@@ -100,6 +100,10 @@ func (h *PostInstallHandler) Handle(ctx context.Context, cmd commands.PostInstal
 		h.logger.Warn("Failed to install Limine logo", "error", err)
 	}
 
+	if err := h.tunePacmanConfig(cmd.MountPoint); err != nil {
+		h.logger.Warn("Failed to tune pacman.conf", "error", err)
+	}
+
 	// Final cleanup and verification
 	h.logger.Info("Post-installation tasks completed")
 	result.Success = true
@@ -224,6 +228,23 @@ func (h *PostInstallHandler) writeDankLinuxFlag(mountPoint string) error {
 	}
 	flagPath := filepath.Join(mountPoint, "var", "lib", "archup-install-danklinux")
 	return h.fs.WriteFile(flagPath, []byte(""), 0644)
+}
+
+func (h *PostInstallHandler) tunePacmanConfig(mountPoint string) error {
+	confPath := filepath.Join(mountPoint, "etc", "pacman.conf")
+	content, err := h.fs.ReadFile(confPath)
+	if err != nil {
+		return fmt.Errorf("failed to read pacman.conf: %w", err)
+	}
+	conf := string(content)
+	conf = enablePacmanOption(conf, "#Color", "Color")
+	conf = enablePacmanOption(conf, "#ParallelDownloads = 5", "ParallelDownloads = 5")
+	conf = enablePacmanOption(conf, "#ILoveCandy", "ILoveCandy")
+	return h.fs.WriteFile(confPath, []byte(conf), 0644)
+}
+
+func enablePacmanOption(conf, commented, replacement string) string {
+	return strings.ReplaceAll(conf, commented, replacement)
 }
 
 func (h *PostInstallHandler) downloadTemplate(path string) ([]byte, error) {
