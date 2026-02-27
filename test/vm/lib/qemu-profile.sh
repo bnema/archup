@@ -100,6 +100,8 @@ build_qemu_args() {
   QEMU_ARGS+=(-device hda-duplex,audiodev=audio0)
 
   # ── GPU / Display ─────────────────────────────────────────────────────────────
-  QEMU_ARGS+=(-device "virtio-vga,xres=1920,yres=1080")
+  # Use std VGA: works regardless of guest GPU drivers (virtio-vga needs
+  # virtio-gpu module in the guest initramfs which may not be present).
+  QEMU_ARGS+=(-device "VGA,vgamem_mb=64")
   QEMU_ARGS+=(-display "gtk,zoom-to-fit=on")
 }

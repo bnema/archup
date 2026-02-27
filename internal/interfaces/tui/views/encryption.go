@@ -42,7 +42,7 @@ func RenderEncryptionSelection(em *models.EncryptionModelImpl) string {
 	}
 
 	b.WriteString("\n")
-	b.WriteString(info.Render("↑/↓ to select • enter to confirm • esc to go back"))
+	b.WriteString(info.Render("↑/↓ navigate • enter confirm • esc back • ctrl+c quit"))
 
 	return b.String()
 }

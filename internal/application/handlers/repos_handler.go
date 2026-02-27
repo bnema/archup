@@ -203,22 +203,34 @@ func ensureChaoticRepo(conf string) string {
 	return conf + chaotic
 }
 
+// setupCachyOSRepo configures the CachyOS repo inside the chroot. Mirrors the
+// bash approach: import+sign key, write mirrorlist manually (no versioned
+// package URLs), patch pacman.conf, then sync.
 func (h *ReposHandler) setupCachyOSRepo(ctx context.Context, mountPoint string) error {
-	if _, err := h.chrExec.ExecuteInChroot(ctx, mountPoint, "pacman-key", "--recv-key",
-		"F3B607488DB35A47", "--keyserver", "keyserver.ubuntu.com"); err != nil {
-		return fmt.Errorf("failed to receive CachyOS key: %w", err)
+	const (
+		cachyOSKeyID      = "F3B607488DB35A47"
+		keyserver         = "keyserver.ubuntu.com"
+		cachyOSMirrorlist = "## CachyOS mirrorlist\nServer = https://mirror.cachyos.org/repo/$arch/$repo\n"
+	)
+
+	// Only fetch from keyserver if key is not already present in chroot.
+	if _, err := h.chrExec.ExecuteInChroot(ctx, mountPoint, "pacman-key", "--list-keys", cachyOSKeyID); err != nil {
+		if _, err := h.chrExec.ExecuteInChroot(ctx, mountPoint, "pacman-key", "--recv-keys",
+			cachyOSKeyID, "--keyserver", keyserver); err != nil {
+			return fmt.Errorf("failed to receive CachyOS key: %w", err)
+		}
 	}
-	if _, err := h.chrExec.ExecuteInChroot(ctx, mountPoint, "pacman-key", "--lsign-key",
-		"F3B607488DB35A47"); err != nil {
+
+	if _, err := h.chrExec.ExecuteInChroot(ctx, mountPoint, "pacman-key", "--lsign-key", cachyOSKeyID); err != nil {
 		return fmt.Errorf("failed to sign CachyOS key: %w", err)
 	}
-	if _, err := h.chrExec.ExecuteInChroot(ctx, mountPoint, "pacman", "-U", "--noconfirm",
-		"https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-keyring-20240331-1-any.pkg.tar.zst",
-		"https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-mirrorlist-18-1-any.pkg.tar.zst",
-		"https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v3-mirrorlist-18-1-any.pkg.tar.zst",
-		"https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v4-mirrorlist-6-1-any.pkg.tar.zst"); err != nil {
-		return fmt.Errorf("failed to install CachyOS packages: %w", err)
+
+	// Write static mirrorlist — no versioned package URLs that can go stale.
+	mirrorlistPath := filepath.Join(mountPoint, "etc", "pacman.d", "cachyos-mirrorlist")
+	if err := h.fs.WriteFile(mirrorlistPath, []byte(cachyOSMirrorlist), 0644); err != nil {
+		return fmt.Errorf("failed to write CachyOS mirrorlist: %w", err)
 	}
+
 	pacmanConfPath := filepath.Join(mountPoint, "etc", "pacman.conf")
 	confBytes, err := h.fs.ReadFile(pacmanConfPath)
 	if err != nil {
@@ -232,6 +244,30 @@ func ensureCachyOSRepo(conf string) string {
 	if strings.Contains(conf, "[cachyos]") {
 		return conf
 	}
+
 	conf = strings.TrimRight(conf, "\n")
+	if conf == "" {
+		return "[cachyos]\nInclude = /etc/pacman.d/cachyos-mirrorlist\n"
+	}
+
+	block := []string{
+		"# CachyOS repositories",
+		"[cachyos]",
+		"Include = /etc/pacman.d/cachyos-mirrorlist",
+		"",
+	}
+
+	lines := strings.Split(conf, "\n")
+	for i, line := range lines {
+		if strings.TrimSpace(line) == "[core]" {
+			out := make([]string, 0, len(lines)+len(block))
+			out = append(out, lines[:i]...)
+			out = append(out, block...)
+			out = append(out, lines[i:]...)
+			return strings.Join(out, "\n") + "\n"
+		}
+	}
+
+	// Fallback: append if [core] section is not found.
 	return conf + "\n[cachyos]\nInclude = /etc/pacman.d/cachyos-mirrorlist\n"
 }

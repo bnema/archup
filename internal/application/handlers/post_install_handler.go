@@ -11,6 +11,7 @@ import (
 	"github.com/bnema/archup/internal/application/dto"
 	"github.com/bnema/archup/internal/config"
 	"github.com/bnema/archup/internal/domain/ports"
+	"github.com/bnema/archup/internal/ui/assets"
 )
 
 // PostInstallHandler handles post-installation tasks
@@ -159,13 +160,8 @@ func (h *PostInstallHandler) setupPostBoot(ctx context.Context, mountPoint, user
 }
 
 func (h *PostInstallHandler) installLimineLogo(mountPoint string) error {
-	logoContent, err := h.downloadTemplate(config.ArchLogoURL)
-	if err != nil {
-		return err
-	}
-
 	logoPath := filepath.Join(mountPoint, "boot", "arch-logo.png")
-	if err := h.fs.WriteFile(logoPath, logoContent, 0644); err != nil {
+	if err := h.fs.WriteFile(logoPath, assets.LimineLogo, 0644); err != nil {
 		return fmt.Errorf("failed to write Limine logo: %w", err)
 	}
 

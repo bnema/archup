@@ -194,7 +194,6 @@ var PostBootScripts = []string{
 	"blesh.sh",
 	"cli-tools.sh",
 	"dms-opt-in.sh",
-	"logo.txt",
 }
 
 // Post-boot service template URL path

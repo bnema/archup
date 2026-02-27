@@ -70,7 +70,7 @@ func RenderAMDPStateSelection(am *models.AMDPStateModelImpl) string {
 	}
 
 	b.WriteString("\n")
-	b.WriteString(info.Render("Up/Down Move | Enter Confirm | Esc Back | Ctrl+C Quit"))
+	b.WriteString(info.Render("↑/↓ navigate • enter confirm • esc back • ctrl+c quit"))
 
 	return b.String()
 }

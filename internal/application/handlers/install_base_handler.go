@@ -80,6 +80,15 @@ func (h *InstallBaseHandler) Handle(ctx context.Context, cmd commands.InstallBas
 		h.logger.Info("Adding additional packages", "count", len(cmd.Packages))
 	}
 
+	// For CachyOS kernel: add the repo to the live host before pacstrap
+	if cmd.KernelVariant == packages.KernelCachyOS {
+		if err := h.setupCachyOSOnHost(ctx); err != nil {
+			h.logger.Error("Failed to setup CachyOS repo on host", "error", err)
+			result.ErrorDetail = fmt.Sprintf("Failed to setup CachyOS repo on host: %v", err)
+			return result, err
+		}
+	}
+
 	h.logger.Info("Installing base packages", "count", len(basePackages))
 	args := append([]string{cmd.MountPoint}, basePackages...)
 	if _, err := h.cmdExec.Execute(ctx, "pacstrap", args...); err != nil {
@@ -107,6 +116,88 @@ func (h *InstallBaseHandler) Handle(ctx context.Context, cmd commands.InstallBas
 
 	h.logger.Info("Base system installation completed", "packages", len(basePackages))
 	return result, nil
+}
+
+// setupCachyOSOnHost configures the CachyOS repo on the live host so that
+// pacstrap can resolve linux-cachyos. Mirrors the working bash approach:
+// import+sign key, write mirrorlist manually (no versioned package URLs),
+// patch pacman.conf, then sync.
+func (h *InstallBaseHandler) setupCachyOSOnHost(ctx context.Context) error {
+	h.logger.Info("Setting up CachyOS repo on host for pacstrap")
+
+	const (
+		cachyOSKeyID          = "F3B607488DB35A47"
+		keyserver             = "keyserver.ubuntu.com"
+		hostPacmanConf        = "/etc/pacman.conf"
+		cachyOSMirrorlistPath = "/etc/pacman.d/cachyos-mirrorlist"
+		cachyOSMirrorlist     = "## CachyOS mirrorlist\nServer = https://mirror.cachyos.org/repo/$arch/$repo\n"
+	)
+
+	// Only fetch from keyserver if key is not already present.
+	if _, err := h.cmdExec.Execute(ctx, "pacman-key", "--list-keys", cachyOSKeyID); err != nil {
+		if _, err := h.cmdExec.Execute(ctx, "pacman-key", "--recv-keys",
+			cachyOSKeyID, "--keyserver", keyserver); err != nil {
+			return fmt.Errorf("failed to receive CachyOS key on host: %w", err)
+		}
+	}
+
+	// Local-sign the key so pacman trusts packages from this unofficial repo.
+	if _, err := h.cmdExec.Execute(ctx, "pacman-key", "--lsign-key", cachyOSKeyID); err != nil {
+		return fmt.Errorf("failed to sign CachyOS key on host: %w", err)
+	}
+
+	// Write static mirrorlist — no versioned package URLs that can go stale.
+	if err := h.fs.WriteFile(cachyOSMirrorlistPath, []byte(cachyOSMirrorlist), 0644); err != nil {
+		return fmt.Errorf("failed to write host CachyOS mirrorlist: %w", err)
+	}
+
+	confBytes, err := h.fs.ReadFile(hostPacmanConf)
+	if err != nil {
+		return fmt.Errorf("failed to read host pacman.conf: %w", err)
+	}
+	conf := ensureCachyOSHostRepo(string(confBytes))
+	if err := h.fs.WriteFile(hostPacmanConf, []byte(conf), 0644); err != nil {
+		return fmt.Errorf("failed to write host pacman.conf: %w", err)
+	}
+
+	if _, err := h.cmdExec.Execute(ctx, "pacman", "-Sy", "--noconfirm"); err != nil {
+		return fmt.Errorf("failed to sync host pacman repos: %w", err)
+	}
+
+	h.logger.Info("CachyOS repo ready on host")
+	return nil
+}
+
+func ensureCachyOSHostRepo(conf string) string {
+	if strings.Contains(conf, "[cachyos]") {
+		return conf
+	}
+
+	conf = strings.TrimRight(conf, "\n")
+	if conf == "" {
+		return "[cachyos]\nInclude = /etc/pacman.d/cachyos-mirrorlist\n"
+	}
+
+	block := []string{
+		"# CachyOS repositories",
+		"[cachyos]",
+		"Include = /etc/pacman.d/cachyos-mirrorlist",
+		"",
+	}
+
+	lines := strings.Split(conf, "\n")
+	for i, line := range lines {
+		if strings.TrimSpace(line) == "[core]" {
+			out := make([]string, 0, len(lines)+len(block))
+			out = append(out, lines[:i]...)
+			out = append(out, block...)
+			out = append(out, lines[i:]...)
+			return strings.Join(out, "\n") + "\n"
+		}
+	}
+
+	// Fallback: append if [core] section is not found.
+	return conf + "\n[cachyos]\nInclude = /etc/pacman.d/cachyos-mirrorlist\n"
 }
 
 // loadBasePackages reads the base package list from file

@@ -43,7 +43,7 @@ func RenderGPUSelection(gm *models.GPUModelImpl) string {
 	}
 
 	b.WriteString("\n")
-	b.WriteString(info.Render("↑↓ Move • Enter Confirm • Ctrl+C Quit"))
+	b.WriteString(info.Render("↑/↓ navigate • enter confirm • esc back • ctrl+c quit"))
 
 	return b.String()
 }

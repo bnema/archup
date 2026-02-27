@@ -44,7 +44,7 @@ func RenderDankLinuxSelection(dm *models.DankLinuxModelImpl) string {
 	}
 
 	b.WriteString("\n")
-	b.WriteString(info.Render("↑/↓ to select • enter to confirm"))
+	b.WriteString(info.Render("↑/↓ navigate • enter confirm • esc back • ctrl+c quit"))
 
 	return b.String()
 }

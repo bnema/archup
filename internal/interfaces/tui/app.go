@@ -320,6 +320,8 @@ func (a *App) handleGPUInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "ctrl+c":
 		return a, tea.Quit
+	case "esc", "backspace":
+		return a.startAMDPStateSelection()
 	case "up", "shift+tab":
 		a.gpuModel.MoveUp()
 		return a, nil
@@ -373,11 +375,9 @@ func (a *App) handleReposInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "down":
 		a.reposModel.MoveDown()
 		return a, nil
-	case "tab":
-		a.reposModel.NextSection()
-		return a, nil
-	case "shift+tab":
-		a.reposModel.PrevSection()
+	case "left", "right", " ":
+		// Select the item under the cursor (radio within its section)
+		a.reposModel.Select()
 		return a, nil
 	case "enter":
 		a.formData.AURHelper = a.reposModel.SelectedAURHelper()
@@ -567,6 +567,9 @@ func (a *App) handleDiskInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "ctrl+c":
 		return a, tea.Quit
+	case "esc", "backspace":
+		a.currentScreen = ScreenForm
+		return a, nil
 	case "up", "shift+tab":
 		a.diskModel.MoveUp()
 		return a, nil

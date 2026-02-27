@@ -57,7 +57,7 @@ func RenderDiskSelection(dm *models.DiskModelImpl) string {
 	b.WriteString("\n")
 	b.WriteString(warningStyle.Render("⚠ WARNING: Selected disk will be completely erased!"))
 	b.WriteString("\n\n")
-	b.WriteString(dimStyle.Render("↑↓ Navigate • Enter Select • Ctrl+C Quit"))
+	b.WriteString(dimStyle.Render("↑/↓ navigate • enter select • esc back • ctrl+c quit"))
 
 	return b.String()
 }
