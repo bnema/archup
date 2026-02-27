@@ -369,6 +369,11 @@ func (a *App) handleCPUDetected(msg CPUDetectedMsg) (tea.Model, tea.Cmd) {
 
 	a.amdPstateModel.SetCPUInfo(msg.CPU)
 
+	// Always include microcode when CPU vendor is known
+	if msg.CPU != nil && msg.CPU.Vendor != "" && msg.CPU.Vendor != legacysystem.CPUVendorUnknown {
+		a.formData.Microcode = true
+	}
+
 	if !a.amdPstateModel.ShouldPrompt() {
 		a.formData.AMDPState = ""
 		a.formData.KernelParamsExtra = ""
