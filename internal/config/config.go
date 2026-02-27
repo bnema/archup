@@ -290,6 +290,17 @@ func NewConfig(version string) *Config {
 	}
 }
 
+// Branch returns the git branch to use for asset downloads and repo cloning.
+func (c *Config) Branch() string {
+	rawURL := c.RawURL
+	// Extract branch from RawURL: "https://raw.githubusercontent.com/bnema/archup/<branch>"
+	parts := strings.Split(rawURL, "/")
+	if len(parts) > 0 {
+		return parts[len(parts)-1]
+	}
+	return "main"
+}
+
 // Load reads configuration from a shell-compatible config file
 func Load(path string, version string) (*Config, error) {
 	cfg := NewConfig(version)

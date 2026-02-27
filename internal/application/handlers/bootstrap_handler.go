@@ -18,16 +18,18 @@ type BootstrapHandler struct {
 	logger     ports.Logger
 	repoURL    string
 	rawURL     string
+	branch     string
 }
 
 // NewBootstrapHandler creates a new bootstrap handler
-func NewBootstrapHandler(fs ports.FileSystem, httpClient ports.HTTPClient, logger ports.Logger, repoURL, rawURL string) *BootstrapHandler {
+func NewBootstrapHandler(fs ports.FileSystem, httpClient ports.HTTPClient, logger ports.Logger, repoURL, rawURL, branch string) *BootstrapHandler {
 	return &BootstrapHandler{
 		fs:         fs,
 		httpClient: httpClient,
 		logger:     logger,
 		repoURL:    repoURL,
 		rawURL:     rawURL,
+		branch:     branch,
 	}
 }
 
@@ -86,7 +88,7 @@ func (h *BootstrapHandler) cloneRepo(ctx context.Context) error {
 
 	h.logger.Info("Cloning repository", "url", h.repoURL)
 
-	cmd := exec.CommandContext(ctx, "git", "clone", "--depth", "1", h.repoURL, repoDir)
+	cmd := exec.CommandContext(ctx, "git", "clone", "--depth", "1", "--branch", h.branch, h.repoURL, repoDir)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("git clone failed: %w (output: %s)", err, string(output))
 	}

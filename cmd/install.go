@@ -68,7 +68,7 @@ func runInstall(dryRun bool) error {
 		return fmt.Errorf("create repository adapter: %w", err)
 	}
 
-	bootstrapHandler := apphandlers.NewBootstrapHandler(fsAdapter, httpClient, slogAdapter, cfg.RepoURL, cfg.RawURL)
+	bootstrapHandler := apphandlers.NewBootstrapHandler(fsAdapter, httpClient, slogAdapter, cfg.RepoURL, cfg.RawURL, cfg.Branch())
 	preflightHandler := apphandlers.NewPreflightHandler(fsAdapter, shellExec, slogAdapter)
 	partitionHandler := apphandlers.NewPartitionHandler(shellExec, slogAdapter)
 	baseHandler := apphandlers.NewInstallBaseHandler(fsAdapter, shellExec, chrootExec, slogAdapter)

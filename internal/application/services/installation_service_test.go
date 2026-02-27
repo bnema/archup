@@ -56,7 +56,7 @@ func createTestService(ctrl *gomock.Controller) *InstallationService {
 	mockChrExec.EXPECT().ExecuteInChrootWithStdin(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
-	bootstrapHandler := handlers.NewBootstrapHandler(mockFS, mockHTTP, mockLogger, "https://github.com/bnema/archup", "https://raw.githubusercontent.com/bnema/archup/dev")
+	bootstrapHandler := handlers.NewBootstrapHandler(mockFS, mockHTTP, mockLogger, "https://github.com/bnema/archup", "https://raw.githubusercontent.com/bnema/archup/dev", "dev")
 	preflightHandler := handlers.NewPreflightHandler(mockFS, mockExec, mockLogger)
 	partitionHandler := handlers.NewPartitionHandler(mockExec, mockLogger)
 	baseHandler := handlers.NewInstallBaseHandler(mockFS, mockExec, mockChrExec, mockLogger)
@@ -141,7 +141,7 @@ func TestInstallationService_Start_InvalidHostname(t *testing.T) {
 	mockChrExec.EXPECT().ExecuteInChrootWithStdin(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
-	bootstrapHandler := handlers.NewBootstrapHandler(mockFS, mockHTTP, mockLogger, "https://github.com/bnema/archup", "https://raw.githubusercontent.com/bnema/archup/dev")
+	bootstrapHandler := handlers.NewBootstrapHandler(mockFS, mockHTTP, mockLogger, "https://github.com/bnema/archup", "https://raw.githubusercontent.com/bnema/archup/dev", "dev")
 	preflightHandler := handlers.NewPreflightHandler(mockFS, mockExec, mockLogger)
 	partitionHandler := handlers.NewPartitionHandler(mockExec, mockLogger)
 	baseHandler := handlers.NewInstallBaseHandler(mockFS, mockExec, mockChrExec, mockLogger)
