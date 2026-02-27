@@ -1,11 +1,19 @@
 #!/bin/bash
-# Boot to ISO and check LUKS setup
+# Check LUKS setup on the VM disk
+# Usage: ./check-luks.sh [--disk DEVICE]  (default: /dev/nvme0n1p2)
 
-echo "Checking LUKS volume..."
+DISK="/dev/nvme0n1p2"
 
-# Try to test if LUKS volume exists
-cryptsetup luksDump /dev/vda2
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --disk) DISK="$2"; shift 2 ;;
+    *) echo "Unknown flag: $1" >&2; exit 1 ;;
+  esac
+done
+
+echo "Checking LUKS volume on $DISK..."
+cryptsetup luksDump "$DISK"
 
 echo ""
 echo "Trying to open with 'test' password..."
-echo "test" | cryptsetup open --test-passphrase /dev/vda2 && echo "Password 'test' works!" || echo "Password 'test' does NOT work!"
+echo "test" | cryptsetup open --test-passphrase "$DISK" && echo "Password 'test' works!" || echo "Password 'test' does NOT work!"
