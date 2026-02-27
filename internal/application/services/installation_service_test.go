@@ -49,6 +49,7 @@ func createTestService(ctrl *gomock.Controller) *InstallationService {
 	mockFS.EXPECT().WriteFile(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	mockFS.EXPECT().MkdirAll(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	mockFS.EXPECT().Chmod(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockFS.EXPECT().Stat(gomock.Any()).Return(nil, nil).AnyTimes()
 	mockHTTP.EXPECT().Get(gomock.Any()).Return(newMockResponse(ctrl, http.StatusOK, []byte("content")), nil).AnyTimes()
 	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
 	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
@@ -61,7 +62,7 @@ func createTestService(ctrl *gomock.Controller) *InstallationService {
 	partitionHandler := handlers.NewPartitionHandler(mockExec, mockLogger)
 	baseHandler := handlers.NewInstallBaseHandler(mockFS, mockExec, mockChrExec, mockLogger)
 	configHandler := handlers.NewConfigureSystemHandler(mockFS, mockChrExec, mockLogger)
-	bootloaderHandler := handlers.NewBootloaderHandler(mockChrExec, mockLogger)
+	bootloaderHandler := handlers.NewBootloaderHandler(mockFS, mockExec, mockChrExec, mockLogger)
 	reposHandler := handlers.NewReposHandler(mockFS, mockChrExec, mockLogger)
 	postInstallHandler := handlers.NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger, "https://raw.githubusercontent.com/bnema/archup/dev")
 
@@ -134,6 +135,7 @@ func TestInstallationService_Start_InvalidHostname(t *testing.T) {
 	mockFS.EXPECT().WriteFile(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	mockFS.EXPECT().MkdirAll(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	mockFS.EXPECT().Chmod(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockFS.EXPECT().Stat(gomock.Any()).Return(nil, nil).AnyTimes()
 	mockHTTP.EXPECT().Get(gomock.Any()).Return(newMockResponse(ctrl, http.StatusOK, []byte("content")), nil).AnyTimes()
 	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
 	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
@@ -146,7 +148,7 @@ func TestInstallationService_Start_InvalidHostname(t *testing.T) {
 	partitionHandler := handlers.NewPartitionHandler(mockExec, mockLogger)
 	baseHandler := handlers.NewInstallBaseHandler(mockFS, mockExec, mockChrExec, mockLogger)
 	configHandler := handlers.NewConfigureSystemHandler(mockFS, mockChrExec, mockLogger)
-	bootloaderHandler := handlers.NewBootloaderHandler(mockChrExec, mockLogger)
+	bootloaderHandler := handlers.NewBootloaderHandler(mockFS, mockExec, mockChrExec, mockLogger)
 	reposHandler := handlers.NewReposHandler(mockFS, mockChrExec, mockLogger)
 	postInstallHandler := handlers.NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger, "https://raw.githubusercontent.com/bnema/archup/dev")
 
