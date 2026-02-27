@@ -30,9 +30,11 @@ type App struct {
 	// UI models (using concrete types for compatibility with views/handlers)
 	formModel         *models.FormModelImpl
 	diskModel         *models.DiskModelImpl
+	encryptionModel   *models.EncryptionModelImpl
 	kernelModel       *models.KernelModelImpl
 	amdPstateModel    *models.AMDPStateModelImpl
 	gpuModel          *models.GPUModelImpl
+	reposModel        *models.ReposModelImpl
 	dankLinuxModel    *models.DankLinuxModelImpl
 	installationModel *models.InstallationModelImpl
 	progressModel     *models.ProgressModelImpl
@@ -55,9 +57,11 @@ type Screen string
 const (
 	ScreenForm       Screen = "form"
 	ScreenDisk       Screen = "disk"
+	ScreenEncryption Screen = "encryption"
 	ScreenKernel     Screen = "kernel"
 	ScreenAMDPState  Screen = "amd-pstate"
 	ScreenGPU        Screen = "gpu"
+	ScreenRepos      Screen = "repos"
 	ScreenDankLinux  Screen = "danklinux"
 	ScreenInstalling Screen = "installing"
 	ScreenProgress   Screen = "progress"
@@ -81,9 +85,11 @@ func NewApp(
 		logger:            logger,
 		formModel:         models.NewFormModel(),
 		diskModel:         models.NewDiskModel(),
+		encryptionModel:   models.NewEncryptionModel(),
 		kernelModel:       models.NewKernelModel(),
 		amdPstateModel:    models.NewAMDPStateModel(),
 		gpuModel:          models.NewGPUModel(),
+		reposModel:        models.NewReposModel(),
 		dankLinuxModel:    models.NewDankLinuxModel(),
 		installationModel: models.NewInstallationModel(),
 		progressModel:     models.NewProgressModel(),
@@ -155,12 +161,16 @@ func (a *App) View() string {
 		return views.RenderForm(a.formModel)
 	case ScreenDisk:
 		return views.RenderDiskSelection(a.diskModel)
+	case ScreenEncryption:
+		return views.RenderEncryptionSelection(a.encryptionModel)
 	case ScreenKernel:
 		return views.RenderKernelSelection(a.kernelModel)
 	case ScreenAMDPState:
 		return views.RenderAMDPStateSelection(a.amdPstateModel)
 	case ScreenGPU:
 		return views.RenderGPUSelection(a.gpuModel)
+	case ScreenRepos:
+		return views.RenderReposSelection(a.reposModel)
 	case ScreenDankLinux:
 		return views.RenderDankLinuxSelection(a.dankLinuxModel)
 	case ScreenInstalling, ScreenProgress:
@@ -181,12 +191,16 @@ func (a *App) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return a.handleFormInput(msg)
 	case ScreenDisk:
 		return a.handleDiskInput(msg)
+	case ScreenEncryption:
+		return a.handleEncryptionInput(msg)
 	case ScreenKernel:
 		return a.handleKernelInput(msg)
 	case ScreenAMDPState:
 		return a.handleAMDPStateInput(msg)
 	case ScreenGPU:
 		return a.handleGPUInput(msg)
+	case ScreenRepos:
+		return a.handleReposInput(msg)
 	case ScreenDankLinux:
 		return a.handleDankLinuxInput(msg)
 	case ScreenProgress:
@@ -317,8 +331,7 @@ func (a *App) handleGPUInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		// Update stored form data directly
 		a.formData.GPUVendor = string(selected.Vendor)
 		a.formData.GPUDrivers = append([]string{}, selected.Drivers...)
-		a.currentScreen = ScreenDankLinux
-		return a, nil
+		return a.startReposSelection()
 	}
 
 	return a, nil
@@ -326,6 +339,8 @@ func (a *App) handleGPUInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func (a *App) handleDankLinuxInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
+	case "esc", "backspace":
+		return a.startReposSelection()
 	case "up", "shift+tab":
 		a.dankLinuxModel.MoveUp()
 		return a, nil
@@ -337,6 +352,35 @@ func (a *App) handleDankLinuxInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return a.startInstallation()
 	case "q", "ctrl+c":
 		return a, tea.Quit
+	}
+	return a, nil
+}
+
+func (a *App) startReposSelection() (tea.Model, tea.Cmd) {
+	a.currentScreen = ScreenRepos
+	return a, nil
+}
+
+func (a *App) handleReposInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "ctrl+c", "q":
+		return a, tea.Quit
+	case "esc", "backspace":
+		return a.startGPUSelection()
+	case "up":
+		a.reposModel.MoveUp()
+		return a, nil
+	case "down":
+		a.reposModel.MoveDown()
+		return a, nil
+	case "tab", "shift+tab":
+		a.reposModel.NextSection()
+		return a, nil
+	case "enter":
+		a.formData.AURHelper = a.reposModel.SelectedAURHelper()
+		a.formData.EnableChaotic = a.reposModel.SelectedChaoticEnabled()
+		a.currentScreen = ScreenDankLinux
+		return a, nil
 	}
 	return a, nil
 }
@@ -536,6 +580,30 @@ func (a *App) handleDiskInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		// Update stored form data directly
 		a.formData.TargetDisk = selected.Path
+		return a.startEncryptionSelection()
+	}
+	return a, nil
+}
+
+func (a *App) startEncryptionSelection() (tea.Model, tea.Cmd) {
+	a.currentScreen = ScreenEncryption
+	return a, nil
+}
+
+func (a *App) handleEncryptionInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "ctrl+c":
+		return a, tea.Quit
+	case "esc", "backspace":
+		return a.startDiskSelection()
+	case "up", "shift+tab":
+		a.encryptionModel.MoveUp()
+		return a, nil
+	case "down", "tab":
+		a.encryptionModel.MoveDown()
+		return a, nil
+	case "enter":
+		a.formData.EncryptionType = a.encryptionModel.SelectedOption().Value
 		return a.startKernelSelection()
 	}
 	return a, nil
