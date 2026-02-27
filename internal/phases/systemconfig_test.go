@@ -229,6 +229,7 @@ func TestConfigPhaseExecute(t *testing.T) {
 	mockChrExec.EXPECT().ChrootExecWithStdin(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	mockFS.EXPECT().WriteFile(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockFS.EXPECT().MkdirAll(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 	tmpDir := t.TempDir()
 	logPath := filepath.Join(tmpDir, "test.log")

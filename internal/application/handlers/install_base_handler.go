@@ -129,9 +129,15 @@ func (h *InstallBaseHandler) setupCachyOSOnHost(ctx context.Context) error {
 		cachyOSKeyID          = "F3B607488DB35A47"
 		keyserver             = "keyserver.ubuntu.com"
 		hostPacmanConf        = "/etc/pacman.conf"
+		cachyOSMirrorlistDir  = "/etc/pacman.d"
 		cachyOSMirrorlistPath = "/etc/pacman.d/cachyos-mirrorlist"
 		cachyOSMirrorlist     = "## CachyOS mirrorlist\nServer = https://mirror.cachyos.org/repo/$arch/$repo\n"
 	)
+
+	// Ensure the pacman keyring is initialized before any key operations.
+	if _, err := h.cmdExec.Execute(ctx, "pacman-key", "--init"); err != nil {
+		return fmt.Errorf("failed to init pacman keyring on host: %w", err)
+	}
 
 	// Only fetch from keyserver if key is not already present.
 	if _, err := h.cmdExec.Execute(ctx, "pacman-key", "--list-keys", cachyOSKeyID); err != nil {
@@ -144,6 +150,11 @@ func (h *InstallBaseHandler) setupCachyOSOnHost(ctx context.Context) error {
 	// Local-sign the key so pacman trusts packages from this unofficial repo.
 	if _, err := h.cmdExec.Execute(ctx, "pacman-key", "--lsign-key", cachyOSKeyID); err != nil {
 		return fmt.Errorf("failed to sign CachyOS key on host: %w", err)
+	}
+
+	// Ensure /etc/pacman.d exists before writing the mirrorlist.
+	if err := h.fs.MkdirAll(cachyOSMirrorlistDir, 0755); err != nil {
+		return fmt.Errorf("failed to create pacman.d directory on host: %w", err)
 	}
 
 	// Write static mirrorlist — no versioned package URLs that can go stale.

@@ -28,8 +28,8 @@ func TestBootloaderHandler_Handle_Limine(t *testing.T) {
 	mockFS.EXPECT().Exists(gomock.Any()).Return(true, nil).AnyTimes()
 	mockExec.EXPECT().Execute(gomock.Any(), "blkid", "-s", "UUID", "-o", "value", gomock.Any()).Return([]byte("uuid"), nil).AnyTimes()
 	mockExec.EXPECT().Execute(gomock.Any(), "cp", gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
-	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), "mkinitcpio", "-P").Return([]byte{}, nil).AnyTimes()
-	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), "efibootmgr", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
 
 	handler := NewBootloaderHandler(mockFS, mockExec, mockChrExec, mockLogger)
 

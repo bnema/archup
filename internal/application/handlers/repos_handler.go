@@ -213,6 +213,11 @@ func (h *ReposHandler) setupCachyOSRepo(ctx context.Context, mountPoint string) 
 		cachyOSMirrorlist = "## CachyOS mirrorlist\nServer = https://mirror.cachyos.org/repo/$arch/$repo\n"
 	)
 
+	// Ensure keyring is initialized inside the chroot.
+	if _, err := h.chrExec.ExecuteInChroot(ctx, mountPoint, "pacman-key", "--init"); err != nil {
+		return fmt.Errorf("failed to init pacman keyring in chroot: %w", err)
+	}
+
 	// Only fetch from keyserver if key is not already present in chroot.
 	if _, err := h.chrExec.ExecuteInChroot(ctx, mountPoint, "pacman-key", "--list-keys", cachyOSKeyID); err != nil {
 		if _, err := h.chrExec.ExecuteInChroot(ctx, mountPoint, "pacman-key", "--recv-keys",
@@ -223,6 +228,12 @@ func (h *ReposHandler) setupCachyOSRepo(ctx context.Context, mountPoint string) 
 
 	if _, err := h.chrExec.ExecuteInChroot(ctx, mountPoint, "pacman-key", "--lsign-key", cachyOSKeyID); err != nil {
 		return fmt.Errorf("failed to sign CachyOS key: %w", err)
+	}
+
+	// Ensure /etc/pacman.d exists inside the chroot before writing mirrorlist.
+	mirrorlistDir := filepath.Join(mountPoint, "etc", "pacman.d")
+	if err := h.fs.MkdirAll(mirrorlistDir, 0755); err != nil {
+		return fmt.Errorf("failed to create pacman.d in chroot: %w", err)
 	}
 
 	// Write static mirrorlist — no versioned package URLs that can go stale.

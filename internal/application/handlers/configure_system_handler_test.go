@@ -21,6 +21,7 @@ func TestConfigureSystemHandler_Handle_Success(t *testing.T) {
 	mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 	mockLogger.EXPECT().LogPath().Return("/var/log/archup-install.log").AnyTimes()
 	mockFS.EXPECT().WriteFile(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+	mockFS.EXPECT().MkdirAll(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
 	mockChrExec.EXPECT().ExecuteInChrootWithStdin(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
