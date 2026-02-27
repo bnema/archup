@@ -138,8 +138,11 @@ func (h *PostInstallHandler) setupPostBoot(ctx context.Context, mountPoint, user
 		if err := h.writeFromTemplate(src, dst); err != nil {
 			return fmt.Errorf("failed to write %s: %w", script, err)
 		}
-		if err := h.fs.Chmod(dst, 0755); err != nil {
-			return fmt.Errorf("failed to set permissions for %s: %w", script, err)
+		// Only set executable bit on shell scripts
+		if strings.HasSuffix(script, ".sh") {
+			if err := h.fs.Chmod(dst, 0755); err != nil {
+				return fmt.Errorf("failed to set permissions for %s: %w", script, err)
+			}
 		}
 	}
 
