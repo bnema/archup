@@ -68,6 +68,12 @@ func (h *InstallBaseHandler) Handle(ctx context.Context, cmd commands.InstallBas
 		h.logger.Info("Adding CPU microcode packages")
 	}
 
+	// Add cryptsetup for encrypted installs
+	if cmd.Encrypted {
+		basePackages = append(basePackages, "cryptsetup")
+		h.logger.Info("Adding cryptsetup for encrypted install")
+	}
+
 	// Add any additional packages from command
 	if len(cmd.Packages) > 0 {
 		basePackages = append(basePackages, cmd.Packages...)

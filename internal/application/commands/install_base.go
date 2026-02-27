@@ -9,4 +9,5 @@ type InstallBaseCommand struct {
 	Packages         []string               // Additional packages to install (in addition to base)
 	KernelVariant    packages.KernelVariant // KernelStable, KernelZen, KernelLTS, KernelHardened, KernelCachyOS
 	IncludeMicrocode bool                   // Whether to install CPU microcode
+	Encrypted        bool                   // true when disk encryption was chosen
 }

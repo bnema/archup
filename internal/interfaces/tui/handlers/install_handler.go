@@ -141,6 +141,7 @@ func CreateInstallationCommand(app AppContext, formData models.FormData) tea.Cmd
 				MountPoint:       "/mnt",
 				KernelVariant:    parseKernelVariant(formData.KernelVariant),
 				IncludeMicrocode: formData.Microcode,
+				Encrypted:        parseEncryptionType(formData.EncryptionType) != disk.EncryptionTypeNone,
 			}
 			if _, err := svc.RunBaseInstall(ctx, baseCmd); err != nil {
 				logger.Error("Base installation failed", "error", err)
