@@ -3,7 +3,8 @@
 # Source this file then call: build_qemu_args PROFILE SECURE_BOOT SSH_PORT TEST_DIR
 # Result is stored in the QEMU_ARGS array.
 
-OVMF_CODE_NORMAL="/usr/share/edk2/x64/OVMF_CODE.4m.fd"
+[[ "${BASH_SOURCE[0]}" == "${0}" ]] && { echo "Source this file, do not execute it directly." >&2; exit 1; }
+
 OVMF_CODE_SECBOOT="/usr/share/edk2/x64/OVMF_CODE.secboot.4m.fd"
 OVMF_VARS_TEMPLATE="/usr/share/edk2/x64/OVMF_VARS.4m.fd"
 
@@ -13,22 +14,27 @@ build_qemu_args() {
   local ssh_port="$3"
   local test_dir="$4"
 
+  local machine_opts="q35,vmport=off"
+  [[ "$secure_boot" == "on" ]] && machine_opts="q35,vmport=off,smm=on"
+
+  local sys_uuid
+  sys_uuid="$(uuidgen 2>/dev/null || cat /proc/sys/kernel/random/uuid)"
+
   QEMU_ARGS=()
 
   # ── Machine & CPU ────────────────────────────────────────────────────────────
   QEMU_ARGS+=(-enable-kvm)
-  QEMU_ARGS+=(-machine q35,vmport=off)
+  QEMU_ARGS+=(-machine "$machine_opts")
   QEMU_ARGS+=(-cpu host)
   QEMU_ARGS+=(-smp 4,cores=2,threads=2,sockets=1)
   QEMU_ARGS+=(-m 4096)
-  QEMU_ARGS+=(-uuid "$(cat /proc/sys/kernel/random/uuid 2>/dev/null || uuidgen)")
+  QEMU_ARGS+=(-uuid "$sys_uuid")
 
   # ── Firmware ─────────────────────────────────────────────────────────────────
   if [[ "$secure_boot" == "on" ]]; then
     local vars_copy
     vars_copy="$(mktemp /tmp/OVMF_VARS_XXXXXXXX.fd)"
-    cp "$OVMF_VARS_TEMPLATE" "$vars_copy"
-    QEMU_ARGS+=(-machine q35,vmport=off,smm=on)  # override previous -machine
+    cp "$OVMF_VARS_TEMPLATE" "$vars_copy" || { rm -f "$vars_copy"; return 1; }
     QEMU_ARGS+=(-global driver=cfi.pflash01,property=secure,value=on)
     QEMU_ARGS+=(-drive "if=pflash,readonly=on,format=raw,file=${OVMF_CODE_SECBOOT}")
     QEMU_ARGS+=(-drive "if=pflash,format=raw,file=${vars_copy}")
@@ -45,7 +51,7 @@ build_qemu_args() {
   case "$profile" in
     desktop)
       # Type 1: System
-      QEMU_ARGS+=(-smbios "type=1,manufacturer=Gigabyte Technology Co. Ltd.,product=B550 AORUS ELITE V2,version=1.0,serial=SN-DESKTOP-001,uuid=$(uuidgen 2>/dev/null || cat /proc/sys/kernel/random/uuid),sku=Default string,family=Desktop")
+      QEMU_ARGS+=(-smbios "type=1,manufacturer=Gigabyte Technology Co. Ltd.,product=B550 AORUS ELITE V2,version=1.0,serial=SN-DESKTOP-001,uuid=${sys_uuid},sku=Default string,family=Desktop")
       # Type 2: Board
       QEMU_ARGS+=(-smbios "type=2,manufacturer=Gigabyte Technology Co. Ltd.,product=B550 AORUS ELITE V2,version=x.x,serial=SN-BOARD-DESKTOP,asset=Base Board Asset Tag,location=Default string")
       # Type 3: Chassis — desktop (type 3)
@@ -53,7 +59,7 @@ build_qemu_args() {
       ;;
     laptop)
       # Type 1: System — ThinkPad X1 Carbon Gen 10
-      QEMU_ARGS+=(-smbios "type=1,manufacturer=LENOVO,product=21CB,version=ThinkPad X1 Carbon Gen 10,serial=SN-LAPTOP-001,uuid=$(uuidgen 2>/dev/null || cat /proc/sys/kernel/random/uuid),sku=LENOVO_MT_21CB,family=ThinkPad X1 Carbon Gen 10")
+      QEMU_ARGS+=(-smbios "type=1,manufacturer=LENOVO,product=21CB,version=ThinkPad X1 Carbon Gen 10,serial=SN-LAPTOP-001,uuid=${sys_uuid},sku=LENOVO_MT_21CB,family=ThinkPad X1 Carbon Gen 10")
       # Type 2: Board
       QEMU_ARGS+=(-smbios "type=2,manufacturer=LENOVO,product=21CB,version=SDK0J40697 WIN,serial=SN-BOARD-LAPTOP,asset=Not Available,location=Not Available")
       # Type 3: Chassis — notebook (type 10)
