@@ -117,6 +117,7 @@ func CreateInstallationCommand(app AppContext, formData models.FormData) tea.Cmd
 			}
 
 			// Phase 2: Partition disk with chosen encryption using user password
+			isEncrypted := parseEncryptionType(formData.EncryptionType) != disk.EncryptionTypeNone
 			partitionCmd := commands.PartitionDiskCommand{
 				TargetDisk:         formData.TargetDisk,
 				RootSizeGB:         0, // Use all available space
@@ -141,7 +142,7 @@ func CreateInstallationCommand(app AppContext, formData models.FormData) tea.Cmd
 				MountPoint:       "/mnt",
 				KernelVariant:    parseKernelVariant(formData.KernelVariant),
 				IncludeMicrocode: formData.Microcode,
-				Encrypted:        parseEncryptionType(formData.EncryptionType) != disk.EncryptionTypeNone,
+				Encrypted:        isEncrypted,
 			}
 			if _, err := svc.RunBaseInstall(ctx, baseCmd); err != nil {
 				logger.Error("Base installation failed", "error", err)
@@ -217,7 +218,7 @@ func CreateInstallationCommand(app AppContext, formData models.FormData) tea.Cmd
 				RunPostBootScripts: true,
 				InstallDankLinux:   formData.InstallDankLinux,
 				TargetDisk:         formData.TargetDisk,
-				Encrypted:          parseEncryptionType(formData.EncryptionType) != disk.EncryptionTypeNone,
+				Encrypted:          isEncrypted,
 			}
 			if _, err := svc.RunPostInstall(ctx, postCmd); err != nil {
 				logger.Error("Post-installation failed", "error", err)

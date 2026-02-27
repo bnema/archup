@@ -11,5 +11,5 @@ Target = linux-cachyos
 [Action]
 Description = Updating Limine bootloader after kernel upgrade...
 When = PostTransaction
-Exec = /usr/bin/limine bios-install DISK_PLACEHOLDER
+Exec = /bin/sh -c '[ -d /sys/firmware/efi ] || /usr/bin/limine bios-install DISK_PLACEHOLDER'
 Depends = limine

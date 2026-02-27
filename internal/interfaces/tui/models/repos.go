@@ -143,5 +143,5 @@ func (rm *ReposModelImpl) NextSection() {
 
 // PrevSection moves focus to the previous section.
 func (rm *ReposModelImpl) PrevSection() {
-	rm.focusSection = (rm.focusSection + 1) % 2
+	rm.focusSection = (rm.focusSection - 1 + 2) % 2
 }

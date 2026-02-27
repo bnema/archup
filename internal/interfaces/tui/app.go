@@ -373,8 +373,11 @@ func (a *App) handleReposInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "down":
 		a.reposModel.MoveDown()
 		return a, nil
-	case "tab", "shift+tab":
+	case "tab":
 		a.reposModel.NextSection()
+		return a, nil
+	case "shift+tab":
+		a.reposModel.PrevSection()
 		return a, nil
 	case "enter":
 		a.formData.AURHelper = a.reposModel.SelectedAURHelper()

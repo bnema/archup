@@ -257,6 +257,9 @@ func (h *PostInstallHandler) setupSnapperSync(ctx context.Context, mountPoint st
 	return nil
 }
 
+// limineDiskPlaceholder is the placeholder in limine-update.hook replaced at install time.
+const limineDiskPlaceholder = "DISK_PLACEHOLDER"
+
 func (h *PostInstallHandler) installLimineHook(mountPoint, targetDisk string) error {
 	hooksDir := filepath.Join(mountPoint, "etc", "pacman.d", "hooks")
 	if err := h.fs.MkdirAll(hooksDir, 0755); err != nil {
@@ -269,7 +272,7 @@ func (h *PostInstallHandler) installLimineHook(mountPoint, targetDisk string) er
 			return fmt.Errorf("failed to get limine hook template: %w", err)
 		}
 	}
-	hookContent := strings.ReplaceAll(string(content), "DISK_PLACEHOLDER", targetDisk)
+	hookContent := strings.ReplaceAll(string(content), limineDiskPlaceholder, targetDisk)
 	return h.fs.WriteFile(filepath.Join(hooksDir, "limine-update.hook"), []byte(hookContent), 0644)
 }
 
@@ -280,14 +283,16 @@ func (h *PostInstallHandler) tunePacmanConfig(mountPoint string) error {
 		return fmt.Errorf("failed to read pacman.conf: %w", err)
 	}
 	conf := string(content)
-	conf = enablePacmanOption(conf, "#Color", "Color")
-	conf = enablePacmanOption(conf, "#ParallelDownloads = 5", "ParallelDownloads = 5")
-	conf = enablePacmanOption(conf, "#ILoveCandy", "ILoveCandy")
+	conf = uncommentPacmanOption(conf, "Color")
+	conf = uncommentPacmanOption(conf, "ParallelDownloads")
+	conf = uncommentPacmanOption(conf, "ILoveCandy")
 	return h.fs.WriteFile(confPath, []byte(conf), 0644)
 }
 
-func enablePacmanOption(conf, commented, replacement string) string {
-	return strings.ReplaceAll(conf, commented, replacement)
+// uncommentPacmanOption uncomments a pacman.conf option, handling optional spaces after #.
+func uncommentPacmanOption(conf, option string) string {
+	re := regexp.MustCompile(`(?m)^#\s*(` + regexp.QuoteMeta(option) + `.*)$`)
+	return re.ReplaceAllString(conf, "$1")
 }
 
 func (h *PostInstallHandler) verifyInstallation(mountPoint string, encrypted bool) []string {

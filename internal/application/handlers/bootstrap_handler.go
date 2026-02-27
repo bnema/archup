@@ -86,9 +86,14 @@ func (h *BootstrapHandler) cloneRepo(ctx context.Context) error {
 		return nil
 	}
 
-	h.logger.Info("Cloning repository", "url", h.repoURL)
+	branch := h.branch
+	if branch == "" {
+		branch = "main"
+	}
 
-	cmd := exec.CommandContext(ctx, "git", "clone", "--depth", "1", "--branch", h.branch, h.repoURL, repoDir)
+	h.logger.Info("Cloning repository", "url", h.repoURL, "branch", branch)
+
+	cmd := exec.CommandContext(ctx, "git", "clone", "--depth", "1", "--branch", branch, h.repoURL, repoDir)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("git clone failed: %w (output: %s)", err, string(output))
 	}
