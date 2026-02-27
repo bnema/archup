@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
@@ -40,6 +41,7 @@ func TestPostInstallHandler_Handle_NoScripts(t *testing.T) {
 	mockHTTP.EXPECT().Get(gomock.Any()).Return(newMockResponse(ctrl, http.StatusOK, []byte("content")), nil).AnyTimes()
 	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
 	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockFS.EXPECT().Stat(gomock.Any()).Return(nil, nil).AnyTimes()
 
 	handler := NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger, "https://raw.githubusercontent.com/bnema/archup/dev")
 
@@ -86,6 +88,7 @@ func TestPostInstallHandler_Handle_WithScripts(t *testing.T) {
 	mockHTTP.EXPECT().Get(gomock.Any()).Return(newMockResponse(ctrl, http.StatusOK, []byte("content")), nil).AnyTimes()
 	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
 	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockFS.EXPECT().Stat(gomock.Any()).Return(nil, nil).AnyTimes()
 
 	handler := NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger, "https://raw.githubusercontent.com/bnema/archup/dev")
 
@@ -135,6 +138,7 @@ func TestPostInstallHandler_Handle_WithPlymouth(t *testing.T) {
 	mockHTTP.EXPECT().Get(gomock.Any()).Return(newMockResponse(ctrl, http.StatusOK, []byte("content")), nil).AnyTimes()
 	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
 	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockFS.EXPECT().Stat(gomock.Any()).Return(nil, nil).AnyTimes()
 
 	handler := NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger, "https://raw.githubusercontent.com/bnema/archup/dev")
 
@@ -185,6 +189,7 @@ func TestPostInstallHandler_Handle_WithDankLinux(t *testing.T) {
 	mockHTTP.EXPECT().Get(gomock.Any()).Return(newMockResponse(ctrl, http.StatusOK, []byte("content")), nil).AnyTimes()
 	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
 	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockFS.EXPECT().Stat(gomock.Any()).Return(nil, nil).AnyTimes()
 
 	handler := NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger, "https://raw.githubusercontent.com/bnema/archup/dev")
 
@@ -235,6 +240,7 @@ func TestPostInstallHandler_Handle_TunesPacman(t *testing.T) {
 	mockHTTP.EXPECT().Get(gomock.Any()).Return(newMockResponse(ctrl, http.StatusOK, []byte("content")), nil).AnyTimes()
 	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
 	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockFS.EXPECT().Stat(gomock.Any()).Return(nil, nil).AnyTimes()
 
 	// ReadFile for pacman.conf returns commented options; other reads return generic content
 	mockFS.EXPECT().ReadFile(gomock.Eq("/mnt/etc/pacman.conf")).Return([]byte(pacmanContent), nil).AnyTimes()
@@ -305,6 +311,7 @@ func TestPostInstallHandler_Handle_InstallsLimineHook(t *testing.T) {
 	mockHTTP.EXPECT().Get(gomock.Any()).Return(newMockResponse(ctrl, http.StatusOK, []byte(hookTemplate)), nil).AnyTimes()
 	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
 	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockFS.EXPECT().Stat(gomock.Any()).Return(nil, nil).AnyTimes()
 
 	hookWritten := false
 	mockFS.EXPECT().WriteFile(gomock.Eq(hookFile), gomock.Any(), gomock.Any()).DoAndReturn(
@@ -389,6 +396,7 @@ func TestPostInstallHandler_Handle_EnablesSnapperSync(t *testing.T) {
 	}).AnyTimes()
 	// Catch-all for any other ChrootSystemctl calls
 	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockFS.EXPECT().Stat(gomock.Any()).Return(nil, nil).AnyTimes()
 
 	handler := NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger, "https://raw.githubusercontent.com/bnema/archup/dev")
 
@@ -439,6 +447,7 @@ func TestPostInstallHandler_Handle_Everything(t *testing.T) {
 	mockHTTP.EXPECT().Get(gomock.Any()).Return(newMockResponse(ctrl, http.StatusOK, []byte("content")), nil).AnyTimes()
 	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
 	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockFS.EXPECT().Stat(gomock.Any()).Return(nil, nil).AnyTimes()
 
 	handler := NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger, "https://raw.githubusercontent.com/bnema/archup/dev")
 
@@ -475,5 +484,115 @@ func TestPostInstallHandler_Handle_Everything(t *testing.T) {
 
 	if !tasksFound["plymouth-theme-bgrt"] {
 		t.Error("expected plymouth-theme-bgrt task")
+	}
+}
+
+func TestPostInstallHandler_Handle_RunsVerification(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockFS := mocks.NewMockFileSystem(ctrl)
+	mockHTTP := mocks.NewMockHTTPClient(ctrl)
+	mockChrExec := mocks.NewMockChrootExecutor(ctrl)
+	mockScriptExec := mocks.NewMockScriptExecutor(ctrl)
+	mockLogger := mocks.NewMockLogger(ctrl)
+
+	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().LogPath().Return("/var/log/archup-install.log").AnyTimes()
+	mockFS.EXPECT().Exists(gomock.Any()).Return(false, nil).AnyTimes()
+	mockFS.EXPECT().ReadFile(gomock.Any()).Return([]byte("graphics: yes"), nil).AnyTimes()
+	mockFS.EXPECT().WriteFile(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockFS.EXPECT().MkdirAll(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockHTTP.EXPECT().Get(gomock.Any()).Return(newMockResponse(ctrl, http.StatusOK, []byte("content")), nil).AnyTimes()
+	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+	// Stat returns nil (files exist) for the checked paths
+	mockFS.EXPECT().Stat(gomock.Any()).Return(nil, nil).AnyTimes()
+
+	handler := NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger, "https://raw.githubusercontent.com/bnema/archup/dev")
+
+	cmd := commands.PostInstallCommand{
+		MountPoint:         "/mnt",
+		Username:           "testuser",
+		RunPostBootScripts: false,
+		PlymouthTheme:      "",
+		Encrypted:          false,
+	}
+
+	result, err := handler.Handle(context.Background(), cmd)
+
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if !result.Success {
+		t.Error("expected success")
+	}
+
+	if len(result.VerificationWarnings) != 0 {
+		t.Errorf("expected no verification warnings, got: %v", result.VerificationWarnings)
+	}
+}
+
+func TestPostInstallHandler_Handle_VerificationWarnsOnMissingFiles(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockFS := mocks.NewMockFileSystem(ctrl)
+	mockHTTP := mocks.NewMockHTTPClient(ctrl)
+	mockChrExec := mocks.NewMockChrootExecutor(ctrl)
+	mockScriptExec := mocks.NewMockScriptExecutor(ctrl)
+	mockLogger := mocks.NewMockLogger(ctrl)
+
+	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().LogPath().Return("/var/log/archup-install.log").AnyTimes()
+	mockFS.EXPECT().Exists(gomock.Any()).Return(false, nil).AnyTimes()
+	mockFS.EXPECT().ReadFile(gomock.Any()).Return([]byte("graphics: yes"), nil).AnyTimes()
+	mockFS.EXPECT().WriteFile(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockFS.EXPECT().MkdirAll(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockHTTP.EXPECT().Get(gomock.Any()).Return(newMockResponse(ctrl, http.StatusOK, []byte("content")), nil).AnyTimes()
+	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+	// limine.conf is missing; all other Stat calls succeed
+	mockFS.EXPECT().Stat(gomock.Eq("/mnt/boot/limine.conf")).Return(nil, fmt.Errorf("not found"))
+	mockFS.EXPECT().Stat(gomock.Any()).Return(nil, nil).AnyTimes()
+
+	handler := NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger, "https://raw.githubusercontent.com/bnema/archup/dev")
+
+	cmd := commands.PostInstallCommand{
+		MountPoint:         "/mnt",
+		Username:           "testuser",
+		RunPostBootScripts: false,
+		PlymouthTheme:      "",
+		Encrypted:          false,
+	}
+
+	result, err := handler.Handle(context.Background(), cmd)
+
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if !result.Success {
+		t.Error("expected success even with verification warnings")
+	}
+
+	if len(result.VerificationWarnings) == 0 {
+		t.Error("expected verification warnings for missing limine.conf")
+	}
+
+	found := false
+	for _, w := range result.VerificationWarnings {
+		if strings.Contains(w, "limine.conf") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("expected warning about limine.conf, got: %v", result.VerificationWarnings)
 	}
 }

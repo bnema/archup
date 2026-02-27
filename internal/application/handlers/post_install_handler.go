@@ -114,6 +114,11 @@ func (h *PostInstallHandler) Handle(ctx context.Context, cmd commands.PostInstal
 	}
 
 	// Final cleanup and verification
+	result.VerificationWarnings = h.verifyInstallation(cmd.MountPoint, cmd.Encrypted)
+	if len(result.VerificationWarnings) > 0 {
+		h.logger.Warn("Post-install verification warnings", "warnings", result.VerificationWarnings)
+	}
+
 	h.logger.Info("Post-installation tasks completed")
 	result.Success = true
 
@@ -283,6 +288,24 @@ func (h *PostInstallHandler) tunePacmanConfig(mountPoint string) error {
 
 func enablePacmanOption(conf, commented, replacement string) string {
 	return strings.ReplaceAll(conf, commented, replacement)
+}
+
+func (h *PostInstallHandler) verifyInstallation(mountPoint string, encrypted bool) []string {
+	warnings := []string{}
+	checks := []struct{ path, name string }{
+		{filepath.Join(mountPoint, "etc", "fstab"), "fstab"},
+		{filepath.Join(mountPoint, "boot", "limine.conf"), "limine.conf"},
+		{filepath.Join(mountPoint, "boot", "EFI", "BOOT", "BOOTX64.EFI"), "EFI boot file"},
+	}
+	if encrypted {
+		checks = append(checks, struct{ path, name string }{filepath.Join(mountPoint, "etc", "crypttab"), "crypttab"})
+	}
+	for _, c := range checks {
+		if _, err := h.fs.Stat(c.path); err != nil {
+			warnings = append(warnings, fmt.Sprintf("missing %s: %s", c.name, c.path))
+		}
+	}
+	return warnings
 }
 
 func (h *PostInstallHandler) downloadTemplate(path string) ([]byte, error) {

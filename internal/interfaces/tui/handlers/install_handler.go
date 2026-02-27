@@ -217,6 +217,7 @@ func CreateInstallationCommand(app AppContext, formData models.FormData) tea.Cmd
 				RunPostBootScripts: true,
 				InstallDankLinux:   formData.InstallDankLinux,
 				TargetDisk:         formData.TargetDisk,
+				Encrypted:          parseEncryptionType(formData.EncryptionType) != disk.EncryptionTypeNone,
 			}
 			if _, err := svc.RunPostInstall(ctx, postCmd); err != nil {
 				logger.Error("Post-installation failed", "error", err)

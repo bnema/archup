@@ -9,4 +9,5 @@ type PostInstallCommand struct {
 	PlymouthTheme      string // Plymouth theme to install (optional)
 	InstallDankLinux   bool   // Whether to write the Dank Linux flag file for first-boot auto-install
 	TargetDisk         string // Target disk for bootloader hook (e.g. /dev/sda)
+	Encrypted          bool   // Whether disk encryption is enabled
 }
