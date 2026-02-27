@@ -177,7 +177,7 @@ func CreateInstallationCommand(app AppContext, formData models.FormData) tea.Cmd
 				MountPoint:        "/mnt",
 				BootloaderType:    bootloader.BootloaderTypeLimine,
 				TimeoutSeconds:    5,
-				Branding:          "ArchUp",
+				Branding:          "Arch Linux",
 				KernelVariant:     parseKernelVariant(formData.KernelVariant),
 				RootPartition:     partitionResult.RootPartition,
 				EncryptionType:    partitionCmd.EncryptionType,

@@ -139,13 +139,13 @@ const (
 // Limine configuration
 const (
 	LimineTimeout  = "0"
-	LimineBranding = "ArchUp"
+	LimineBranding = "Arch Linux"
 	LimineColor    = "6"
 )
 
 // UEFI boot entry
 const (
-	UEFIBootLabel  = "ArchUp"
+	UEFIBootLabel  = "Arch Linux"
 	UEFIBootLoader = "\\EFI\\limine\\BOOTX64.EFI"
 )
 
