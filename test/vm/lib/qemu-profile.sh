@@ -81,8 +81,13 @@ build_qemu_args() {
   QEMU_ARGS+=(-device "nvme,drive=nvme0,serial=${nvme_serial}")
 
   # ── Network ──────────────────────────────────────────────────────────────────
+  local nic_mac
+  case "$profile" in
+    desktop) nic_mac="52:54:00:12:34:01" ;;
+    laptop)  nic_mac="52:54:00:12:34:02" ;;
+  esac
   QEMU_ARGS+=(-netdev "user,id=net0,hostfwd=tcp::${ssh_port}-:22")
-  QEMU_ARGS+=(-device "e1000e,netdev=net0,mac=52:54:00:12:34:56")
+  QEMU_ARGS+=(-device "e1000e,netdev=net0,mac=${nic_mac}")
 
   # ── USB Controller + Input ───────────────────────────────────────────────────
   QEMU_ARGS+=(-device qemu-xhci)

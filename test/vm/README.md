@@ -106,3 +106,5 @@ ip link
 
 - Secure Boot mode copies OVMF_VARS to a temp file each run; keys must be enrolled manually via UEFI shell on first boot.
 - `check-luks.sh` defaults to `/dev/nvme0n1p2`. For old virtio-disk images use `--disk /dev/vda2`.
+- `arch-test.qcow2` must exist before launching any VM (run `./create-vm-img.sh` first). The ISO launcher also requires it as the install target disk.
+- Desktop and laptop profiles use different MAC addresses (`52:54:00:12:34:01` / `:02`) so both VMs can run concurrently on the same host.
