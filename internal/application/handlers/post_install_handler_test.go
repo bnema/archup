@@ -278,6 +278,71 @@ func TestPostInstallHandler_Handle_TunesPacman(t *testing.T) {
 	}
 }
 
+func TestPostInstallHandler_Handle_InstallsLimineHook(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockFS := mocks.NewMockFileSystem(ctrl)
+	mockHTTP := mocks.NewMockHTTPClient(ctrl)
+	mockChrExec := mocks.NewMockChrootExecutor(ctrl)
+	mockScriptExec := mocks.NewMockScriptExecutor(ctrl)
+	mockLogger := mocks.NewMockLogger(ctrl)
+
+	hooksDir := "/mnt/etc/pacman.d/hooks"
+	hookFile := hooksDir + "/limine-update.hook"
+	targetDisk := "/dev/sda"
+	hookTemplate := "Exec = /usr/bin/limine bios-install DISK_PLACEHOLDER"
+
+	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().LogPath().Return("/var/log/archup-install.log").AnyTimes()
+	mockFS.EXPECT().Exists(gomock.Any()).Return(false, nil).AnyTimes()
+	mockFS.EXPECT().ReadFile(gomock.Any()).Return([]byte("graphics: yes"), nil).AnyTimes()
+	mockFS.EXPECT().MkdirAll(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockHTTP.EXPECT().Get(gomock.Any()).Return(newMockResponse(ctrl, http.StatusOK, []byte(hookTemplate)), nil).AnyTimes()
+	mockChrExec.EXPECT().ChrootSystemctl(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+	hookWritten := false
+	mockFS.EXPECT().WriteFile(gomock.Eq(hookFile), gomock.Any(), gomock.Any()).DoAndReturn(
+		func(path string, data []byte, perm interface{}) error {
+			hookWritten = true
+			content := string(data)
+			if strings.Contains(content, "DISK_PLACEHOLDER") {
+				t.Errorf("hook content should not contain DISK_PLACEHOLDER, got: %s", content)
+			}
+			if !strings.Contains(content, targetDisk) {
+				t.Errorf("hook content should contain target disk %s, got: %s", targetDisk, content)
+			}
+			return nil
+		},
+	).AnyTimes()
+	mockFS.EXPECT().WriteFile(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+	handler := NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger, "https://raw.githubusercontent.com/bnema/archup/dev")
+
+	cmd := commands.PostInstallCommand{
+		MountPoint:         "/mnt",
+		Username:           "testuser",
+		RunPostBootScripts: false,
+		PlymouthTheme:      "",
+		TargetDisk:         targetDisk,
+	}
+
+	result, err := handler.Handle(context.Background(), cmd)
+
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if !result.Success {
+		t.Error("expected success")
+	}
+
+	if !hookWritten {
+		t.Error("expected limine hook file to be written")
+	}
+}
+
 func TestPostInstallHandler_Handle_Everything(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

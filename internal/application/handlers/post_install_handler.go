@@ -104,6 +104,10 @@ func (h *PostInstallHandler) Handle(ctx context.Context, cmd commands.PostInstal
 		h.logger.Warn("Failed to tune pacman.conf", "error", err)
 	}
 
+	if err := h.installLimineHook(cmd.MountPoint, cmd.TargetDisk); err != nil {
+		h.logger.Warn("Failed to install limine hook", "error", err)
+	}
+
 	// Final cleanup and verification
 	h.logger.Info("Post-installation tasks completed")
 	result.Success = true
@@ -228,6 +232,22 @@ func (h *PostInstallHandler) writeDankLinuxFlag(mountPoint string) error {
 	}
 	flagPath := filepath.Join(mountPoint, "var", "lib", "archup-install-danklinux")
 	return h.fs.WriteFile(flagPath, []byte(""), 0644)
+}
+
+func (h *PostInstallHandler) installLimineHook(mountPoint, targetDisk string) error {
+	hooksDir := filepath.Join(mountPoint, "etc", "pacman.d", "hooks")
+	if err := h.fs.MkdirAll(hooksDir, 0755); err != nil {
+		return fmt.Errorf("failed to create hooks dir: %w", err)
+	}
+	content, err := h.tryReadLocal("install/configs/limine-update.hook")
+	if err != nil {
+		content, err = h.downloadTemplate("install/configs/limine-update.hook")
+		if err != nil {
+			return fmt.Errorf("failed to get limine hook template: %w", err)
+		}
+	}
+	hookContent := strings.ReplaceAll(string(content), "DISK_PLACEHOLDER", targetDisk)
+	return h.fs.WriteFile(filepath.Join(hooksDir, "limine-update.hook"), []byte(hookContent), 0644)
 }
 
 func (h *PostInstallHandler) tunePacmanConfig(mountPoint string) error {

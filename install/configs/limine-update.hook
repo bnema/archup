@@ -1,0 +1,15 @@
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = linux
+Target = linux-lts
+Target = linux-zen
+Target = linux-hardened
+Target = linux-cachyos
+
+[Action]
+Description = Updating Limine bootloader after kernel upgrade...
+When = PostTransaction
+Exec = /usr/bin/limine bios-install DISK_PLACEHOLDER
+Depends = limine

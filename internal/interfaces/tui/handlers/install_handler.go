@@ -216,6 +216,7 @@ func CreateInstallationCommand(app AppContext, formData models.FormData) tea.Cmd
 				PlymouthTheme:      config.PlymouthThemeName,
 				RunPostBootScripts: true,
 				InstallDankLinux:   formData.InstallDankLinux,
+				TargetDisk:         formData.TargetDisk,
 			}
 			if _, err := svc.RunPostInstall(ctx, postCmd); err != nil {
 				logger.Error("Post-installation failed", "error", err)
