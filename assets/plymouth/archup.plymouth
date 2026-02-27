@@ -1,6 +1,6 @@
 [Plymouth Theme]
-Name=ArchUp
-Description=ArchUp splash screen.
+Name=Arch Linux
+Description=Arch Linux splash screen.
 ModuleName=script
 
 [script]
