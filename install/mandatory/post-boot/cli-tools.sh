@@ -125,9 +125,8 @@ if [ -f "$DMS_SCRIPT" ]; then
 # BEGIN archup-dms first-login
 if [ -f "$DMS_SCRIPT" ]; then
   ARCHUP_USERNAME="$USERNAME" bash "$DMS_SCRIPT"
-  # Remove this block after first run
-  sed -i '/# BEGIN archup-dms first-login/,/# END archup-dms first-login/d' ~/.bash_profile
 fi
+sed -i '/# BEGIN archup-dms first-login/,/# END archup-dms first-login/d' ~/.bash_profile
 # END archup-dms first-login
 PROFILE
   chown "$USERNAME:$USERNAME" "$USER_HOME/.bash_profile"
