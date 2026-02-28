@@ -1,5 +1,6 @@
 timeout: {{TIMEOUT}}
-quiet: no
+default_entry: 2
+quiet: yes
 interface_branding: {{BRANDING}}
 interface_branding_colour: {{COLOR}}
 graphics: yes
