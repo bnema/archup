@@ -1,9 +1,25 @@
 # Arch Linux Plymouth Theme Script
 
-Window.SetBackgroundTopColor(0, 0, 0);
-Window.SetBackgroundBottomColor(0, 0, 0);
+Window.SetBackgroundTopColor(0.0196, 0.0392, 0.0784);
+Window.SetBackgroundBottomColor(0.0196, 0.0392, 0.0784);
 
-logo.image = Image("logo.png");
+logo.original_image = Image("logo.png");
+
+# Scale logo to at most 40% of screen height
+logo.max_height = Math.Int(Window.GetHeight() * 0.40);
+if (logo.original_image.GetHeight() > logo.max_height)
+  {
+    logo.scale = logo.max_height / logo.original_image.GetHeight();
+    logo.image = logo.original_image.Scale(
+      Math.Int(logo.original_image.GetWidth() * logo.scale),
+      logo.max_height
+    );
+  }
+else
+  {
+    logo.image = logo.original_image;
+  }
+
 logo.sprite = Sprite(logo.image);
 
 # Center the logo during boot
@@ -122,7 +138,7 @@ entry.image = Image("entry.png");
 bullet.image = Image("bullet.png");
 
 # Gap between logo bottom and entry top when password dialog is shown
-dialog_gap = 32;
+dialog_gap = 40;
 
 # Total height of logo + gap + entry when grouped for password dialog
 dialog_group_height = logo.image.GetHeight() + dialog_gap + entry.image.GetHeight();
