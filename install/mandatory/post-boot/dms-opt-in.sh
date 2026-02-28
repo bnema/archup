@@ -4,7 +4,7 @@
 # Dank Linux desktop (compositor + DMS shell + terminal + all tools).
 set -euo pipefail
 
-LOG_FILE="/var/log/archup-first-boot.log"
+LOG_FILE="$HOME/archup-first-boot.log"
 
 log() { echo "[dms-opt-in] $*" | tee -a "$LOG_FILE"; }
 
