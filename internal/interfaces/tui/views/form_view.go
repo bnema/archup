@@ -8,14 +8,19 @@ import (
 )
 
 // RenderForm renders the form model to a styled string
-func RenderForm(fm *models.FormModelImpl) string {
+func RenderForm(fm *models.FormModelImpl, version string) string {
 	var b strings.Builder
+
+	title := "ArchUp Installer"
+	if version != "" {
+		title += " " + version
+	}
 
 	b.WriteString("\n")
 	b.WriteString(lipgloss.NewStyle().
 		Bold(true).
 		Foreground(lipgloss.Color("12")).
-		Render("ArchUp Installer Configuration"))
+		Render(title))
 	b.WriteString("\n\n")
 
 	labels := []string{

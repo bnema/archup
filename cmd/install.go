@@ -91,7 +91,7 @@ func runInstall(dryRun bool) error {
 	)
 
 	gpuHandler := apphandlers.NewGPUHandler(shellExec, slogAdapter)
-	tuiApp := tui.NewApp(installService, installService.Tracker(), gpuHandler, slogAdapter)
+	tuiApp := tui.NewApp(installService, installService.Tracker(), gpuHandler, slogAdapter, version)
 
 	oldLog.Info("Starting TUI application", "version", version)
 	p := tea.NewProgram(tuiApp, tea.WithAltScreen())

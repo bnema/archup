@@ -107,8 +107,8 @@ func TestFormModelDataExtraction(t *testing.T) {
 
 	// Set test data
 	testData := models.FormData{
-		Hostname:       "myarch",
-		Username:       "archuser",
+		Hostname:       "arch",
+		Username:       "",
 		UserPassword:   "password123",
 		RootPassword:   "rootpass123",
 		TargetDisk:     "/dev/sda",

@@ -13,12 +13,12 @@ func TestRenderForm(t *testing.T) {
 	fm := models.NewFormModel()
 
 	// Render the form
-	output := RenderForm(fm)
+	output := RenderForm(fm, "")
 
 	// Verify key content is present
 	checks := []string{
-		"ArchUp Installer Configuration", // Title
-		"Hostname:",                      // Field labels
+		"ArchUp Installer", // Title
+		"Hostname:",        // Field labels
 		"Username:",
 		"↑↓ Navigate", // Instructions
 	}
@@ -44,7 +44,7 @@ func TestRenderFormWithError(t *testing.T) {
 	fm.SetError(errors.New(testErr))
 
 	// Render the form
-	output := RenderForm(fm)
+	output := RenderForm(fm, "")
 
 	// Verify error is displayed
 	if !strings.Contains(output, testErr) {
@@ -57,13 +57,13 @@ func TestRenderFormWithDifferentFocus(t *testing.T) {
 	fm := models.NewFormModel()
 
 	// Render initial form
-	output1 := RenderForm(fm)
+	output1 := RenderForm(fm, "")
 
 	// Move focus
 	fm.FocusNext()
 
 	// Render form with different focus
-	output2 := RenderForm(fm)
+	output2 := RenderForm(fm, "")
 
 	// Both should render successfully
 	if len(output1) == 0 || len(output2) == 0 {
@@ -142,6 +142,6 @@ func BenchmarkRenderForm(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = RenderForm(fm)
+		_ = RenderForm(fm, "")
 	}
 }

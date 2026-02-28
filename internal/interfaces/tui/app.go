@@ -41,6 +41,7 @@ type App struct {
 
 	// Application state
 	currentScreen Screen
+	version       string
 	ctx           context.Context
 	cancel        context.CancelFunc
 
@@ -75,6 +76,7 @@ func NewApp(
 	progressTracker *services.ProgressTracker,
 	gpuHandler *apphandlers.GPUHandler,
 	logger ports.Logger,
+	version string,
 ) *App {
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -83,6 +85,7 @@ func NewApp(
 		progressTracker:   progressTracker,
 		gpuHandler:        gpuHandler,
 		logger:            logger,
+		version:           version,
 		formModel:         models.NewFormModel(),
 		diskModel:         models.NewDiskModel(),
 		encryptionModel:   models.NewEncryptionModel(),
@@ -158,7 +161,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (a *App) View() string {
 	switch a.currentScreen {
 	case ScreenForm:
-		return views.RenderForm(a.formModel)
+		return views.RenderForm(a.formModel, a.version)
 	case ScreenDisk:
 		return views.RenderDiskSelection(a.diskModel)
 	case ScreenEncryption:
@@ -180,7 +183,7 @@ func (a *App) View() string {
 	case ScreenError:
 		return views.RenderError(a.installationModel.GetError())
 	default:
-		return views.RenderForm(a.formModel)
+		return views.RenderForm(a.formModel, a.version)
 	}
 }
 

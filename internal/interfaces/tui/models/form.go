@@ -75,10 +75,10 @@ func NewFormModel() *FormModelImpl {
 
 	// Initialize text inputs with default values
 	fm.hostname = createTextInput("Hostname", "", "Enter system hostname")
-	fm.hostname.SetValue("myarch")
+	fm.hostname.SetValue("arch")
 
 	fm.username = createTextInput("Username", "", "Enter regular user name")
-	fm.username.SetValue("archuser")
+	fm.username.SetValue("")
 
 	fm.userEmail = createTextInput("Email", "", "Enter email for git config")
 

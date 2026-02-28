@@ -9,9 +9,9 @@ import (
 
 	"github.com/bnema/archup/internal/application/commands"
 	"github.com/bnema/archup/internal/application/dto"
+	"github.com/bnema/archup/internal/assets"
 	"github.com/bnema/archup/internal/config"
 	"github.com/bnema/archup/internal/domain/ports"
-	"github.com/bnema/archup/internal/ui/assets"
 )
 
 // PostInstallHandler handles post-installation tasks
