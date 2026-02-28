@@ -79,19 +79,10 @@ func (p *PostInstallPhase) PreCheck() error {
 
 // Execute runs the post-install phase
 func (p *PostInstallPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResult {
-	totalSteps := 9
+	totalSteps := 8
 	currentStep := 0
 
-	// Step 1: Boot logo
-	currentStep++
-	p.SendProgress(progressChan, "Installing boot logo...", currentStep, totalSteps)
-	switch err := p.installBootLogo(progressChan); {
-	case err != nil:
-		// Non-fatal, continue
-		p.SendOutput(progressChan, fmt.Sprintf("[WARN] Boot logo failed: %v", err))
-	}
-
-	// Step 2: Plymouth
+	// Step 1: Plymouth
 	currentStep++
 	p.SendProgress(progressChan, "Configuring Plymouth splash screen...", currentStep, totalSteps)
 	switch err := p.configurePlymouth(progressChan); {
@@ -164,51 +155,6 @@ func (p *PostInstallPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResu
 
 	p.SendComplete(progressChan, "Post-installation complete")
 	return PhaseResult{Success: true, Message: "Post-installation complete"}
-}
-
-// installBootLogo downloads and configures Limine boot logo
-func (p *PostInstallPhase) installBootLogo(progressChan chan<- ProgressUpdate) error {
-	p.SendOutput(progressChan, "Downloading Arch logo...")
-
-	data, err := p.fetchFile(config.ArchLogoURL)
-	if err != nil {
-		return fmt.Errorf("failed to fetch logo: %w", err)
-	}
-
-	if err := p.fs.WriteFile(config.PathMntBootLogo, data, 0644); err != nil {
-		return fmt.Errorf("failed to write logo: %w", err)
-	}
-
-	p.SendOutput(progressChan, "[OK] Logo downloaded")
-
-	// Update Limine config
-	limineConf := config.PathMntBootLimineConf
-	content, err := p.fs.ReadFile(limineConf)
-	switch {
-	case err != nil:
-		return fmt.Errorf("failed to read limine.conf: %w", err)
-	}
-
-	contentStr := string(content)
-
-	// Find "graphics: yes" and add wallpaper settings after it
-	graphicsRegex := regexp.MustCompile(`(?m)^graphics: yes$`)
-	switch {
-	case graphicsRegex.MatchString(contentStr):
-		wallpaperSettings := "\nwallpaper: boot():/arch-logo.png\nwallpaper_style: centered\nbackdrop: 000000"
-		contentStr = graphicsRegex.ReplaceAllString(contentStr, "graphics: yes"+wallpaperSettings)
-
-		switch err := p.fs.WriteFile(limineConf, []byte(contentStr), 0644); {
-		case err != nil:
-			return fmt.Errorf("failed to update limine.conf: %w", err)
-		}
-
-		p.SendOutput(progressChan, "[OK] Boot logo configured")
-	default:
-		p.SendOutput(progressChan, "[WARN] graphics: yes not found in limine.conf")
-	}
-
-	return nil
 }
 
 // configurePlymouth sets up Plymouth splash screen

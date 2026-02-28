@@ -12,7 +12,7 @@ import (
 )
 
 // CreatePreflightForm creates the initial configuration form with all user identity fields
-func CreatePreflightForm(cfg *config.Config, fb *components.FormBuilder, sys *system.System) *huh.Form {
+func CreatePreflightForm(cfg *config.Config, fb *components.FormBuilder, sys *system.System, version string) *huh.Form {
 
 	// Auto-detect timezone from API, fallback to default if detection fails
 	detectedTimezone := sys.DetectTimezone()
@@ -28,6 +28,11 @@ func CreatePreflightForm(cfg *config.Config, fb *components.FormBuilder, sys *sy
 		cfg.Keymap = config.KeymapDefault
 	}
 
+	title := "ArchUp Installer"
+	if version != "" {
+		title += " " + version
+	}
+
 	return fb.CreateForm(
 		// System configuration
 		huh.NewGroup(
@@ -35,7 +40,7 @@ func CreatePreflightForm(cfg *config.Config, fb *components.FormBuilder, sys *sy
 			fb.TextInput("Username", "> ", &cfg.Username, validation.ValidateUsername),
 			fb.TextInput("Email (optional)", "> ", &cfg.Email, nil).
 				Description(DescEmail),
-		).Title(SectionUserIdentity),
+		).Title(title),
 
 		// Passwords
 		huh.NewGroup(

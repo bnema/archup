@@ -272,6 +272,7 @@ func NewConfig(version string) *Config {
 	}
 
 	return &Config{
+		Hostname:                     "arch",
 		Locale:                       "en_US.UTF-8",
 		Timezone:                     "UTC",
 		Keymap:                       "us",

@@ -119,7 +119,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// Network check passed, move to preflight form
 				m.logger.Info("Moving to preflight form")
 				m.state = StatePreflightForm
-				m.currentForm = CreatePreflightForm(m.config, m.formBuilder, m.system)
+				m.currentForm = CreatePreflightForm(m.config, m.formBuilder, m.system, m.version)
 				return m, m.currentForm.Init()
 
 			case StateConfirmation:
@@ -133,7 +133,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch m.state {
 			case StateDiskForm:
 				m.state = StatePreflightForm
-				m.currentForm = CreatePreflightForm(m.config, m.formBuilder, m.system)
+				m.currentForm = CreatePreflightForm(m.config, m.formBuilder, m.system, m.version)
 				return m, m.currentForm.Init()
 
 			case StateOptionsForm:
@@ -169,7 +169,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Network check passed - automatically continue to preflight form
 		m.logger.Info("Network check passed - continuing automatically")
 		m.state = StatePreflightForm
-		m.currentForm = CreatePreflightForm(m.config, m.formBuilder, m.system)
+		m.currentForm = CreatePreflightForm(m.config, m.formBuilder, m.system, m.version)
 		return m, m.currentForm.Init()
 
 	case phaseCompleteMsg:

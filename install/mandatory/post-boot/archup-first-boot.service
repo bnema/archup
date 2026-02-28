@@ -10,9 +10,7 @@ Environment="ARCHUP_EMAIL=__ARCHUP_EMAIL__"
 Environment="ARCHUP_USERNAME=__ARCHUP_USERNAME__"
 ExecStart=/usr/local/share/archup/post-boot/all.sh
 ExecStartPost=/usr/bin/touch /var/lib/archup-first-boot-complete
-TTYPath=/dev/tty1
-StandardInput=tty
-StandardOutput=tty
+StandardOutput=journal+console
 StandardError=journal+console
 
 [Install]
