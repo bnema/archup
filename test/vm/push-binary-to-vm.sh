@@ -52,7 +52,7 @@ scp_cmd() {
 }
 
 rsync_cmd() {
-    $SSHPASS rsync -az --no-perms -e "ssh $SSH_OPTS" "$@" 2>&1 | grep -v "Warning: Permanently added" || true
+    $SSHPASS rsync -az --checksum --no-perms -e "ssh $SSH_OPTS" "$@" 2>&1 | grep -v "Warning: Permanently added" || true
 }
 
 echo "Pushing $BINARY_NAME to VM..."
