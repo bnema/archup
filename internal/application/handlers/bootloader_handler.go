@@ -208,12 +208,20 @@ func (h *BootloaderHandler) configureLimine(ctx context.Context, cmd commands.In
 		return fmt.Errorf("failed to read Limine template: %w", err)
 	}
 
+	// Read machine-id from the installed system for limine-snapper-sync identification
+	machineIDBytes, err := h.fs.ReadFile(filepath.Join(cmd.MountPoint, "etc", "machine-id"))
+	machineID := strings.TrimSpace(string(machineIDBytes))
+	if err != nil || machineID == "" {
+		machineID = "unknown"
+	}
+
 	limineConfig := string(templateBytes)
 	limineConfig = strings.ReplaceAll(limineConfig, "{{TIMEOUT}}", fmt.Sprintf("%d", cmd.TimeoutSeconds))
 	limineConfig = strings.ReplaceAll(limineConfig, "{{BRANDING}}", cmd.Branding)
 	limineConfig = strings.ReplaceAll(limineConfig, "{{COLOR}}", config.LimineColor)
 	limineConfig = strings.ReplaceAll(limineConfig, "{{KERNEL}}", kernelName)
 	limineConfig = strings.ReplaceAll(limineConfig, "{{KERNEL_PARAMS}}", kernelParams)
+	limineConfig = strings.ReplaceAll(limineConfig, "{{MACHINE_ID}}", machineID)
 
 	limineConfigPath := filepath.Join(cmd.MountPoint, "boot", "limine.conf")
 	if err := h.fs.WriteFile(limineConfigPath, []byte(limineConfig), 0644); err != nil {

@@ -1,18 +1,24 @@
 timeout: {{TIMEOUT}}
 default_entry: 1
+quiet: yes
 interface_branding: {{BRANDING}}
 interface_branding_colour: {{COLOR}}
 graphics: yes
 backdrop: 000000
 
-/{{KERNEL}}
-protocol: linux
-kernel_path: boot():/vmlinuz-{{KERNEL}}
-kernel_cmdline: {{KERNEL_PARAMS}}
-module_path: boot():/initramfs-{{KERNEL}}.img
+/+{{KERNEL}}
+comment: machine-id={{MACHINE_ID}}
 
-/{{KERNEL}}-fallback
-protocol: linux
-kernel_path: boot():/vmlinuz-{{KERNEL}}
-kernel_cmdline: {{KERNEL_PARAMS}}
-module_path: boot():/initramfs-{{KERNEL}}-fallback.img
+    //{{KERNEL}}
+    protocol: linux
+    kernel_path: boot():/vmlinuz-{{KERNEL}}
+    kernel_cmdline: {{KERNEL_PARAMS}}
+    module_path: boot():/initramfs-{{KERNEL}}.img
+
+    //{{KERNEL}}-fallback
+    protocol: linux
+    kernel_path: boot():/vmlinuz-{{KERNEL}}
+    kernel_cmdline: {{KERNEL_PARAMS}}
+    module_path: boot():/initramfs-{{KERNEL}}-fallback.img
+
+    //Snapshots
