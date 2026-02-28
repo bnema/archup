@@ -140,17 +140,9 @@ entry.scaled_image = entry.image.Scale(
   Math.Int(entry.image.GetHeight() * 0.6)
 );
 
-# Gap between logo bottom and entry top when password dialog is shown
-dialog_gap = 40;
-
-# Total height of logo + gap + entry when grouped for password dialog
-dialog_group_height = logo.image.GetHeight() + dialog_gap + entry.scaled_image.GetHeight();
-
-# Vertical start so the group is centered on screen
-dialog_group_y = Window.GetHeight() / 2 - dialog_group_height / 2;
-
-# Entry sits below the logo in password mode
-entry.dialog_y = dialog_group_y + logo.image.GetHeight() + dialog_gap;
+# Entry appears below the centered logo with a fixed gap
+dialog_gap = 32;
+entry.dialog_y = logo.normal_y + logo.image.GetHeight() + dialog_gap;
 entry.x = Window.GetWidth() / 2 - entry.scaled_image.GetWidth() / 2;
 
 entry.sprite = Sprite(entry.scaled_image);
@@ -182,9 +174,8 @@ fun display_password_callback (prompt, bullets)
   {
     global.password_shown = 1;  # Mark that password dialog has been shown
 
-    # Move logo up so logo + entry are centered together as a group
-    logo_dialog_y = dialog_group_y;
-    logo.sprite.SetPosition(logo.normal_x, logo_dialog_y, 1);
+    # Keep logo at its normal centered position during unlock
+    logo.sprite.SetPosition(logo.normal_x, logo.normal_y, 1);
 
     # Reset progress when password dialog appears
     stop_fake_progress();
