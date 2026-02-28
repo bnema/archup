@@ -1,5 +1,5 @@
 timeout: {{TIMEOUT}}
-default_entry: 1
+default_entry: 2
 interface_branding: {{BRANDING}}
 interface_branding_colour: {{COLOR}}
 graphics: yes
