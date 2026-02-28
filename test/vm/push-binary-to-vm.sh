@@ -84,9 +84,9 @@ if [ "$LOCAL_MODE" = "1" ]; then
     echo "Syncing local install files to VM ($REMOTE_INSTALL_DIR)..."
 
     ssh_cmd "mkdir -p \
-        $REMOTE_INSTALL_DIR/configs/shell \
+        $REMOTE_INSTALL_DIR/configs \
         $REMOTE_INSTALL_DIR/assets/plymouth \
-        $REMOTE_INSTALL_DIR/install/configs/shell \
+        $REMOTE_INSTALL_DIR/install/configs \
         $REMOTE_INSTALL_DIR/install/mandatory/post-boot"
 
     # install/ configs (bootstrap files land here: /tmp/archup-install/<file>)
@@ -95,7 +95,6 @@ if [ "$LOCAL_MODE" = "1" ]; then
     rsync_cmd "$REPO_ROOT/install/configs/limine.conf.template"      "$VM_USER@$VM_HOST:$REMOTE_INSTALL_DIR/configs/"
     rsync_cmd "$REPO_ROOT/install/configs/chaotic-aur.conf"          "$VM_USER@$VM_HOST:$REMOTE_INSTALL_DIR/configs/"
     rsync_cmd "$REPO_ROOT/install/configs/limine-update.hook"        "$VM_USER@$VM_HOST:$REMOTE_INSTALL_DIR/configs/"
-    rsync_cmd "$REPO_ROOT/install/configs/shell/"                    "$VM_USER@$VM_HOST:$REMOTE_INSTALL_DIR/configs/shell/"
 
     # install/ configs also at repo-relative path (used by tryReadLocal fallback)
     rsync_cmd "$REPO_ROOT/install/configs/limine.conf.template"      "$VM_USER@$VM_HOST:$REMOTE_INSTALL_DIR/install/configs/"
@@ -103,7 +102,6 @@ if [ "$LOCAL_MODE" = "1" ]; then
 
     # assets
     rsync_cmd "$REPO_ROOT/assets/plymouth/"                          "$VM_USER@$VM_HOST:$REMOTE_INSTALL_DIR/assets/plymouth/"
-    rsync_cmd "$REPO_ROOT/assets/Arch_Linux__Crystal__icon.png"      "$VM_USER@$VM_HOST:$REMOTE_INSTALL_DIR/assets/"
 
     # logo.txt
     rsync_cmd "$REPO_ROOT/logo.txt"                                  "$VM_USER@$VM_HOST:$REMOTE_INSTALL_DIR/"
