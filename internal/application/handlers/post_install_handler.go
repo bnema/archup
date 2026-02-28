@@ -214,8 +214,8 @@ func (h *PostInstallHandler) setupSnapperSync(ctx context.Context, mountPoint st
 	if _, err := h.chrExec.ExecuteInChroot(ctx, mountPoint, "pacman", "-S", "--noconfirm", "--needed", "limine-snapper-sync"); err != nil {
 		return fmt.Errorf("failed to install limine-snapper-sync: %w", err)
 	}
-	if err := h.chrExec.ChrootSystemctl(ctx, h.logger.LogPath(), mountPoint, "enable", "limine-snapper-sync.timer"); err != nil {
-		return fmt.Errorf("failed to enable limine-snapper-sync.timer: %w", err)
+	if err := h.chrExec.ChrootSystemctl(ctx, h.logger.LogPath(), mountPoint, "enable", "limine-snapper-sync.service"); err != nil {
+		return fmt.Errorf("failed to enable limine-snapper-sync.service: %w", err)
 	}
 	return nil
 }

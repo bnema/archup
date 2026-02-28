@@ -122,6 +122,11 @@ func (h *ReposHandler) Handle(ctx context.Context, cmd commands.SetupRepositorie
 			return fail("Failed to install extra packages", err)
 		}
 		h.logger.Info("Extra packages installed successfully")
+
+		// Enable power-profiles-daemon after it has been installed via extra.packages
+		if err := h.chrExec.ChrootSystemctl(ctx, "", cmd.MountPoint, "enable", "power-profiles-daemon.service"); err != nil {
+			h.logger.Warn("Failed to enable power-profiles-daemon", "error", err)
+		}
 	}
 
 	result.Success = true

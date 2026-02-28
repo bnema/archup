@@ -387,9 +387,9 @@ func TestPostInstallHandler_Handle_EnablesSnapperSync(t *testing.T) {
 	// Catch-all for any other ExecuteInChroot calls
 	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
 
-	// Track systemctl enable for limine-snapper-sync.timer (specific expectation first)
+	// Track systemctl enable for limine-snapper-sync.service (specific expectation first)
 	mockChrExec.EXPECT().ChrootSystemctl(
-		gomock.Any(), gomock.Any(), gomock.Eq("/mnt"), gomock.Eq("enable"), gomock.Eq("limine-snapper-sync.timer"),
+		gomock.Any(), gomock.Any(), gomock.Eq("/mnt"), gomock.Eq("enable"), gomock.Eq("limine-snapper-sync.service"),
 	).DoAndReturn(func(ctx context.Context, logPath, chrootPath string, args ...string) error {
 		snapperTimerEnabled = true
 		return nil
@@ -422,7 +422,7 @@ func TestPostInstallHandler_Handle_EnablesSnapperSync(t *testing.T) {
 	}
 
 	if !snapperTimerEnabled {
-		t.Error("expected limine-snapper-sync.timer to be enabled via systemctl")
+		t.Error("expected limine-snapper-sync.service to be enabled via systemctl")
 	}
 }
 
