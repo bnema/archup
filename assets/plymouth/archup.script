@@ -143,6 +143,12 @@ entry.scaled_image = entry.image.Scale(
 # Entry appears below the centered logo with a fixed gap
 dialog_gap = 32;
 entry.dialog_y = logo.normal_y + logo.image.GetHeight() + dialog_gap;
+
+# Safety cap: never push entry off screen
+entry.max_y = Window.GetHeight() - entry.scaled_image.GetHeight() - 20;
+if (entry.dialog_y > entry.max_y)
+  entry.dialog_y = entry.max_y;
+
 entry.x = Window.GetWidth() / 2 - entry.scaled_image.GetWidth() / 2;
 
 entry.sprite = Sprite(entry.scaled_image);
