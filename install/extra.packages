@@ -17,7 +17,7 @@ wget
 unzip
 
 # Power management
-tlp
+power-profiles-daemon
 
 # Security
 firewalld

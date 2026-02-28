@@ -11,6 +11,7 @@ import (
 
 	"github.com/bnema/archup/internal/application/commands"
 	"github.com/bnema/archup/internal/application/dto"
+	"github.com/bnema/archup/internal/config"
 	"github.com/bnema/archup/internal/domain/ports"
 	"github.com/bnema/archup/internal/domain/system"
 	"github.com/bnema/archup/internal/domain/user"
@@ -174,7 +175,7 @@ func (h *ConfigureSystemHandler) Handle(ctx context.Context, cmd commands.Config
 		result.ErrorDetail = fmt.Sprintf("Failed to create sudoers.d directory: %v", err)
 		return result, err
 	}
-	if err := h.fs.WriteFile(filepath.Join(sudoersDir, "wheel"), []byte("%wheel ALL=(ALL:ALL) ALL\n"), 0440); err != nil {
+	if err := h.fs.WriteFile(filepath.Join(sudoersDir, "wheel"), []byte(config.SudoersWheelContent), config.SudoersWheelPerms); err != nil {
 		h.logger.Error("Failed to write sudoers", "error", err)
 		result.ErrorDetail = fmt.Sprintf("Failed to write sudoers: %v", err)
 		return result, err
@@ -189,6 +190,14 @@ func (h *ConfigureSystemHandler) Handle(ctx context.Context, cmd commands.Config
 	// Mask NetworkManager-wait-online to prevent boot delays when no network is immediately available.
 	if err := h.chrExec.ChrootSystemctl(ctx, h.logger.LogPath(), cmd.MountPoint, "mask", "NetworkManager-wait-online.service"); err != nil {
 		h.logger.Warn("Failed to mask NetworkManager-wait-online.service", "error", err)
+	}
+
+	if err := h.chrExec.ChrootSystemctl(ctx, h.logger.LogPath(), cmd.MountPoint, "enable", "power-profiles-daemon"); err != nil {
+		h.logger.Warn("Failed to enable power-profiles-daemon", "error", err)
+	}
+
+	if err := h.configureZram(cmd.MountPoint); err != nil {
+		h.logger.Warn("Failed to configure zram", "error", err)
 	}
 
 	// Migrate iwd WiFi credentials from live ISO to NetworkManager profiles in the installed system.
@@ -362,6 +371,29 @@ func hexNibble(c byte) int {
 		return int(c-'A') + 10
 	}
 	return -1
+}
+
+// configureZram writes zram-generator.conf and the matching sysctl tuning file.
+func (h *ConfigureSystemHandler) configureZram(mountPoint string) error {
+	zramDir := filepath.Join(mountPoint, "etc", "systemd")
+	if err := h.fs.MkdirAll(zramDir, 0755); err != nil {
+		return fmt.Errorf("failed to create systemd dir: %w", err)
+	}
+	zramConf := filepath.Join(zramDir, config.FileZramGenerator)
+	if err := h.fs.WriteFile(zramConf, []byte(config.ZramConfigContent), 0644); err != nil {
+		return fmt.Errorf("failed to write zram-generator.conf: %w", err)
+	}
+
+	sysctlDir := filepath.Join(mountPoint, "etc", "sysctl.d")
+	if err := h.fs.MkdirAll(sysctlDir, 0755); err != nil {
+		return fmt.Errorf("failed to create sysctl.d dir: %w", err)
+	}
+	sysctlConf := filepath.Join(sysctlDir, config.FileSysctlZramParams)
+	if err := h.fs.WriteFile(sysctlConf, []byte(config.ZramSysctlContent), 0644); err != nil {
+		return fmt.Errorf("failed to write zram sysctl params: %w", err)
+	}
+
+	return nil
 }
 
 // buildNMWiFiProfile generates a NetworkManager keyfile for a WPA-PSK network.
