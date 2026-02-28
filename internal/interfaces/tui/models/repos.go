@@ -8,23 +8,12 @@ type AURHelperOption struct {
 	Recommended bool
 }
 
-// ChaoticOption represents a selectable Chaotic-AUR option.
-type ChaoticOption struct {
-	Enabled     bool
-	Label       string
-	Description string
-	Recommended bool
-}
-
-// ReposModelImpl holds AUR helper and Chaotic-AUR selection state.
-// Navigation: ↑/↓ moves a single cursor across all items (crossing sections).
-// ←/→ selects the item under the cursor (radio within its section).
+// ReposModelImpl holds AUR helper selection state.
+// Chaotic-AUR is always enabled — not user-configurable.
 type ReposModelImpl struct {
-	aurOptions      []AURHelperOption
-	aurSelected     int // which AUR item is selected (confirmed)
-	chaoticOptions  []ChaoticOption
-	chaoticSelected int // which Chaotic item is selected (confirmed)
-	cursor          int // flat index across all items (0..totalItems-1)
+	aurOptions  []AURHelperOption
+	aurSelected int // which AUR item is selected (confirmed)
+	cursor      int // flat index across all items
 }
 
 // NewReposModel creates a new repos selection model.
@@ -41,30 +30,11 @@ func NewReposModel() *ReposModelImpl {
 		}
 	}
 
-	chaoticOptions := []ChaoticOption{
-		{Enabled: true, Label: "Enabled", Description: "Pre-built AUR packages; faster installs (recommended)", Recommended: true},
-		{Enabled: false, Label: "Disabled", Description: "Build AUR packages from source"},
-	}
-	chaoticSelected := 0
-	for i, o := range chaoticOptions {
-		if o.Recommended {
-			chaoticSelected = i
-			break
-		}
-	}
-
 	return &ReposModelImpl{
-		aurOptions:      aurOptions,
-		aurSelected:     aurSelected,
-		chaoticOptions:  chaoticOptions,
-		chaoticSelected: chaoticSelected,
-		cursor:          0,
+		aurOptions:  aurOptions,
+		aurSelected: aurSelected,
+		cursor:      0,
 	}
-}
-
-// totalItems returns the total number of items across all sections.
-func (rm *ReposModelImpl) totalItems() int {
-	return len(rm.aurOptions) + len(rm.chaoticOptions)
 }
 
 // CursorIndex returns the current flat cursor position.
@@ -75,21 +45,6 @@ func (rm *ReposModelImpl) AUROptions() []AURHelperOption { return rm.aurOptions 
 
 // AURSelectedIndex returns the confirmed AUR selection index.
 func (rm *ReposModelImpl) AURSelectedIndex() int { return rm.aurSelected }
-
-// ChaoticOptions returns the selectable Chaotic-AUR options.
-func (rm *ReposModelImpl) ChaoticOptions() []ChaoticOption { return rm.chaoticOptions }
-
-// ChaoticSelectedIndex returns the confirmed Chaotic-AUR selection index.
-func (rm *ReposModelImpl) ChaoticSelectedIndex() int { return rm.chaoticSelected }
-
-// FocusSection returns which section the cursor is in (0=AUR, 1=Chaotic).
-// Kept for view compatibility.
-func (rm *ReposModelImpl) FocusSection() int {
-	if rm.cursor < len(rm.aurOptions) {
-		return 0
-	}
-	return 1
-}
 
 // SelectedAURHelper returns the selected AUR helper value string.
 func (rm *ReposModelImpl) SelectedAURHelper() string {
@@ -102,57 +57,23 @@ func (rm *ReposModelImpl) SelectedAURHelper() string {
 	return rm.aurOptions[rm.aurSelected].Value
 }
 
-// SelectedChaoticEnabled returns whether Chaotic-AUR is enabled.
-func (rm *ReposModelImpl) SelectedChaoticEnabled() bool {
-	if len(rm.chaoticOptions) == 0 {
-		return true
-	}
-	if rm.chaoticSelected < 0 || rm.chaoticSelected >= len(rm.chaoticOptions) {
-		return rm.chaoticOptions[0].Enabled
-	}
-	return rm.chaoticOptions[rm.chaoticSelected].Enabled
-}
-
-// MoveUp moves the cursor up (crosses section boundaries, no wrap).
+// MoveUp moves the cursor up.
 func (rm *ReposModelImpl) MoveUp() {
 	if rm.cursor > 0 {
 		rm.cursor--
 	}
 }
 
-// MoveDown moves the cursor down (crosses section boundaries, no wrap).
+// MoveDown moves the cursor down.
 func (rm *ReposModelImpl) MoveDown() {
-	if rm.cursor < rm.totalItems()-1 {
+	if rm.cursor < len(rm.aurOptions)-1 {
 		rm.cursor++
 	}
 }
 
-// Select selects (radio) the item currently under the cursor within its section.
+// Select confirms the item currently under the cursor.
 func (rm *ReposModelImpl) Select() {
 	if rm.cursor < len(rm.aurOptions) {
 		rm.aurSelected = rm.cursor
-	} else {
-		rm.chaoticSelected = rm.cursor - len(rm.aurOptions)
 	}
 }
-
-// NextSection moves focus to the next section (kept for compatibility).
-func (rm *ReposModelImpl) NextSection() {
-	rm.focusToSection(rm.FocusSection() + 1)
-}
-
-// PrevSection moves focus to the previous section (kept for compatibility).
-func (rm *ReposModelImpl) PrevSection() {
-	rm.focusToSection(rm.FocusSection() - 1)
-}
-
-func (rm *ReposModelImpl) focusToSection(s int) {
-	if s <= 0 {
-		rm.cursor = 0
-	} else {
-		rm.cursor = len(rm.aurOptions)
-	}
-}
-
-// SectionCount returns the total number of sections.
-func (rm *ReposModelImpl) SectionCount() int { return 2 }

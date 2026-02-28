@@ -138,7 +138,7 @@ func TestAvailableKernels(t *testing.T) {
 // Repository Tests
 
 func TestNewRepository_Valid(t *testing.T) {
-	repo, err := NewRepository(true, true, AURHelperParu)
+	repo, err := NewRepository(true, AURHelperParu)
 
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -146,10 +146,6 @@ func TestNewRepository_Valid(t *testing.T) {
 
 	if !repo.EnableMultilib() {
 		t.Error("expected multilib enabled")
-	}
-
-	if !repo.EnableChaotic() {
-		t.Error("expected chaotic enabled")
 	}
 
 	if repo.AURHelper() != AURHelperParu {
@@ -161,19 +157,16 @@ func TestNewRepository_AllCombinations(t *testing.T) {
 	tests := []struct {
 		name     string
 		multilib bool
-		chaotic  bool
 		helper   AURHelper
 	}{
-		{"minimal", false, false, AURHelperParu},
-		{"chaotic only", false, true, AURHelperParu},
-		{"multilib only", true, false, AURHelperParu},
-		{"all enabled", true, true, AURHelperParu},
-		{"with yay", true, true, AURHelperYay},
+		{"minimal", false, AURHelperParu},
+		{"multilib", true, AURHelperParu},
+		{"with yay", true, AURHelperYay},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repo, err := NewRepository(tt.multilib, tt.chaotic, tt.helper)
+			repo, err := NewRepository(tt.multilib, tt.helper)
 
 			if err != nil {
 				t.Fatalf("expected no error, got %v", err)
@@ -181,10 +174,6 @@ func TestNewRepository_AllCombinations(t *testing.T) {
 
 			if repo.EnableMultilib() != tt.multilib {
 				t.Errorf("expected multilib=%v", tt.multilib)
-			}
-
-			if repo.EnableChaotic() != tt.chaotic {
-				t.Errorf("expected chaotic=%v", tt.chaotic)
 			}
 
 			if repo.AURHelper() != tt.helper {
@@ -211,9 +200,9 @@ func TestAURHelper_String(t *testing.T) {
 }
 
 func TestRepository_Equals(t *testing.T) {
-	r1, _ := NewRepository(true, true, AURHelperParu)
-	r2, _ := NewRepository(true, true, AURHelperParu)
-	r3, _ := NewRepository(true, true, AURHelperYay)
+	r1, _ := NewRepository(true, AURHelperParu)
+	r2, _ := NewRepository(true, AURHelperParu)
+	r3, _ := NewRepository(true, AURHelperYay)
 
 	if !r1.Equals(r2) {
 		t.Error("expected equal repositories")

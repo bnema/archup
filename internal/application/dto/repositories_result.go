@@ -4,7 +4,6 @@ package dto
 type RepositoriesResult struct {
 	Success     bool
 	Multilib    bool
-	Chaotic     bool
 	AURHelper   string
 	ErrorDetail string
 }

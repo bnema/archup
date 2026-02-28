@@ -32,12 +32,11 @@ func NewReposHandler(fs ports.FileSystem, chrExec ports.ChrootExecutor, logger p
 
 // Handle configures package repositories
 func (h *ReposHandler) Handle(ctx context.Context, cmd commands.SetupRepositoriesCommand) (*dto.RepositoriesResult, error) {
-	h.logger.Info("Starting repository configuration", "multilib", cmd.EnableMultilib, "chaotic", cmd.EnableChaotic)
+	h.logger.Info("Starting repository configuration", "multilib", cmd.EnableMultilib)
 
 	result := &dto.RepositoriesResult{
 		Success:     false,
 		Multilib:    cmd.EnableMultilib,
-		Chaotic:     cmd.EnableChaotic,
 		AURHelper:   "",
 		ErrorDetail: "",
 	}
@@ -48,8 +47,8 @@ func (h *ReposHandler) Handle(ctx context.Context, cmd commands.SetupRepositorie
 		return result, err
 	}
 
-	// Create repository domain object
-	repo, err := packages.NewRepository(cmd.EnableMultilib, cmd.EnableChaotic, cmd.AURHelper)
+	// Create repository domain object — Chaotic AUR is always enabled
+	repo, err := packages.NewRepository(cmd.EnableMultilib, cmd.AURHelper)
 	if err != nil {
 		h.logger.Error("Invalid repository configuration", "error", err)
 		result.ErrorDetail = fmt.Sprintf("Invalid repository configuration: %v", err)
@@ -58,7 +57,6 @@ func (h *ReposHandler) Handle(ctx context.Context, cmd commands.SetupRepositorie
 
 	h.logger.Info("Repository configuration validated",
 		"multilib", repo.EnableMultilib(),
-		"chaotic", repo.EnableChaotic(),
 		"aurHelper", repo.AURHelper())
 
 	pacmanConfPath := filepath.Join(cmd.MountPoint, "etc", "pacman.conf")
@@ -82,44 +80,35 @@ func (h *ReposHandler) Handle(ctx context.Context, cmd commands.SetupRepositorie
 		}
 	}
 
-	// For chaotic-aur: install keyring and mirrorlist BEFORE adding to pacman.conf
-	if repo.EnableChaotic() {
-		if _, err := h.chrExec.ExecuteInChroot(ctx, cmd.MountPoint, "pacman-key", "--recv-key", "3056513887B78AEB", "--keyserver", "keyserver.ubuntu.com"); err != nil {
-			return fail("Failed to receive Chaotic-AUR key", err)
-		}
-
-		if _, err := h.chrExec.ExecuteInChroot(ctx, cmd.MountPoint, "pacman-key", "--lsign-key", "3056513887B78AEB"); err != nil {
-			return fail("Failed to sign Chaotic-AUR key", err)
-		}
-
-		if _, err := h.chrExec.ExecuteInChroot(ctx, cmd.MountPoint, "pacman", "-U", "--noconfirm",
-			"https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst",
-			"https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst"); err != nil {
-			return fail("Failed to install Chaotic-AUR keyring", err)
-		}
-
-		// Now that mirrorlist exists, add chaotic-aur to pacman.conf
-		confBytes, err := h.fs.ReadFile(pacmanConfPath)
-		if err != nil {
-			return fail("Failed to read pacman.conf", err)
-		}
-		conf := ensureChaoticRepo(string(confBytes))
-		if err := h.fs.WriteFile(pacmanConfPath, []byte(conf), 0644); err != nil {
-			return fail("Failed to write pacman.conf", err)
-		}
+	// Chaotic-AUR: always enabled — install keyring and mirrorlist BEFORE adding to pacman.conf
+	if _, err := h.chrExec.ExecuteInChroot(ctx, cmd.MountPoint, "pacman-key", "--recv-key", "3056513887B78AEB", "--keyserver", "keyserver.ubuntu.com"); err != nil {
+		return fail("Failed to receive Chaotic-AUR key", err)
+	}
+	if _, err := h.chrExec.ExecuteInChroot(ctx, cmd.MountPoint, "pacman-key", "--lsign-key", "3056513887B78AEB"); err != nil {
+		return fail("Failed to sign Chaotic-AUR key", err)
+	}
+	if _, err := h.chrExec.ExecuteInChroot(ctx, cmd.MountPoint, "pacman", "-U", "--noconfirm",
+		"https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst",
+		"https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst"); err != nil {
+		return fail("Failed to install Chaotic-AUR keyring", err)
 	}
 
-	// Sync repos after all config changes
-	if repo.EnableMultilib() || repo.EnableChaotic() {
-		if _, err := h.chrExec.ExecuteInChroot(ctx, cmd.MountPoint, "pacman", "-Sy", "--noconfirm"); err != nil {
-			return fail("Failed to sync pacman repositories", err)
-		}
+	confBytes, err := h.fs.ReadFile(pacmanConfPath)
+	if err != nil {
+		return fail("Failed to read pacman.conf", err)
+	}
+	if err := h.fs.WriteFile(pacmanConfPath, []byte(ensureChaoticRepo(string(confBytes))), 0644); err != nil {
+		return fail("Failed to write pacman.conf", err)
 	}
 
-	if repo.EnableChaotic() {
-		if _, err := h.chrExec.ExecuteInChroot(ctx, cmd.MountPoint, "pacman", "-S", "--noconfirm", repo.AURHelper().String()); err != nil {
-			return fail("Failed to install AUR helper", err)
-		}
+	// Sync all repos
+	if _, err := h.chrExec.ExecuteInChroot(ctx, cmd.MountPoint, "pacman", "-Sy", "--noconfirm"); err != nil {
+		return fail("Failed to sync pacman repositories", err)
+	}
+
+	// Install AUR helper from Chaotic-AUR
+	if _, err := h.chrExec.ExecuteInChroot(ctx, cmd.MountPoint, "pacman", "-S", "--noconfirm", repo.AURHelper().String()); err != nil {
+		return fail("Failed to install AUR helper", err)
 	}
 
 	// Install extra packages from extra.packages file

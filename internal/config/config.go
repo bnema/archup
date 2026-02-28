@@ -12,20 +12,12 @@ const (
 	DefaultLogPath    = "/var/log/archup-install.log"
 
 	// Install paths
-	DefaultInstallDir      = "/tmp/archup-install"
-	DefaultInstallRepoDir  = "/tmp/archup-install/repo"
-	DefaultInstallPath     = ".local/share/archup/install"
-	BasePackagesFile       = "base.packages"
-	ExtraPackagesFile      = "extra.packages"
-	LimineConfigTemplate   = "configs/limine.conf.template"
-	ChaoticConfigFile      = "configs/chaotic-aur.conf"
-	StarshipConfigTemplate = "configs/shell/starship.toml"
-	ShellConfigTemplate    = "configs/shell/shell"
-	ShellInitTemplate      = "configs/shell/init"
-	ShellAliasesTemplate   = "configs/shell/aliases"
-	ShellEnvsTemplate      = "configs/shell/envs"
-	ShellRcTemplate        = "configs/shell/rc"
-	BashrcTemplate         = "configs/shell/bashrc"
+	DefaultInstallDir     = "/tmp/archup-install"
+	DefaultInstallRepoDir = "/tmp/archup-install/repo"
+	DefaultInstallPath    = ".local/share/archup/install"
+	BasePackagesFile      = "base.packages"
+	ExtraPackagesFile     = "extra.packages"
+	LimineConfigTemplate  = "configs/limine.conf.template"
 )
 
 // Encryption types
@@ -51,78 +43,7 @@ const (
 
 // System paths
 const (
-	PathMnt              = "/mnt"
-	PathMntEtc           = "/mnt/etc"
-	PathMntEtcHostname   = "/mnt/etc/hostname"
-	PathMntEtcHosts      = "/mnt/etc/hosts"
-	PathMntEtcLocaleGen  = "/mnt/etc/locale.gen"
-	PathMntEtcLocaleConf = "/mnt/etc/locale.conf"
-	PathMntEtcVconsole   = "/mnt/etc/vconsole.conf"
-	PathMntEtcSudoersD   = "/mnt/etc/sudoers.d/wheel"
-	PathMntEtcSystemd    = "/mnt/etc/systemd"
-	PathMntEtcSysctlD    = "/mnt/etc/sysctl.d"
-	PathUsrShareZoneinfo = "/usr/share/zoneinfo"
-	PathEtcLocaltime     = "/etc/localtime"
-)
-
-// Config file names
-const (
-	FileZramGenerator    = "zram-generator.conf"
-	FileSysctlZramParams = "99-vm-zram-parameters.conf"
-)
-
-// Services
-const (
-	ServiceNetworkManager = "NetworkManager"
-)
-
-// User groups
-const (
-	GroupWheel = "wheel"
-)
-
-// Shells
-const (
-	ShellBash = "/bin/bash"
-)
-
-// Locale defaults
-const (
-	LocaleDefault    = "en_US.UTF-8"
-	LocaleDefaultGen = "en_US.UTF-8 UTF-8"
-	TimezoneDefault  = ""
-	KeymapDefault    = "us"
-)
-
-// Zram configuration
-const (
-	ZramConfigContent = `[zram0]
-zram-size = min(ram / 2, 4096)
-compression-algorithm = zstd
-`
-	ZramSysctlContent = `vm.swappiness = 180
-vm.watermark_boost_factor = 0
-vm.watermark_scale_factor = 125
-vm.page-cluster = 0
-`
-)
-
-// Sudoers configuration
-const (
-	SudoersWheelContent = "%wheel ALL=(ALL:ALL) ALL\n"
-	SudoersWheelPerms   = 0440
-)
-
-// Boot paths
-const (
-	PathMntBoot           = "/mnt/boot"
-	PathMntBootEFI        = "/mnt/boot/EFI"
-	PathMntBootEFILimine  = "/mnt/boot/EFI/limine"
-	PathMntBootLimineConf = "/mnt/boot/limine.conf"
-	PathMntEtcMkinitcpio  = "/mnt/etc/mkinitcpio.conf"
-	PathUsrShareLimine    = "/mnt/usr/share/limine"
-	FileLimineBootloader  = "BOOTX64.EFI"
-	FileLimineConfig      = "limine.conf"
+	PathMnt = "/mnt"
 )
 
 // Mkinitcpio hooks
@@ -138,9 +59,7 @@ const (
 
 // Limine configuration
 const (
-	LimineTimeout  = "0"
-	LimineBranding = "Arch Linux"
-	LimineColor    = "6"
+	LimineColor = "6"
 )
 
 // UEFI boot entry
@@ -149,20 +68,37 @@ const (
 	UEFIBootLoader = "\\EFI\\limine\\BOOTX64.EFI"
 )
 
-// Repository paths
-const (
-	PathMntEtcPacmanConf = "/mnt/etc/pacman.conf"
-)
-
 // PostInstall paths
 const (
-	PathMntBootLogo         = "/mnt/boot/arch-logo.png"
-	PathMntPlymouthThemes   = "/mnt/usr/share/plymouth/themes"
-	PathMntEtcDefaultLimine = "/mnt/etc/default/limine"
-	PathMntEtcPacmanDHooks  = "/mnt/etc/pacman.d/hooks"
-	PathBootLimineConf      = "/boot/limine.conf"
-	ArchLogoURL             = "assets/Arch_Linux__Crystal__icon.png"
-	PlymouthThemeName       = "archup"
+	PathMntPlymouthThemes  = "/mnt/usr/share/plymouth/themes"
+	PathMntEtcPacmanDHooks = "/mnt/etc/pacman.d/hooks"
+	PathBootLimineConf     = "/boot/limine.conf"
+	PlymouthThemeName      = "archup"
+)
+
+// Zram configuration
+const (
+	ZramConfigContent = `[zram0]
+zram-size = min(ram / 2, 4096)
+compression-algorithm = zstd
+`
+	ZramSysctlContent = `vm.swappiness = 180
+vm.watermark_boost_factor = 0
+vm.watermark_scale_factor = 125
+vm.page-cluster = 0
+`
+)
+
+// Zram file names
+const (
+	FileZramGenerator    = "zram-generator.conf"
+	FileSysctlZramParams = "99-vm-zram-parameters.conf"
+)
+
+// Sudoers configuration
+const (
+	SudoersWheelContent = "%wheel ALL=(ALL:ALL) ALL\n"
+	SudoersWheelPerms   = 0440
 )
 
 // Plymouth files
@@ -239,7 +175,6 @@ type Config struct {
 	// Repos
 	AURHelper      string // "paru" or "yay"
 	EnableMultilib bool
-	EnableChaotic  bool
 
 	// Paths
 	ConfigPath  string
@@ -282,7 +217,6 @@ func NewConfig(version string) *Config {
 		NetworkManager:               "NetworkManager",
 		AURHelper:                    "paru",
 		EnableMultilib:               true,
-		EnableChaotic:                true,
 		UseSamePasswordForEncryption: true, // Default to using same password for encryption
 		ConfigPath:                   DefaultConfigPath,
 		LogPath:                      DefaultLogPath,
@@ -400,7 +334,6 @@ func (c *Config) Save() error {
 		{"ARCHUP_NETWORK_MANAGER", c.NetworkManager},
 		{"ARCHUP_AUR_HELPER", c.AURHelper},
 		{"ARCHUP_ENABLE_MULTILIB", boolToString(c.EnableMultilib)},
-		{"ARCHUP_ENABLE_CHAOTIC", boolToString(c.EnableChaotic)},
 	}
 
 	for _, entry := range entries {
@@ -465,8 +398,6 @@ func (c *Config) setValue(key, value string) {
 		c.AURHelper = value
 	case "ARCHUP_ENABLE_MULTILIB":
 		c.EnableMultilib = stringToBool(value)
-	case "ARCHUP_ENABLE_CHAOTIC":
-		c.EnableChaotic = stringToBool(value)
 	}
 }
 

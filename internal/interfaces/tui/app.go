@@ -384,7 +384,6 @@ func (a *App) handleReposInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return a, nil
 	case "enter":
 		a.formData.AURHelper = a.reposModel.SelectedAURHelper()
-		a.formData.EnableChaotic = a.reposModel.SelectedChaoticEnabled()
 		a.currentScreen = ScreenDankLinux
 		return a, nil
 	}

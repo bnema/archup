@@ -40,7 +40,6 @@ type FormData struct {
 	AURHelper         string
 	Microcode         bool
 	InstallDankLinux  bool
-	EnableChaotic     bool
 }
 
 // FormModelImpl implements FormModel interface
@@ -313,7 +312,6 @@ func (fm *FormModelImpl) extractData() {
 		Locale:            fm.fields[5].Value(),
 		Keymap:            fm.fields[6].Value(),
 		InstallDankLinux:  fm.data.InstallDankLinux,
-		EnableChaotic:     fm.data.EnableChaotic,
 	}
 }
 

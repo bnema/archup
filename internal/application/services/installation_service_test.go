@@ -413,7 +413,6 @@ func TestInstallationService_RunRepositorySetup(t *testing.T) {
 	cmd := commands.SetupRepositoriesCommand{
 		MountPoint:      "/mnt",
 		EnableMultilib:  false,
-		EnableChaotic:   false,
 		AURHelper:       packages.AURHelperParu,
 		AdditionalRepos: []string{},
 	}

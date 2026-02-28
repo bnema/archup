@@ -198,7 +198,6 @@ func CreateInstallationCommand(app AppContext, formData models.FormData) tea.Cmd
 			repoCmd := commands.SetupRepositoriesCommand{
 				MountPoint:     "/mnt",
 				EnableMultilib: true,
-				EnableChaotic:  formData.EnableChaotic,
 				AURHelper:      parseAURHelper(formData.AURHelper),
 				KernelVariant:  parseKernelVariant(formData.KernelVariant),
 			}

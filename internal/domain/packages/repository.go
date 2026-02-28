@@ -23,22 +23,21 @@ func (a AURHelper) String() string {
 	}
 }
 
-// Repository is an immutable value object for repository configuration
+// Repository is an immutable value object for repository configuration.
+// Chaotic-AUR is always enabled.
 type Repository struct {
 	enableMultilib bool
-	enableChaotic  bool
 	aurHelper      AURHelper
 }
 
 // NewRepository creates a new Repository value object
-func NewRepository(enableMultilib, enableChaotic bool, aurHelper AURHelper) (*Repository, error) {
+func NewRepository(enableMultilib bool, aurHelper AURHelper) (*Repository, error) {
 	if aurHelper < AURHelperParu || aurHelper > AURHelperYay {
 		return nil, errors.New("invalid AUR helper")
 	}
 
 	return &Repository{
 		enableMultilib: enableMultilib,
-		enableChaotic:  enableChaotic,
 		aurHelper:      aurHelper,
 	}, nil
 }
@@ -46,11 +45,6 @@ func NewRepository(enableMultilib, enableChaotic bool, aurHelper AURHelper) (*Re
 // EnableMultilib returns true if multilib is enabled
 func (r *Repository) EnableMultilib() bool {
 	return r.enableMultilib
-}
-
-// EnableChaotic returns true if chaotic-aur is enabled
-func (r *Repository) EnableChaotic() bool {
-	return r.enableChaotic
 }
 
 // AURHelper returns the AUR helper choice
@@ -61,7 +55,7 @@ func (r *Repository) AURHelper() AURHelper {
 // String returns human-readable representation
 func (r *Repository) String() string {
 	return "Repository(multilib=" + boolToStr(r.enableMultilib) +
-		", chaotic=" + boolToStr(r.enableChaotic) +
+		", chaotic=true" +
 		", aur=" + r.aurHelper.String() + ")"
 }
 
@@ -71,7 +65,6 @@ func (r *Repository) Equals(other *Repository) bool {
 		return false
 	}
 	return r.enableMultilib == other.enableMultilib &&
-		r.enableChaotic == other.enableChaotic &&
 		r.aurHelper == other.aurHelper
 }
 
