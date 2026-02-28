@@ -71,11 +71,6 @@ if [ -f /usr/local/share/archup/post-boot/cli-tools.sh ]; then
   fi
 fi
 
-# Optional Dank Linux installation (interactive — do NOT pipe stdin)
-if [ -f /usr/local/share/archup/post-boot/dms-opt-in.sh ]; then
-  bash /usr/local/share/archup/post-boot/dms-opt-in.sh || true
-fi
-
 echo "=== First Boot Setup Complete ===" >> "$LOG_FILE"
 
 # Disable this service after first run

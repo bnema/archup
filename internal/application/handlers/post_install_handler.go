@@ -9,7 +9,6 @@ import (
 
 	"github.com/bnema/archup/internal/application/commands"
 	"github.com/bnema/archup/internal/application/dto"
-	"github.com/bnema/archup/internal/assets"
 	"github.com/bnema/archup/internal/config"
 	"github.com/bnema/archup/internal/domain/ports"
 )
@@ -107,10 +106,6 @@ func (h *PostInstallHandler) Handle(ctx context.Context, cmd commands.PostInstal
 		h.logger.Info("Plymouth theme installed and initramfs rebuilt")
 	}
 
-	if err := h.installLimineLogo(cmd.MountPoint); err != nil {
-		h.logger.Warn("Failed to install Limine logo", "error", err)
-	}
-
 	if err := h.tunePacmanConfig(cmd.MountPoint); err != nil {
 		h.logger.Warn("Failed to tune pacman.conf", "error", err)
 	}
@@ -161,39 +156,6 @@ func (h *PostInstallHandler) setupPostBoot(ctx context.Context, mountPoint, user
 		return fmt.Errorf("failed to enable first-boot service: %w", err)
 	}
 
-	return nil
-}
-
-func (h *PostInstallHandler) installLimineLogo(mountPoint string) error {
-	logoPath := filepath.Join(mountPoint, "boot", "arch-logo.png")
-	if err := h.fs.WriteFile(logoPath, assets.LimineLogo, 0644); err != nil {
-		return fmt.Errorf("failed to write Limine logo: %w", err)
-	}
-
-	limineConf := filepath.Join(mountPoint, "boot", "limine.conf")
-	content, err := h.fs.ReadFile(limineConf)
-	if err != nil {
-		return fmt.Errorf("failed to read limine.conf: %w", err)
-	}
-
-	contentStr := string(content)
-	graphicsRegex := regexp.MustCompile(`(?m)^graphics: yes$`)
-	if graphicsRegex.MatchString(contentStr) {
-		wallpaperSettings := "\nwallpaper: boot():/arch-logo.png\nwallpaper_style: centered\nbackdrop: 000000"
-		contentStr = graphicsRegex.ReplaceAllString(contentStr, "graphics: yes"+wallpaperSettings)
-		if err := h.fs.WriteFile(limineConf, []byte(contentStr), 0644); err != nil {
-			return fmt.Errorf("failed to update limine.conf: %w", err)
-		}
-		return nil
-	}
-
-	h.logger.Warn("graphics: yes not found in limine.conf")
-	return nil
-}
-
-// copyShellConfigs is a no-op: shell configuration is handled by
-// cli-tools.sh on first boot. No config files are copied at install time.
-func (h *PostInstallHandler) copyShellConfigs(mountPoint, username string) error {
 	return nil
 }
 

@@ -10,12 +10,23 @@ log() { echo "[dms-opt-in] $*" | tee -a "$LOG_FILE"; }
 
 FLAG_FILE="/var/lib/archup-install-danklinux"
 
+# Resolve the target user — must not run the installer as root
+INSTALL_USER="${ARCHUP_USERNAME:-}"
+if [ -z "$INSTALL_USER" ]; then
+  log "ARCHUP_USERNAME not set — skipping Dank Linux installation."
+  exit 0
+fi
+
+run_as_user() {
+  sudo -u "$INSTALL_USER" env HOME="/home/$INSTALL_USER" "$@"
+}
+
 # Auto-install if flag was set during installation
 if [ -f "$FLAG_FILE" ]; then
   log "Dank Linux install flag detected — running installer automatically."
   echo ""
   echo "Installing Dank Linux (selected during system installation)..."
-  if curl -fsSL https://install.danklinux.com | sh; then
+  if run_as_user bash -c 'curl -fsSL https://install.danklinux.com | sh'; then
     rm -f "$FLAG_FILE"
     log "Dank Linux installation complete."
   else
@@ -57,7 +68,7 @@ case "$REPLY" in
   [yY][eE][sS]|[yY])
     log "User opted in — starting Dank Linux installer."
     echo "Starting Dank Linux installer..."
-    if curl -fsSL https://install.danklinux.com | sh; then
+    if run_as_user bash -c 'curl -fsSL https://install.danklinux.com | sh'; then
       log "Dank Linux installation complete."
     else
       log "ERROR: Dank Linux installer failed (exit code $?)."
