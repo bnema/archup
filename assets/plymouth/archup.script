@@ -101,13 +101,11 @@ fun hide_progress_bar()
 
 fun show_password_dialog()
   {
-    lock.sprite.SetOpacity(1);
     entry.sprite.SetOpacity(1);
   }
 
 fun hide_password_dialog()
   {
-    lock.sprite.SetOpacity(0);
     entry.sprite.SetOpacity(0);
     for (index = 0; bullet.sprites[index]; index++)
       bullet.sprites[index].SetOpacity(0);
@@ -133,38 +131,31 @@ fun stop_fake_progress()
 
 #----------------------------------------- Dialogue --------------------------------
 
-lock.image = Image("lock.png");
 entry.image = Image("entry.png");
 bullet.image = Image("bullet.png");
+
+# Scale entry to 60% of its original size
+entry.scaled_image = entry.image.Scale(
+  Math.Int(entry.image.GetWidth() * 0.6),
+  Math.Int(entry.image.GetHeight() * 0.6)
+);
 
 # Gap between logo bottom and entry top when password dialog is shown
 dialog_gap = 40;
 
 # Total height of logo + gap + entry when grouped for password dialog
-dialog_group_height = logo.image.GetHeight() + dialog_gap + entry.image.GetHeight();
+dialog_group_height = logo.image.GetHeight() + dialog_gap + entry.scaled_image.GetHeight();
 
 # Vertical start so the group is centered on screen
 dialog_group_y = Window.GetHeight() / 2 - dialog_group_height / 2;
 
 # Entry sits below the logo in password mode
 entry.dialog_y = dialog_group_y + logo.image.GetHeight() + dialog_gap;
-entry.x = Window.GetWidth() / 2 - entry.image.GetWidth() / 2;
+entry.x = Window.GetWidth() / 2 - entry.scaled_image.GetWidth() / 2;
 
-entry.sprite = Sprite(entry.image);
+entry.sprite = Sprite(entry.scaled_image);
 entry.sprite.SetPosition(entry.x, entry.dialog_y, 10001);
 entry.sprite.SetOpacity(0);
-
-# Scale lock icon to match entry field height
-lock_height = entry.image.GetHeight() * 0.8;
-lock_scale = lock_height / 96;
-lock_width = 84 * lock_scale;
-
-scaled_lock = lock.image.Scale(lock_width, lock_height);
-lock.sprite = Sprite(scaled_lock);
-lock.x = entry.x - lock_width - 15;
-lock.y = entry.dialog_y + entry.image.GetHeight() / 2 - lock_height / 2;
-lock.sprite.SetPosition(lock.x, lock.y, 10001);
-lock.sprite.SetOpacity(0);
 
 # Bullet array
 bullet.sprites = [];
@@ -217,11 +208,11 @@ fun display_password_callback (prompt, bullets)
       {
         if (!bullet.sprites[index])
           {
-            # Scale bullet image to 7x7 pixels
-            scaled_bullet = bullet.image.Scale(7, 7);
+            # Scale bullet image to 6x6 pixels
+            scaled_bullet = bullet.image.Scale(6, 6);
             bullet.sprites[index] = Sprite(scaled_bullet);
-            bullet.x = entry.x + 20 + index * (7 + 5);
-            bullet.y = entry.dialog_y + entry.image.GetHeight() / 2 - 3.5;
+            bullet.x = entry.x + 12 + index * (6 + 4);
+            bullet.y = entry.dialog_y + entry.scaled_image.GetHeight() / 2 - 3;
             bullet.sprites[index].SetPosition(bullet.x, bullet.y, 10002);
           }
         bullet.sprites[index].SetOpacity(1);
