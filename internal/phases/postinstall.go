@@ -35,6 +35,30 @@ func NewPostInstallPhase(cfg *config.Config, log *logger.Logger, fs interfaces.F
 	}
 }
 
+// fetchFile returns the content of a repo-relative path.
+// It checks /tmp/archup-install/<repoPath> first (populated by push-binary-to-vm.sh --local),
+// then falls back to downloading from GitHub.
+func (p *PostInstallPhase) fetchFile(repoPath string) ([]byte, error) {
+	localPath := filepath.Join(config.DefaultInstallDir, repoPath)
+	if content, err := p.fs.ReadFile(localPath); err == nil {
+		return content, nil
+	}
+	url := fmt.Sprintf("%s/%s", p.config.RawURL, repoPath)
+	resp, err := p.http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch %s: %w", repoPath, err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch %s: HTTP %d", repoPath, resp.StatusCode)
+	}
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read %s: %w", repoPath, err)
+	}
+	return data, nil
+}
+
 // PreCheck validates post-install prerequisites
 func (p *PostInstallPhase) PreCheck() error {
 	// Verify /mnt is mounted
@@ -146,41 +170,13 @@ func (p *PostInstallPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResu
 func (p *PostInstallPhase) installBootLogo(progressChan chan<- ProgressUpdate) error {
 	p.SendOutput(progressChan, "Downloading Arch logo...")
 
-	// Build logo URL from config
-	logoURL := fmt.Sprintf("%s/%s", p.config.RawURL, config.ArchLogoURL)
-
-	resp, err := p.http.Get(logoURL)
-	switch {
-	case err != nil:
-		return fmt.Errorf("failed to download logo: %w", err)
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			p.SendOutput(progressChan, fmt.Sprintf("[WARN] Failed to close response body: %v", err))
-		}
-	}()
-
-	switch {
-	case resp.StatusCode != http.StatusOK:
-		return fmt.Errorf("failed to download logo: HTTP %d", resp.StatusCode)
+	data, err := p.fetchFile(config.ArchLogoURL)
+	if err != nil {
+		return fmt.Errorf("failed to fetch logo: %w", err)
 	}
 
-	// Save to boot partition
-	logoFile, err := p.fs.Create(config.PathMntBootLogo)
-	switch {
-	case err != nil:
-		return fmt.Errorf("failed to create logo file: %w", err)
-	}
-	defer func() {
-		if err := logoFile.Close(); err != nil {
-			p.SendOutput(progressChan, fmt.Sprintf("[WARN] Failed to close logo file: %v", err))
-		}
-	}()
-
-	_, err = io.Copy(logoFile, resp.Body)
-	switch {
-	case err != nil:
-		return fmt.Errorf("failed to save logo: %w", err)
+	if err := p.fs.WriteFile(config.PathMntBootLogo, data, 0644); err != nil {
+		return fmt.Errorf("failed to write logo: %w", err)
 	}
 
 	p.SendOutput(progressChan, "[OK] Logo downloaded")
@@ -226,53 +222,18 @@ func (p *PostInstallPhase) configurePlymouth(progressChan chan<- ProgressUpdate)
 		return fmt.Errorf("failed to create theme directory: %w", err)
 	}
 
-	// Download all Plymouth files from assets (local files in repo)
+	// Fetch all Plymouth files (local-first, then remote)
 	for _, filename := range config.PlymouthFiles {
-		p.SendOutput(progressChan, fmt.Sprintf("Downloading %s...", filename))
+		p.SendOutput(progressChan, fmt.Sprintf("Fetching %s...", filename))
 
-		fileURL := fmt.Sprintf("%s/assets/plymouth/%s", p.config.RawURL, filename)
-		resp, err := p.http.Get(fileURL)
-		switch {
-		case err != nil:
-			return fmt.Errorf("failed to download %s: %w", filename, err)
+		data, err := p.fetchFile(filepath.Join("assets", "plymouth", filename))
+		if err != nil {
+			return fmt.Errorf("failed to fetch %s: %w", filename, err)
 		}
 
-		switch {
-		case resp.StatusCode != http.StatusOK:
-			if closeErr := resp.Body.Close(); closeErr != nil {
-				return fmt.Errorf("failed to close %s response: %w", filename, closeErr)
-			}
-			return fmt.Errorf("failed to download %s: HTTP %d", filename, resp.StatusCode)
-		}
-
-		// Save file
 		destPath := filepath.Join(themeDir, filename)
-		destFile, err := p.fs.Create(destPath)
-		switch {
-		case err != nil:
-			if closeErr := resp.Body.Close(); closeErr != nil {
-				return fmt.Errorf("failed to close response for %s: %w", filename, closeErr)
-			}
-			return fmt.Errorf("failed to create %s: %w", filename, err)
-		}
-
-		_, err = io.Copy(destFile, resp.Body)
-		if closeErr := destFile.Close(); closeErr != nil {
-			return fmt.Errorf("failed to close %s: %w", filename, closeErr)
-		}
-		if closeErr := resp.Body.Close(); closeErr != nil {
-			return fmt.Errorf("failed to close response for %s: %w", filename, closeErr)
-		}
-
-		switch {
-		case err != nil:
-			return fmt.Errorf("failed to save %s: %w", filename, err)
-		}
-
-		// Set permissions
-		switch err := p.fs.Chmod(destPath, 0644); {
-		case err != nil:
-			return fmt.Errorf("failed to set permissions on %s: %w", filename, err)
+		if err := p.fs.WriteFile(destPath, data, 0644); err != nil {
+			return fmt.Errorf("failed to write %s: %w", filename, err)
 		}
 	}
 
@@ -679,110 +640,39 @@ func (p *PostInstallPhase) setupPostBoot(progressChan chan<- ProgressUpdate) err
 		return fmt.Errorf("failed to create post-boot directory: %w", err)
 	}
 
-	// Download logo.txt
-	p.SendOutput(progressChan, "Downloading logo.txt...")
-	logoURL := fmt.Sprintf("%s/logo.txt", p.config.RawURL)
-	resp, err := p.http.Get(logoURL)
-	switch {
-	case err != nil:
-		return fmt.Errorf("failed to download logo.txt: %w", err)
-	case resp.StatusCode != http.StatusOK:
-		if closeErr := resp.Body.Close(); closeErr != nil {
-			return fmt.Errorf("failed to close logo response: %w", closeErr)
-		}
-		return fmt.Errorf("failed to download logo.txt: HTTP %d", resp.StatusCode)
+	// Fetch logo.txt (local-first, then remote)
+	p.SendOutput(progressChan, "Fetching logo.txt...")
+	logoData, err := p.fetchFile("logo.txt")
+	if err != nil {
+		return fmt.Errorf("failed to fetch logo.txt: %w", err)
 	}
-
 	logoPath := filepath.Join(config.PathMntPostBoot, "logo.txt")
-	logoFile, err := p.fs.Create(logoPath)
-	switch {
-	case err != nil:
-		if closeErr := resp.Body.Close(); closeErr != nil {
-			return fmt.Errorf("failed to close logo response: %w", closeErr)
-		}
-		return fmt.Errorf("failed to create logo.txt: %w", err)
+	if err := p.fs.WriteFile(logoPath, logoData, 0644); err != nil {
+		return fmt.Errorf("failed to write logo.txt: %w", err)
 	}
 
-	_, err = io.Copy(logoFile, resp.Body)
-	if closeErr := logoFile.Close(); closeErr != nil {
-		return fmt.Errorf("failed to close logo.txt: %w", closeErr)
-	}
-	if closeErr := resp.Body.Close(); closeErr != nil {
-		return fmt.Errorf("failed to close logo response: %w", closeErr)
-	}
-	switch {
-	case err != nil:
-		return fmt.Errorf("failed to save logo.txt: %w", err)
-	}
-
-	// Download all post-boot scripts
+	// Fetch all post-boot scripts (local-first, then remote)
 	for _, script := range config.PostBootScripts {
-		p.SendOutput(progressChan, fmt.Sprintf("Downloading %s...", script))
+		p.SendOutput(progressChan, fmt.Sprintf("Fetching %s...", script))
 
-		scriptURL := fmt.Sprintf("%s/install/mandatory/post-boot/%s", p.config.RawURL, script)
-		resp, err := p.http.Get(scriptURL)
-		switch {
-		case err != nil:
-			return fmt.Errorf("failed to download %s: %w", script, err)
-		case resp.StatusCode != http.StatusOK:
-			if closeErr := resp.Body.Close(); closeErr != nil {
-				return fmt.Errorf("failed to close %s response: %w", script, closeErr)
-			}
-			return fmt.Errorf("failed to download %s: HTTP %d", script, resp.StatusCode)
+		data, err := p.fetchFile(filepath.Join("install", "mandatory", "post-boot", script))
+		if err != nil {
+			return fmt.Errorf("failed to fetch %s: %w", script, err)
 		}
 
 		scriptPath := filepath.Join(config.PathMntPostBoot, script)
-		scriptFile, err := p.fs.Create(scriptPath)
-		switch {
-		case err != nil:
-			if closeErr := resp.Body.Close(); closeErr != nil {
-				return fmt.Errorf("failed to close %s response: %w", script, closeErr)
-			}
-			return fmt.Errorf("failed to create %s: %w", script, err)
-		}
-
-		_, err = io.Copy(scriptFile, resp.Body)
-		if closeErr := scriptFile.Close(); closeErr != nil {
-			return fmt.Errorf("failed to close %s: %w", script, closeErr)
-		}
-		if closeErr := resp.Body.Close(); closeErr != nil {
-			return fmt.Errorf("failed to close %s response: %w", script, closeErr)
-		}
-
-		switch {
-		case err != nil:
-			return fmt.Errorf("failed to save %s: %w", script, err)
-		}
-
-		switch err := p.fs.Chmod(scriptPath, 0755); {
-		case err != nil:
-			return fmt.Errorf("failed to set permissions on %s: %w", script, err)
+		if err := p.fs.WriteFile(scriptPath, data, 0755); err != nil {
+			return fmt.Errorf("failed to write %s: %w", script, err)
 		}
 	}
 
-	p.SendOutput(progressChan, "[OK] Post-boot scripts downloaded")
+	p.SendOutput(progressChan, "[OK] Post-boot scripts ready")
 
-	// Download service template
+	// Fetch service template (local-first, then remote)
 	p.SendOutput(progressChan, "Creating systemd service...")
-	serviceURL := fmt.Sprintf("%s/%s", p.config.RawURL, config.PostBootServiceTemplate)
-	resp, err = p.http.Get(serviceURL)
-	switch {
-	case err != nil:
-		return fmt.Errorf("failed to download service template: %w", err)
-	case resp.StatusCode != http.StatusOK:
-		if closeErr := resp.Body.Close(); closeErr != nil {
-			return fmt.Errorf("failed to close service response: %w", closeErr)
-		}
-		return fmt.Errorf("failed to download service template: HTTP %d", resp.StatusCode)
-	}
-
-	templateBytes, err := io.ReadAll(resp.Body)
-	if closeErr := resp.Body.Close(); closeErr != nil {
-		return fmt.Errorf("failed to close service response: %w", closeErr)
-	}
-	switch {
-	case err != nil:
-		return fmt.Errorf("failed to read service template: %w", err)
+	templateBytes, err := p.fetchFile(config.PostBootServiceTemplate)
+	if err != nil {
+		return fmt.Errorf("failed to fetch service template: %w", err)
 	}
 
 	serviceContent := string(templateBytes)

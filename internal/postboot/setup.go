@@ -12,6 +12,30 @@ import (
 	"github.com/bnema/archup/internal/logger"
 )
 
+// fetchFile returns the content of a repo-relative path.
+// It checks /tmp/archup-install/<repoPath> first (populated by push-binary-to-vm.sh --local),
+// then falls back to downloading from GitHub.
+func (s *Setup) fetchFile(repoPath string) ([]byte, error) {
+	localPath := filepath.Join(config.DefaultInstallDir, repoPath)
+	if content, err := s.fs.ReadFile(localPath); err == nil {
+		return content, nil
+	}
+	url := fmt.Sprintf("%s/%s", s.config.RawURL, repoPath)
+	resp, err := s.http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch %s: %w", repoPath, err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch %s: HTTP %d", repoPath, resp.StatusCode)
+	}
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read %s: %w", repoPath, err)
+	}
+	return data, nil
+}
+
 // SetupResult holds the result of post-boot setup
 type SetupResult struct {
 	ScriptsDownloaded int
@@ -55,79 +79,26 @@ func (s *Setup) Configure() (SetupResult, error) {
 		return result, fmt.Errorf("failed to create post-boot directory: %w", err)
 	}
 
-	// Download logo.txt
-	logoURL := fmt.Sprintf("%s/logo.txt", s.config.RawURL)
-	resp, err := s.http.Get(logoURL)
-	switch {
-	case err != nil:
-		return result, fmt.Errorf("failed to download logo.txt: %w", err)
-	case resp.StatusCode != http.StatusOK:
-		if closeErr := resp.Body.Close(); closeErr != nil {
-			return result, fmt.Errorf("failed to close logo response: %w", closeErr)
-		}
-		return result, fmt.Errorf("failed to download logo.txt: HTTP %d", resp.StatusCode)
+	// Fetch logo.txt (local-first, then remote)
+	logoData, err := s.fetchFile("logo.txt")
+	if err != nil {
+		return result, fmt.Errorf("failed to fetch logo.txt: %w", err)
 	}
-
 	logoPath := filepath.Join(config.PathMntPostBoot, "logo.txt")
-	logoFile, err := s.fs.Create(logoPath)
-	if err != nil {
-		if closeErr := resp.Body.Close(); closeErr != nil {
-			return result, fmt.Errorf("failed to close logo response: %w", closeErr)
-		}
-		return result, fmt.Errorf("failed to create logo.txt: %w", err)
+	if err := s.fs.WriteFile(logoPath, logoData, 0644); err != nil {
+		return result, fmt.Errorf("failed to write logo.txt: %w", err)
 	}
 
-	_, err = io.Copy(logoFile, resp.Body)
-	if closeErr := logoFile.Close(); closeErr != nil {
-		if respCloseErr := resp.Body.Close(); respCloseErr != nil {
-			return result, fmt.Errorf("failed to close logo response: %w", respCloseErr)
-		}
-		return result, fmt.Errorf("failed to close logo.txt: %w", closeErr)
-	}
-	if closeErr := resp.Body.Close(); closeErr != nil {
-		return result, fmt.Errorf("failed to close logo response: %w", closeErr)
-	}
-	if err != nil {
-		return result, fmt.Errorf("failed to save logo.txt: %w", err)
-	}
-
-	// Download all post-boot scripts
+	// Fetch all post-boot scripts (local-first, then remote)
 	for _, script := range config.PostBootScripts {
-
-		scriptURL := fmt.Sprintf("%s/install/mandatory/post-boot/%s", s.config.RawURL, script)
-		resp, err := s.http.Get(scriptURL)
-		switch {
-		case err != nil:
-			return result, fmt.Errorf("failed to download %s: %w", script, err)
-		case resp.StatusCode != http.StatusOK:
-			if closeErr := resp.Body.Close(); closeErr != nil {
-				return result, fmt.Errorf("failed to close %s response: %w", script, closeErr)
-			}
-			return result, fmt.Errorf("failed to download %s: HTTP %d", script, resp.StatusCode)
+		data, err := s.fetchFile(filepath.Join("install", "mandatory", "post-boot", script))
+		if err != nil {
+			return result, fmt.Errorf("failed to fetch %s: %w", script, err)
 		}
 
 		scriptPath := filepath.Join(config.PathMntPostBoot, script)
-		scriptFile, err := s.fs.Create(scriptPath)
-		if err != nil {
-			if closeErr := resp.Body.Close(); closeErr != nil {
-				return result, fmt.Errorf("failed to close %s response: %w", script, closeErr)
-			}
-			return result, fmt.Errorf("failed to create %s: %w", script, err)
-		}
-
-		_, err = io.Copy(scriptFile, resp.Body)
-		if closeErr := scriptFile.Close(); closeErr != nil {
-			if respCloseErr := resp.Body.Close(); respCloseErr != nil {
-				return result, fmt.Errorf("failed to close %s response: %w", script, respCloseErr)
-			}
-			return result, fmt.Errorf("failed to close %s: %w", script, closeErr)
-		}
-		if closeErr := resp.Body.Close(); closeErr != nil {
-			return result, fmt.Errorf("failed to close %s response: %w", script, closeErr)
-		}
-
-		if err != nil {
-			return result, fmt.Errorf("failed to save %s: %w", script, err)
+		if err := s.fs.WriteFile(scriptPath, data, 0755); err != nil {
+			return result, fmt.Errorf("failed to write %s: %w", script, err)
 		}
 
 		if err := s.fs.Chmod(scriptPath, 0755); err != nil {
@@ -135,25 +106,10 @@ func (s *Setup) Configure() (SetupResult, error) {
 		}
 	}
 
-	// Download service template
-	serviceURL := fmt.Sprintf("%s/%s", s.config.RawURL, config.PostBootServiceTemplate)
-	resp, err = s.http.Get(serviceURL)
-	switch {
-	case err != nil:
-		return result, fmt.Errorf("failed to download service template: %w", err)
-	case resp.StatusCode != http.StatusOK:
-		if closeErr := resp.Body.Close(); closeErr != nil {
-			return result, fmt.Errorf("failed to close service response: %w", closeErr)
-		}
-		return result, fmt.Errorf("failed to download service template: HTTP %d", resp.StatusCode)
-	}
-
-	templateBytes, err := io.ReadAll(resp.Body)
-	if closeErr := resp.Body.Close(); closeErr != nil {
-		return result, fmt.Errorf("failed to close service response: %w", closeErr)
-	}
+	// Fetch service template (local-first, then remote)
+	templateBytes, err := s.fetchFile(config.PostBootServiceTemplate)
 	if err != nil {
-		return result, fmt.Errorf("failed to read service template: %w", err)
+		return result, fmt.Errorf("failed to fetch service template: %w", err)
 	}
 
 	serviceContent := string(templateBytes)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -51,6 +52,13 @@ func (p *BootstrapPhase) Execute(progressChan chan<- ProgressUpdate) PhaseResult
 	if err := p.fs.MkdirAll(config.DefaultInstallDir, 0755); err != nil {
 		p.SendError(progressChan, err)
 		return PhaseResult{Success: false, Error: err}
+	}
+
+	// Local mode: files pre-seeded by push-binary-to-vm.sh --local, skip all network activity
+	if os.Getenv("ARCHUP_LOCAL") == "1" {
+		p.SendOutput(progressChan, "[LOCAL] Skipping download — using pre-seeded files in "+config.DefaultInstallDir)
+		p.SendComplete(progressChan, "Bootstrap complete")
+		return PhaseResult{Success: true, Message: "Local mode: using pre-seeded configuration files"}
 	}
 
 	if err := p.cloneRepo(); err == nil {
