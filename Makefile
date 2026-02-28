@@ -1,10 +1,11 @@
-.PHONY: check check-syntax check-shellcheck clean help build
+.PHONY: check check-syntax check-shellcheck clean help build release
 
 # Default target
 help:
 	@echo "archup - Makefile targets:"
 	@echo ""
-	@echo "  make build          - Build archup binary"
+	@echo "  make build          - Build archup binary
+  make release        - Release archup via goreleaser (uses gh CLI token)"
 	@echo "  make check          - Run all checks (syntax + shellcheck)"
 	@echo "  make check-syntax   - Check shell script syntax with bash -n"
 	@echo "  make check-shellcheck - Run shellcheck linting"
@@ -16,6 +17,12 @@ build:
 	@echo "Building archup..."
 	goreleaser build --snapshot --clean --single-target
 	@echo "✓ Build complete: ./dist/archup_linux_amd64_v1/archup"
+
+# Release archup (requires GITHUB_TOKEN or gh CLI)
+release:
+	@echo "Releasing archup..."
+	GITHUB_TOKEN=$$(gh auth token) goreleaser release --clean
+	@echo "✓ Release complete"
 
 # Run all checks
 check: check-syntax check-shellcheck
