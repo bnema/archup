@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -232,7 +233,7 @@ func (h *BootloaderHandler) configureLimine(ctx context.Context, cmd commands.In
 			"\n    //%s-fallback\n    protocol: linux\n    path: boot():/vmlinuz-%s\n    cmdline: %s\n    module_path: boot():/initramfs-%s-fallback.img\n",
 			kernelName, kernelName, kernelParams, kernelName,
 		)
-	} else if !os.IsNotExist(err) {
+	} else if !errors.Is(err, os.ErrNotExist) {
 		h.logger.Warn("Could not stat fallback initramfs, omitting fallback entry", "path", fallbackImgPath, "error", err)
 	}
 	limineConfig = strings.ReplaceAll(limineConfig, "{{FALLBACK_ENTRY}}", fallbackEntry)

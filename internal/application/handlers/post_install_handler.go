@@ -255,6 +255,9 @@ func (h *PostInstallHandler) sanitizeLimineSnapperSyncConfig(mountPoint string) 
 const limineDiskPlaceholder = "DISK_PLACEHOLDER"
 
 func (h *PostInstallHandler) installLimineHook(mountPoint, targetDisk string) error {
+	if targetDisk == "" {
+		return fmt.Errorf("target disk is required for limine hook installation")
+	}
 	hooksDir := filepath.Join(mountPoint, "etc", "pacman.d", "hooks")
 	if err := h.fs.MkdirAll(hooksDir, 0755); err != nil {
 		return fmt.Errorf("failed to create hooks dir: %w", err)

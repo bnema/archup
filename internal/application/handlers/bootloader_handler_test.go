@@ -46,7 +46,8 @@ func setupCommonMocks(mockFS *mocks.MockFileSystem, mockExec *mocks.MockCommandE
 	mockExec.EXPECT().Execute(gomock.Any(), "blkid", "-s", "UUID", "-o", "value", gomock.Any()).Return([]byte("uuid"), nil).AnyTimes()
 	mockExec.EXPECT().Execute(gomock.Any(), "cp", gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
 	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
-	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
+	// efibootmgr and other multi-arg chroot commands: match any number of trailing args
+	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), gomock.Any(), "efibootmgr", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte{}, nil).AnyTimes()
 }
 
 func TestBootloaderHandler_Handle_Limine(t *testing.T) {
@@ -136,7 +137,7 @@ func TestConfigureLimine_FallbackAbsent(t *testing.T) {
 	// Capture the written config
 	var writtenConfig string
 	mockFS.EXPECT().WriteFile(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-		func(path string, data []byte, perm interface{}) error {
+		func(path string, data []byte, perm os.FileMode) error {
 			if strings.HasSuffix(path, "limine.conf") {
 				writtenConfig = string(data)
 			}
@@ -200,7 +201,7 @@ func TestConfigureLimine_FallbackPresent(t *testing.T) {
 	// Capture the written config
 	var writtenConfig string
 	mockFS.EXPECT().WriteFile(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-		func(path string, data []byte, perm interface{}) error {
+		func(path string, data []byte, perm os.FileMode) error {
 			if strings.HasSuffix(path, "limine.conf") {
 				writtenConfig = string(data)
 			}
