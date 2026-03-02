@@ -3,6 +3,25 @@
 
 LOG_FILE="/var/log/archup-first-boot.log"
 
+# --- DNS readiness gate ---
+wait_for_dns() {
+  local host="archlinux.org"
+  local timeout=120
+  local elapsed=0
+  while [ "$elapsed" -le "$timeout" ]; do
+    if getent ahosts "$host" >/dev/null 2>&1; then
+      echo "[first-boot] DNS ready after ${elapsed}s" | tee -a "$LOG_FILE"
+      return 0
+    fi
+    sleep 2
+    elapsed=$((elapsed + 2))
+  done
+  echo "[first-boot] FATAL: DNS not ready after ${timeout}s — aborting" | tee -a "$LOG_FILE"
+  return 1
+}
+
+wait_for_dns || exit 1
+
 # Display ArchUp logo
 if [ -f /usr/local/share/archup/logo.txt ]; then
   cat /usr/local/share/archup/logo.txt

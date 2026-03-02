@@ -1,7 +1,7 @@
 [Unit]
 Description=ArchUp First Boot Setup
-After=local-fs.target systemd-logind.service dbus.service network-online.target
-Wants=network-online.target
+After=local-fs.target systemd-logind.service dbus.service network-online.target nss-lookup.target
+Wants=network-online.target nss-lookup.target
 ConditionPathExists=!/var/lib/archup-first-boot-complete
 
 [Service]
