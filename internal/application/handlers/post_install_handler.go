@@ -217,7 +217,38 @@ func (h *PostInstallHandler) setupSnapperSync(ctx context.Context, mountPoint st
 	if err := h.chrExec.ChrootSystemctl(ctx, h.logger.LogPath(), mountPoint, "enable", "limine-snapper-sync.service"); err != nil {
 		return fmt.Errorf("failed to enable limine-snapper-sync.service: %w", err)
 	}
+	// Sanitize config: comment out enrollment commands when limine-entry-tool is absent
+	if err := h.sanitizeLimineSnapperSyncConfig(mountPoint); err != nil {
+		h.logger.Warn("Failed to sanitize limine-snapper-sync config", "error", err)
+	}
 	return nil
+}
+
+func (h *PostInstallHandler) sanitizeLimineSnapperSyncConfig(mountPoint string) error {
+	confPath := filepath.Join(mountPoint, "etc", "limine-snapper-sync.conf")
+	exists, err := h.fs.Exists(confPath)
+	if err != nil || !exists {
+		return err // config missing, nothing to sanitize
+	}
+
+	// If the binary is present, enrollment workflow is intentionally configured — leave config alone
+	enrollBin := filepath.Join(mountPoint, "usr", "bin", "limine-reset-enroll")
+	if _, err := h.fs.Stat(enrollBin); err == nil {
+		return nil
+	}
+
+	b, err := h.fs.ReadFile(confPath)
+	if err != nil {
+		return fmt.Errorf("failed to read limine-snapper-sync.conf: %w", err)
+	}
+
+	s := string(b)
+	reBefore := regexp.MustCompile(`(?m)^COMMANDS_BEFORE_SAVE=.*$`)
+	reAfter := regexp.MustCompile(`(?m)^COMMANDS_AFTER_SAVE=.*$`)
+	s = reBefore.ReplaceAllString(s, `# COMMANDS_BEFORE_SAVE="" # disabled: limine-entry-tool not installed`)
+	s = reAfter.ReplaceAllString(s, `# COMMANDS_AFTER_SAVE="" # disabled: limine-entry-tool not installed`)
+
+	return h.fs.WriteFile(confPath, []byte(s), 0644)
 }
 
 // limineDiskPlaceholder is the placeholder in limine-update.hook replaced at install time.

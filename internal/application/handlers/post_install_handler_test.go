@@ -536,6 +536,108 @@ func TestPostInstallHandler_Handle_RunsVerification(t *testing.T) {
 	}
 }
 
+func TestPostInstallHandler_SanitizeLimineSnapperSyncConfig(t *testing.T) {
+	const mountPoint = "/mnt"
+	const confPath = "/mnt/etc/limine-snapper-sync.conf"
+	const enrollBin = "/mnt/usr/bin/limine-reset-enroll"
+	const sampleConfig = `# limine-snapper-sync config
+COMMANDS_BEFORE_SAVE="limine-reset-enroll"
+COMMANDS_AFTER_SAVE="limine-enroll-config"
+OTHER_OPTION="keep"
+`
+
+	tests := []struct {
+		name         string
+		confExists   bool
+		binStatErr   error
+		expectWrite  bool
+		checkContent func(t *testing.T, content string)
+	}{
+		{
+			name:        "binary missing config present — comments out enrollment lines",
+			confExists:  true,
+			binStatErr:  fmt.Errorf("no such file"),
+			expectWrite: true,
+			checkContent: func(t *testing.T, content string) {
+				t.Helper()
+				if strings.Contains(content, `COMMANDS_BEFORE_SAVE="limine-reset-enroll"`) {
+					t.Error("expected COMMANDS_BEFORE_SAVE to be commented out")
+				}
+				if strings.Contains(content, `COMMANDS_AFTER_SAVE="limine-enroll-config"`) {
+					t.Error("expected COMMANDS_AFTER_SAVE to be commented out")
+				}
+				if !strings.Contains(content, "# COMMANDS_BEFORE_SAVE=") {
+					t.Error("expected commented COMMANDS_BEFORE_SAVE line")
+				}
+				if !strings.Contains(content, "# COMMANDS_AFTER_SAVE=") {
+					t.Error("expected commented COMMANDS_AFTER_SAVE line")
+				}
+				if !strings.Contains(content, "disabled: limine-entry-tool not installed") {
+					t.Error("expected comment suffix 'disabled: limine-entry-tool not installed'")
+				}
+				if !strings.Contains(content, `OTHER_OPTION="keep"`) {
+					t.Error("expected OTHER_OPTION line to be preserved")
+				}
+			},
+		},
+		{
+			name:        "binary present — no modification",
+			confExists:  true,
+			binStatErr:  nil,
+			expectWrite: false,
+		},
+		{
+			name:        "config absent — no modification",
+			confExists:  false,
+			expectWrite: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockFS := mocks.NewMockFileSystem(ctrl)
+			mockHTTP := mocks.NewMockHTTPClient(ctrl)
+			mockChrExec := mocks.NewMockChrootExecutor(ctrl)
+			mockScriptExec := mocks.NewMockScriptExecutor(ctrl)
+			mockLogger := mocks.NewMockLogger(ctrl)
+
+			// conf exists check
+			mockFS.EXPECT().Exists(gomock.Eq(confPath)).Return(tc.confExists, nil)
+
+			if tc.confExists {
+				// binary stat check
+				mockFS.EXPECT().Stat(gomock.Eq(enrollBin)).Return(nil, tc.binStatErr)
+
+				if tc.binStatErr != nil {
+					// binary absent: expect ReadFile then WriteFile
+					mockFS.EXPECT().ReadFile(gomock.Eq(confPath)).Return([]byte(sampleConfig), nil)
+					if tc.expectWrite {
+						mockFS.EXPECT().WriteFile(gomock.Eq(confPath), gomock.Any(), gomock.Any()).DoAndReturn(
+							func(_ string, data []byte, _ interface{}) error {
+								if tc.checkContent != nil {
+									tc.checkContent(t, string(data))
+								}
+								return nil
+							},
+						)
+					}
+				}
+				// binary present: no ReadFile, no WriteFile
+			}
+			// config absent: no further calls
+
+			handler := NewPostInstallHandler(mockFS, mockHTTP, mockChrExec, mockScriptExec, mockLogger, "https://raw.githubusercontent.com/bnema/archup/dev")
+			err := handler.sanitizeLimineSnapperSyncConfig(mountPoint)
+			if err != nil {
+				t.Fatalf("expected no error, got %v", err)
+			}
+		})
+	}
+}
+
 func TestPostInstallHandler_Handle_VerificationWarnsOnMissingFiles(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
