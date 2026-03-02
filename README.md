@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/archup-logo.svg" alt="ArchUp Logo" width="600">
+  <img src="assets/archup-logo-v2-5.png" alt="ArchUp Logo" width="600">
 </p>
 
 ## What Is ArchUp?
