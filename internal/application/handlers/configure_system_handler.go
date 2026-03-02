@@ -187,11 +187,6 @@ func (h *ConfigureSystemHandler) Handle(ctx context.Context, cmd commands.Config
 		return result, err
 	}
 
-	// Mask NetworkManager-wait-online to prevent boot delays when no network is immediately available.
-	if err := h.chrExec.ChrootSystemctl(ctx, h.logger.LogPath(), cmd.MountPoint, "mask", "NetworkManager-wait-online.service"); err != nil {
-		h.logger.Warn("Failed to mask NetworkManager-wait-online.service", "error", err)
-	}
-
 	if err := h.configureZram(cmd.MountPoint); err != nil {
 		h.logger.Warn("Failed to configure zram", "error", err)
 	}
