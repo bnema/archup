@@ -14,11 +14,5 @@ comment: machine-id={{MACHINE_ID}}
     path: boot():/vmlinuz-{{KERNEL}}
     cmdline: {{KERNEL_PARAMS}}
     module_path: boot():/initramfs-{{KERNEL}}.img
-
-    //{{KERNEL}}-fallback
-    protocol: linux
-    path: boot():/vmlinuz-{{KERNEL}}
-    cmdline: {{KERNEL_PARAMS}}
-    module_path: boot():/initramfs-{{KERNEL}}-fallback.img
-
+{{FALLBACK_ENTRY}}
     //Snapshots

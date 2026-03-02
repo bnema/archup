@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -222,6 +223,19 @@ func (h *BootloaderHandler) configureLimine(ctx context.Context, cmd commands.In
 	limineConfig = strings.ReplaceAll(limineConfig, "{{KERNEL}}", kernelName)
 	limineConfig = strings.ReplaceAll(limineConfig, "{{KERNEL_PARAMS}}", kernelParams)
 	limineConfig = strings.ReplaceAll(limineConfig, "{{MACHINE_ID}}", machineID)
+
+	// Conditionally include fallback initramfs stanza only if the file exists
+	fallbackImgPath := filepath.Join(cmd.MountPoint, "boot", fmt.Sprintf("initramfs-%s-fallback.img", kernelName))
+	fallbackEntry := ""
+	if _, err := h.fs.Stat(fallbackImgPath); err == nil {
+		fallbackEntry = fmt.Sprintf(
+			"\n    //%s-fallback\n    protocol: linux\n    path: boot():/vmlinuz-%s\n    cmdline: %s\n    module_path: boot():/initramfs-%s-fallback.img\n",
+			kernelName, kernelName, kernelParams, kernelName,
+		)
+	} else if !os.IsNotExist(err) {
+		h.logger.Warn("Could not stat fallback initramfs, omitting fallback entry", "path", fallbackImgPath, "error", err)
+	}
+	limineConfig = strings.ReplaceAll(limineConfig, "{{FALLBACK_ENTRY}}", fallbackEntry)
 
 	limineConfigPath := filepath.Join(cmd.MountPoint, "boot", "limine.conf")
 	if err := h.fs.WriteFile(limineConfigPath, []byte(limineConfig), 0644); err != nil {
