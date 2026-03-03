@@ -19,9 +19,6 @@ unzip
 # Power management
 power-profiles-daemon
 
-# Security
-firewalld
-
 # Audio (Pipewire stack)
 pipewire
 pipewire-alsa

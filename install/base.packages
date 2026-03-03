@@ -22,6 +22,7 @@ ttf-jetbrains-mono-nerd
 # Networking
 networkmanager
 openssh
+firewalld
 
 # Essential Tools
 sudo
