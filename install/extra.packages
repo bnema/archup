@@ -15,6 +15,66 @@ dosfstools
 which
 wget
 unzip
+p7zip
+
+# Disk management
+udisks2
+udiskie
+polkit
+
+# GTK runtime
+gtk3
+gtk4
+libadwaita
+gvfs
+gvfs-mtp
+gvfs-gphoto2
+gvfs-smb
+
+# Qt runtime (Wayland)
+qt5-base
+qt6-base
+qt5-wayland
+qt6-wayland
+qt5-svg
+qt6-svg
+qt5ct
+qt6ct
+
+# Wayland essentials
+wl-clipboard
+wl-clip-persist
+xdg-utils
+xdg-desktop-portal
+xdg-desktop-portal-gtk
+
+# Multimedia (GStreamer)
+gstreamer
+gst-plugins-base
+gst-plugins-good
+gst-plugins-bad
+gst-plugins-ugly
+gst-libav
+ffmpeg
+
+# Thumbnails
+tumbler
+ffmpegthumbnailer
+poppler-glib
+libgsf
+webp-pixbuf-loader
+
+# Image formats
+libwebp
+libavif
+libheif
+libjxl
+
+# Fonts
+noto-fonts
+noto-fonts-emoji
+ttf-dejavu
+ttf-liberation
 
 # Power management
 power-profiles-daemon
