@@ -4,7 +4,6 @@ package system
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -156,49 +155,4 @@ func RunLogged(logPath, command string, args ...string) CommandResult {
 		StreamToLog: true,
 		LogPath:     logPath,
 	})
-}
-
-// RunWithOutput runs a command and captures output in real-time via a callback
-func RunWithOutput(command string, args []string, callback func(line string)) error {
-	cmd := exec.Command(command, args...)
-
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return fmt.Errorf("failed to create stdout pipe: %w", err)
-	}
-
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return fmt.Errorf("failed to create stderr pipe: %w", err)
-	}
-
-	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("failed to start command: %w", err)
-	}
-
-	var wg sync.WaitGroup
-
-	// Process stdout
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		processOutput(stdout, callback)
-	}()
-
-	// Process stderr
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		processOutput(stderr, callback)
-	}()
-
-	wg.Wait()
-	return cmd.Wait()
-}
-
-func processOutput(reader io.Reader, callback func(string)) {
-	scanner := bufio.NewScanner(reader)
-	for scanner.Scan() {
-		callback(scanner.Text())
-	}
 }

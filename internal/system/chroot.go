@@ -179,38 +179,12 @@ func ChrootSystemctl(logPath, mountPoint, action, service string) error {
 	return nil
 }
 
-// Mount mounts a filesystem
-func Mount(logPath, device, mountPoint string, options ...string) error {
-	args := []string{device, mountPoint}
-	if len(options) > 0 {
-		args = append([]string{"-o", strings.Join(options, ",")}, args...)
-	}
-
-	result := RunLogged(logPath, "mount", args...)
-	if result.Error != nil {
-		return fmt.Errorf("failed to mount %s: %w", device, result.Error)
-	}
-	return nil
-}
-
 // Unmount unmounts a filesystem
 func Unmount(logPath, mountPoint string) error {
 	result := RunLogged(logPath, "umount", "-R", mountPoint)
 	if result.Error != nil {
 		return fmt.Errorf("failed to unmount %s: %w", mountPoint, result.Error)
 	}
-	return nil
-}
-
-// Genfstab generates fstab for the installed system
-func Genfstab(logPath, mountPoint, fstabPath string) error {
-	result := RunLogged(logPath, "genfstab", "-U", mountPoint)
-	if result.Error != nil {
-		return fmt.Errorf("failed to generate fstab: %w", result.Error)
-	}
-
-	// TODO: Write result.Output to fstabPath
-	// This should be done using file operations
 	return nil
 }
 

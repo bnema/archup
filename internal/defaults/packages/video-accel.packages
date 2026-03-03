@@ -1,4 +1,0 @@
-libva libva-utils nvtop vulkan-icd-loader vulkan-tools
-gstreamer gst-plugins-base gst-plugins-good gst-plugins-bad
-gst-plugins-ugly gst-plugin-va gst-libav ffmpeg
-pipewire pipewire-pulse pipewire-alsa wireplumber
