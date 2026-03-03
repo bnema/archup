@@ -4,9 +4,8 @@
 
 ## What Is ArchUp?
 
-ArchUp is an opinionated Arch Linux installer. It is a faster, saner alternative to `archinstall` — it makes the hard choices for you (Btrfs, Limine, Chaotic-AUR, sensible defaults) so you can go from ISO to working system in minutes.
-
-Boot the Arch ISO, run it, answer a few questions, reboot. That's it.
+ArchUp is an Arch Linux installer. Unlike archinstall, it makes the choices for you:
+Btrfs, Limine, Chaotic-AUR. Boot the ISO, run it, reboot.
 
 **What it decides for you:**
 - Btrfs with `@` and `@home` subvolumes
