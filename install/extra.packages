@@ -75,6 +75,8 @@ noto-fonts
 noto-fonts-emoji
 ttf-dejavu
 ttf-liberation
+ttf-ibmplex-mono-nerd
+ttf-firacode-nerd
 
 # Power management
 power-profiles-daemon
