@@ -34,7 +34,7 @@ check-syntax:
 	@echo "========================================="
 	@echo "Checking shell script syntax..."
 	@echo "========================================="
-	@for script in install.sh install/bootstrap.sh install/helpers/*.sh install/preflight/*.sh install/partitioning/*.sh install/base/*.sh install/config/*.sh install/boot/*.sh install/repos/*.sh install/post-install/*.sh install/post-boot/*.sh; do \
+	@for script in install.sh install/mandatory/post-boot/*.sh; do \
 		if [ -f "$$script" ]; then \
 			echo "Checking: $$script"; \
 			bash -n "$$script" || exit 1; \
@@ -53,7 +53,7 @@ check-shellcheck:
 		echo "Install with: sudo pacman -S shellcheck"; \
 		exit 0; \
 	fi
-	@for script in install.sh install/bootstrap.sh install/helpers/*.sh install/preflight/*.sh install/partitioning/*.sh install/base/*.sh install/config/*.sh install/boot/*.sh install/repos/*.sh install/post-install/*.sh install/post-boot/*.sh; do \
+	@for script in install.sh install/mandatory/post-boot/*.sh; do \
 		if [ -f "$$script" ]; then \
 			echo ""; \
 			echo "Checking: $$script"; \

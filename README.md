@@ -4,25 +4,30 @@
 
 ## What Is ArchUp?
 
-ArchUp is a minimal Arch Linux installer for Wayland. Boot the ISO, run it, and you get a working barebone system. Hardware is detected automatically and defaults are sensible. Afterward, you can optionally add a desktop environment.
+ArchUp is an opinionated Arch Linux installer. It is a faster, saner alternative to `archinstall` — it makes the hard choices for you (Btrfs, Limine, Chaotic-AUR, sensible defaults) so you can go from ISO to working system in minutes.
 
-**Includes:**
-- Lean system without unnecessary packages
-- Ready-to-use shell environment with modern CLI tools configured and themed
-- CPU optimization (amd_pstate/cpu governor) and automatic GPU driver detection
-- Essential libraries and packages (Qt5, GTK4, etc.) for a functional environment
-- Coherent theme applied across all supported applications
-- Full customization after installation
+Boot the Arch ISO, run it, answer a few questions, reboot. That's it.
 
-**Does not include:**
-- KDE, GNOME, or other full desktop environments
-- Any attempt to be a standalone distro
-- Locked-in configurations
-- Bloated softwares
+**What it decides for you:**
+- Btrfs with `@` and `@home` subvolumes
+- Limine bootloader (UEFI only)
+- Chaotic-AUR enabled out of the box
+- Plymouth boot splash
+- Snapper for snapshot-based rollbacks
+- NetworkManager, OpenSSH, zram, firewalld
+
+**What you choose:**
+- Disk and optional LUKS2 encryption
+- Hostname, user, locale, timezone, keymap
+- Kernel (linux, linux-lts, linux-zen, linux-hardened, linux-cachyos)
+- AMD P-State mode (auto-detected per Zen generation)
+- GPU drivers (auto-detected)
+- Extra repos (CachyOS, AUR helper)
+- Dank Linux desktop on first boot (optional)
 
 ## Get Started
 
-**Need:** AMD/Intel 64-bit system, UEFI
+**Requirements:** x86\_64, UEFI, Secure Boot disabled
 
 Boot the Arch ISO and run:
 
@@ -32,41 +37,37 @@ curl -fsSL https://archup.run/install | bash
 
 Reboot when done.
 
-For development versions:
-```bash
-curl -fsSL https://archup.run/install/dev | bash
-```
-
 ## What's Installed
 
-**Core system:**
-- btrfs filesystem, Limine bootloader, Plymouth
-- Kernel selection: linux, linux-lts, or linux-zen
+**Base system:**
+- Btrfs filesystem, Limine bootloader, Plymouth
+- Kernel of your choice + matching microcode
 - GPU drivers and firmware (auto-detected)
-- NetworkManager, OpenSSH, systemd-resolved
+- NetworkManager, OpenSSH, systemd-resolved, zram
 
 **CLI tools:**
 - Neovim, Git, sudo, man pages
 - Modern utilities: fzf, ripgrep, bat, eza, zoxide, starship, btop, yazi
-- Build tools: gcc, make, Go, Rust (for AUR packages)
+- Build tools: base-devel, Go, Rust (for AUR)
 
-**System utilities:**
-- Snapper for snapshots and rollbacks
-- Bluetooth and audio configuration
-- Firewall (ufw) and power management (TLP)
-- Shell completion and theme system
-
-Run `archup wizard` after installation to add a Wayland compositor with integrated theming. Support will expand as the community contributes.
+**First-boot setup (automatic):**
+- Snapper configured for Btrfs snapshots
+- firewalld enabled
+- SSH host keys generated
+- ble.sh and shell tooling installed
 
 ## Status
 
-- [x] Barebone installer (functional, testing in progress)
-- [x] CLI auto-builds on first boot
-- [ ] Desktop wizard (in progress in [archup-cli](https://github.com/bnema/archup-cli))
+Active development — tested manually on real hardware.
 
-Active development. Report bugs with logs.
+- [x] TUI installer (functional)
+- [x] LUKS2 encryption support
+- [x] First-boot systemd service
+- [ ] Dank Linux desktop (niri/Hyprland) — in progress
+
+Report bugs with logs from `/var/log/archup.log`.
 
 ## Acknowledgments
 
-- [Omarchy](https://github.com/omakub/omakub) - modular architecture approach
-- [Charmbracelet Gum](https://github.com/charmbracelet/gum) - interactive UI toolkit
+- [Omarchy](https://github.com/omakub/omakub) — modular architecture approach
+- [Charmbracelet](https://github.com/charmbracelet) — TUI toolkit (Bubble Tea, Lipgloss, Huh)

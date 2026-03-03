@@ -5,7 +5,7 @@
 set -e
 
 # Get the username from the system
-USERNAME=$(ls /home | head -1)
+USERNAME=$(find /home -maxdepth 1 -mindepth 1 -type d -printf '%f\n' | head -1)
 
 if [[ -z "${USERNAME}" ]]; then
   echo "ERROR: Could not find user for ble.sh installation"
