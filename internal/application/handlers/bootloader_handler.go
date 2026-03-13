@@ -65,7 +65,7 @@ func (h *BootloaderHandler) Handle(ctx context.Context, cmd commands.InstallBoot
 		return result, err
 	}
 
-	if err := h.configureMkinitcpio(ctx, cmd.MountPoint, cmd.EncryptionType, cmd.GPUVendor); err != nil {
+	if err := h.configureMkinitcpio(ctx, cmd.MountPoint, cmd.EncryptionType, cmd.GPUVendor, kernel.PackageName()); err != nil {
 		result.ErrorDetail = err.Error()
 		return result, err
 	}
@@ -93,7 +93,7 @@ func (h *BootloaderHandler) Handle(ctx context.Context, cmd commands.InstallBoot
 	return result, nil
 }
 
-func (h *BootloaderHandler) configureMkinitcpio(ctx context.Context, mountPoint string, encType disk.EncryptionType, gpuVendor string) error {
+func (h *BootloaderHandler) configureMkinitcpio(ctx context.Context, mountPoint string, encType disk.EncryptionType, gpuVendor, kernelName string) error {
 	confPath := filepath.Join(mountPoint, "etc", "mkinitcpio.conf")
 	content, err := h.fs.ReadFile(confPath)
 	if err != nil {
@@ -123,7 +123,34 @@ func (h *BootloaderHandler) configureMkinitcpio(ctx context.Context, mountPoint 
 		return fmt.Errorf("failed to regenerate initramfs: %w", err)
 	}
 
+	// Warn if the fallback initramfs was not produced; limine-snapper-notify depends on it
+	// for creating snapshot boot entries. The bootloader config already tolerates a missing
+	// fallback, but an early warning here helps diagnose first-boot notification failures.
+	fallbackPath := fallbackInitramfsPath(mountPoint, kernelName)
+	if _, statErr := h.fs.Stat(fallbackPath); statErr != nil {
+		if errors.Is(statErr, os.ErrNotExist) {
+			h.logger.Warn(
+				"Fallback initramfs was not generated; snapshot boot entries may not include fallback",
+				"kernel", kernelName,
+				"path", fallbackPath,
+			)
+		} else {
+			h.logger.Warn(
+				"Could not verify fallback initramfs after mkinitcpio",
+				"kernel", kernelName,
+				"path", fallbackPath,
+				"error", statErr,
+			)
+		}
+	}
+
 	return nil
+}
+
+// fallbackInitramfsPath returns the expected path of the fallback initramfs image
+// for the given kernel name inside the installed system mount point.
+func fallbackInitramfsPath(mountPoint, kernelName string) string {
+	return filepath.Join(mountPoint, "boot", fmt.Sprintf("initramfs-%s-fallback.img", kernelName))
 }
 
 // kmsModuleForGPU returns the kernel module name required for early KMS on the given GPU vendor.
@@ -226,7 +253,7 @@ func (h *BootloaderHandler) configureLimine(ctx context.Context, cmd commands.In
 	limineConfig = strings.ReplaceAll(limineConfig, "{{MACHINE_ID}}", machineID)
 
 	// Conditionally include fallback initramfs stanza only if the file exists
-	fallbackImgPath := filepath.Join(cmd.MountPoint, "boot", fmt.Sprintf("initramfs-%s-fallback.img", kernelName))
+	fallbackImgPath := fallbackInitramfsPath(cmd.MountPoint, kernelName)
 	fallbackEntry := ""
 	if _, err := h.fs.Stat(fallbackImgPath); err == nil {
 		fallbackEntry = fmt.Sprintf(

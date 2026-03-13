@@ -40,6 +40,7 @@ comment: machine-id={{MACHINE_ID}}
 // Callers MUST register their own ReadFile and Stat expectations before calling configureLimine.
 func setupCommonMocks(mockFS *mocks.MockFileSystem, mockExec *mocks.MockCommandExecutor, mockChrExec *mocks.MockChrootExecutor, mockLogger *mocks.MockLogger) {
 	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 	mockFS.EXPECT().WriteFile(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	mockFS.EXPECT().MkdirAll(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	mockFS.EXPECT().Exists(gomock.Any()).Return(true, nil).AnyTimes()
@@ -302,5 +303,35 @@ func TestBootloaderHandler_Handle_InvalidBranding(t *testing.T) {
 
 	if result.Success {
 		t.Error("expected failure for empty branding")
+	}
+}
+
+// TestConfigureMkinitcpio_WarnsWhenFallbackMissing verifies that configureMkinitcpio logs
+// a warning when mkinitcpio -P succeeds but the fallback initramfs image is not produced.
+func TestConfigureMkinitcpio_WarnsWhenFallbackMissing(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockFS := mocks.NewMockFileSystem(ctrl)
+	mockExec := mocks.NewMockCommandExecutor(ctrl)
+	mockChrExec := mocks.NewMockChrootExecutor(ctrl)
+	mockLogger := mocks.NewMockLogger(ctrl)
+
+	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockFS.EXPECT().ReadFile("/mnt/etc/mkinitcpio.conf").Return([]byte("MODULES=()\nHOOKS=(base udev)\n"), nil)
+	mockFS.EXPECT().WriteFile("/mnt/etc/mkinitcpio.conf", gomock.Any(), os.FileMode(0644)).Return(nil)
+	mockChrExec.EXPECT().ExecuteInChroot(gomock.Any(), "/mnt", "mkinitcpio", "-P").Return([]byte{}, nil)
+	mockFS.EXPECT().Stat("/mnt/boot/initramfs-linux-fallback.img").Return(nil, os.ErrNotExist)
+	mockLogger.EXPECT().Warn(
+		"Fallback initramfs was not generated; snapshot boot entries may not include fallback",
+		"kernel", "linux",
+		"path", "/mnt/boot/initramfs-linux-fallback.img",
+	)
+
+	handler := NewBootloaderHandler(mockFS, mockExec, mockChrExec, mockLogger)
+
+	err := handler.configureMkinitcpio(context.Background(), "/mnt", disk.EncryptionTypeNone, "", "linux")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
 	}
 }
