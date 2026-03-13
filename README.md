@@ -4,8 +4,7 @@
 
 ## What Is ArchUp?
 
-ArchUp is an Arch Linux installer. Unlike archinstall, it makes the choices for you:
-Btrfs, Limine, Chaotic-AUR. Boot the ISO, run it, reboot.
+ArchUp is an Arch Linux installer similar to archinstall but it makes the choices for you on the boring parts. The difference with Omarchy is that it's not enforcing any dotfile or app. The goal is to install Arch as fast as possible with sane defaults.
 
 **What it decides for you:**
 - Btrfs with `@` and `@home` subvolumes
