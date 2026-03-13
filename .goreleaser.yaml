@@ -136,8 +136,8 @@ release:
   # Auto-detect prerelease from version (v1.0.0-rc1, v1.0.0-alpha, etc.)
   prerelease: auto
 
-  # Don't mark prereleases as latest
-  make_latest: false
+  # Mark stable releases as latest; prerelease: auto keeps -dev tags as pre-release
+  make_latest: true
 
   # Replace existing release notes
   mode: replace
