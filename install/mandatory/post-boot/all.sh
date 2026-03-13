@@ -60,16 +60,6 @@ if [ -f /usr/local/share/archup/post-boot/ssh-keygen.sh ]; then
   fi
 fi
 
-# Install archup-cli from GitHub
-if [ -f /usr/local/share/archup/post-boot/archup-cli.sh ]; then
-  echo "Installing archup-cli from GitHub..." >> "$LOG_FILE"
-  if bash /usr/local/share/archup/post-boot/archup-cli.sh >> "$LOG_FILE" 2>&1; then
-    echo "[OK] archup-cli installed successfully" >> "$LOG_FILE"
-  else
-    echo "[KO] archup-cli installation failed (non-critical)" >> "$LOG_FILE"
-  fi
-fi
-
 # Install ble.sh (Bash Line Editor)
 if [ -f /usr/local/share/archup/post-boot/blesh.sh ]; then
   echo "Installing ble.sh (Bash Line Editor)..." >> "$LOG_FILE"

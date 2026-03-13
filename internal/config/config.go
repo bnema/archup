@@ -126,7 +126,6 @@ var PostBootScripts = []string{
 	"snapper.sh",
 	"firewalld.sh",
 	"ssh-keygen.sh",
-	"archup-cli.sh",
 	"blesh.sh",
 	"cli-tools.sh",
 	"dms-opt-in.sh",
