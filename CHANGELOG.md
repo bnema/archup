@@ -7,6 +7,15 @@ All notable changes to this project will be documented in this file.
 ### Added
 - **Separate encryption password**: Allow users to choose between using their account password or a separate password for disk encryption during setup
 
+## [0.5.1] - 2026-03-13
+
+### Fixed
+- **Fallback initramfs warning**: `configureMkinitcpio` now checks for `initramfs-<kernel>-fallback.img` after `mkinitcpio -P` and emits a structured warning if absent, surfacing the root cause of `limine-snapper-notify` failures on first boot
+- **jq added to extra packages**: `jq` is now installed as part of the default extra package set
+
+### Removed
+- **archup-cli post-boot install**: Removed `archup-cli.sh` and its invocation from `all.sh`; the post-boot model is barebone or Dank Linux only
+
 ## [0.3.0] - 2025-10-22
 
 ### Added
