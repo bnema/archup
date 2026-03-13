@@ -148,6 +148,28 @@ func TestShellExecutor_ExecuteWithEnv_MultipleVars(t *testing.T) {
 	}
 }
 
+func TestShellExecutor_ExecuteWithStdin_Success(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockLogger := mocks.NewMockLogger(ctrl)
+	mockLogger.EXPECT().Debug(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+	mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
+
+	executor := NewShellExecutor(mockLogger)
+	ctx := context.Background()
+
+	output, err := executor.ExecuteWithStdin(ctx, "hello stdin", "cat")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if string(output) != "hello stdin" {
+		t.Errorf("expected stdin to be forwarded, got %q", string(output))
+	}
+}
+
 func TestShellExecutor_Execute_ContextCancellation(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

@@ -52,6 +52,9 @@ type CommandExecutor interface {
 	// Execute runs a command and returns output
 	Execute(ctx context.Context, command string, args ...string) ([]byte, error)
 
+	// ExecuteWithStdin runs a command with stdin content and returns output
+	ExecuteWithStdin(ctx context.Context, stdin string, command string, args ...string) ([]byte, error)
+
 	// ExecuteWithEnv runs a command with custom environment variables
 	ExecuteWithEnv(ctx context.Context, env map[string]string, command string, args ...string) ([]byte, error)
 }

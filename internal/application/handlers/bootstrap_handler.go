@@ -76,7 +76,7 @@ func (h *BootstrapHandler) Handle(ctx context.Context) (*dto.BootstrapResult, er
 	return result, nil
 }
 
-// cloneRepo clones the archup repository
+// cloneRepo clones the archup repository at the configured git ref.
 func (h *BootstrapHandler) cloneRepo(ctx context.Context) error {
 	repoDir := config.DefaultInstallRepoDir
 
@@ -176,10 +176,23 @@ func (h *BootstrapHandler) downloadFiles(_ context.Context) error {
 		if err != nil {
 			return fmt.Errorf("failed to download %s: %w", f.urlPath, err)
 		}
-		defer resp.Close()
+
+		if resp.StatusCode() < 200 || resp.StatusCode() > 299 {
+			if closeErr := resp.Close(); closeErr != nil {
+				h.logger.Warn("Failed to close HTTP response", "error", closeErr)
+			}
+			return fmt.Errorf("unexpected status %d from %s", resp.StatusCode(), url)
+		}
 
 		if err := h.fs.WriteFile(destPath, resp.Body(), 0644); err != nil {
+			if closeErr := resp.Close(); closeErr != nil {
+				h.logger.Warn("Failed to close HTTP response", "error", closeErr)
+			}
 			return fmt.Errorf("failed to write %s: %w", f.destPath, err)
+		}
+
+		if closeErr := resp.Close(); closeErr != nil {
+			h.logger.Warn("Failed to close HTTP response", "error", closeErr)
 		}
 	}
 

@@ -249,21 +249,28 @@ func (h *PartitionHandler) setupLUKSEncryption(ctx context.Context, partitionPat
 		return "", fmt.Errorf("wipefs root partition failed: %w", err)
 	}
 
-	// Create LUKS2 container with Argon2id
-	// Note: Using printf to pipe password securely
-	luksFormatCmd := fmt.Sprintf("printf '%%s' '%s' | cryptsetup luksFormat --type luks2 --batch-mode --pbkdf argon2id --iter-time 2000 --label ARCHUP_LUKS --key-file=- %s",
-		password, partitionPath)
-
-	if _, err := h.cmdExec.Execute(ctx, "sh", "-c", luksFormatCmd); err != nil {
+	// Feed the passphrase over stdin so shell metacharacters are treated as data.
+	if _, err := h.cmdExec.ExecuteWithStdin(ctx, password, "cryptsetup",
+		"luksFormat",
+		"--type", "luks2",
+		"--batch-mode",
+		"--pbkdf", "argon2id",
+		"--iter-time", "2000",
+		"--label", "ARCHUP_LUKS",
+		"--key-file=-",
+		partitionPath,
+	); err != nil {
 		return "", fmt.Errorf("luksFormat failed: %w", err)
 	}
 
 	// Open LUKS container
 	cryptDevice := "/dev/mapper/cryptroot"
-	luksOpenCmd := fmt.Sprintf("printf '%%s' '%s' | cryptsetup open --key-file=- %s cryptroot",
-		password, partitionPath)
-
-	if _, err := h.cmdExec.Execute(ctx, "sh", "-c", luksOpenCmd); err != nil {
+	if _, err := h.cmdExec.ExecuteWithStdin(ctx, password, "cryptsetup",
+		"open",
+		"--key-file=-",
+		partitionPath,
+		"cryptroot",
+	); err != nil {
 		return "", fmt.Errorf("cryptsetup open failed: %w", err)
 	}
 

@@ -147,3 +147,49 @@ func TestPartitionHandler_Handle_RootPartitionTooSmall(t *testing.T) {
 		t.Errorf("expected success, got error: %s", result.ErrorDetail)
 	}
 }
+
+func TestPartitionHandler_SetupLUKSEncryption_UsesStdinForPassword(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockExec := mocks.NewMockCommandExecutor(ctrl)
+	mockLogger := mocks.NewMockLogger(ctrl)
+
+	password := "pa'ss$word !"
+
+	mockLogger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mockExec.EXPECT().Execute(gomock.Any(), "wipefs", "-af", "/dev/sda2").Return([]byte{}, nil)
+	mockExec.EXPECT().ExecuteWithStdin(
+		gomock.Any(),
+		password,
+		"cryptsetup",
+		"luksFormat",
+		"--type", "luks2",
+		"--batch-mode",
+		"--pbkdf", "argon2id",
+		"--iter-time", "2000",
+		"--label", "ARCHUP_LUKS",
+		"--key-file=-",
+		"/dev/sda2",
+	).Return([]byte{}, nil)
+	mockExec.EXPECT().ExecuteWithStdin(
+		gomock.Any(),
+		password,
+		"cryptsetup",
+		"open",
+		"--key-file=-",
+		"/dev/sda2",
+		"cryptroot",
+	).Return([]byte{}, nil)
+
+	handler := NewPartitionHandler(mockExec, mockLogger)
+
+	cryptDevice, err := handler.setupLUKSEncryption(context.Background(), "/dev/sda2", password)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if cryptDevice != "/dev/mapper/cryptroot" {
+		t.Fatalf("expected cryptroot mapper path, got %q", cryptDevice)
+	}
+}

@@ -184,27 +184,11 @@ type Config struct {
 	RawURL      string
 }
 
-// NewConfig creates a new Config with sensible defaults
-// version parameter determines which branch to use for downloads (dev builds use dev branch)
-// ENV=dev environment variable takes precedence over version-based detection
+// NewConfig creates a new Config with sensible defaults.
+// version determines which git ref to use for downloads and bootstrap assets.
+// ENV=dev forces the dev ref regardless of the version string.
 func NewConfig(version string) *Config {
-	// Determine which branch to use
-	// ENV=dev takes precedence, then fall back to version-based detection
-	var branch string
-	if os.Getenv("ENV") == "dev" {
-		branch = "dev"
-	} else {
-		switch {
-		case version == "dev" || version == "":
-			branch = "dev"
-		case strings.Contains(version, "-dev"):
-			branch = "dev"
-		case strings.Contains(version, "-next"):
-			branch = "dev"
-		default:
-			branch = "main"
-		}
-	}
+	ref := bootstrapRef(version)
 
 	return &Config{
 		Hostname:                     "arch",
@@ -221,11 +205,29 @@ func NewConfig(version string) *Config {
 		ConfigPath:                   DefaultConfigPath,
 		LogPath:                      DefaultLogPath,
 		RepoURL:                      "https://github.com/bnema/archup",
-		RawURL:                       fmt.Sprintf("https://raw.githubusercontent.com/bnema/archup/%s", branch),
+		RawURL:                       fmt.Sprintf("https://raw.githubusercontent.com/bnema/archup/%s", ref),
 	}
 }
 
-// Branch returns the git branch to use for asset downloads and repo cloning.
+func bootstrapRef(version string) string {
+	if os.Getenv("ENV") == "dev" {
+		return "dev"
+	}
+
+	version = strings.TrimSpace(version)
+	switch {
+	case version == "" || version == "dev":
+		return "dev"
+	case strings.Contains(version, "-dev"):
+		return "dev"
+	case strings.Contains(version, "-next"):
+		return "dev"
+	default:
+		return version
+	}
+}
+
+// Branch returns the git ref to use for asset downloads and repo cloning.
 func (c *Config) Branch() string {
 	rawURL := strings.TrimSpace(c.RawURL)
 	if rawURL == "" {

@@ -270,6 +270,26 @@ func (mr *MockCommandExecutorMockRecorder) Execute(ctx, command any, args ...any
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Execute", reflect.TypeOf((*MockCommandExecutor)(nil).Execute), varargs...)
 }
 
+// ExecuteWithStdin mocks base method.
+func (m *MockCommandExecutor) ExecuteWithStdin(ctx context.Context, stdin, command string, args ...string) ([]byte, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, stdin, command}
+	for _, a := range args {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ExecuteWithStdin", varargs...)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ExecuteWithStdin indicates an expected call of ExecuteWithStdin.
+func (mr *MockCommandExecutorMockRecorder) ExecuteWithStdin(ctx, stdin, command any, args ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, stdin, command}, args...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteWithStdin", reflect.TypeOf((*MockCommandExecutor)(nil).ExecuteWithStdin), varargs...)
+}
+
 // ExecuteWithEnv mocks base method.
 func (m *MockCommandExecutor) ExecuteWithEnv(ctx context.Context, env map[string]string, command string, args ...string) ([]byte, error) {
 	m.ctrl.T.Helper()
