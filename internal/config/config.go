@@ -222,6 +222,9 @@ func bootstrapRef(version string) string {
 	case strings.Contains(version, "-next"):
 		return "dev"
 	default:
+		if !strings.HasPrefix(version, "v") {
+			return "v" + version
+		}
 		return version
 	}
 }

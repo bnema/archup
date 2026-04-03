@@ -26,6 +26,19 @@ func TestNewConfig_UsesDevRefForDevelopmentBuilds(t *testing.T) {
 	}
 }
 
+func TestNewConfig_GoReleaserVersionWithoutVPrefix(t *testing.T) {
+	// GoReleaser strips the 'v' prefix: version={{.Version}} yields "0.5.1" not "v0.5.1".
+	cfg := NewConfig("0.5.1")
+
+	if cfg.RawURL != "https://raw.githubusercontent.com/bnema/archup/v0.5.1" {
+		t.Fatalf("expected v-prefixed raw URL, got %q", cfg.RawURL)
+	}
+
+	if cfg.Branch() != "v0.5.1" {
+		t.Fatalf("expected v-prefixed branch, got %q", cfg.Branch())
+	}
+}
+
 func TestNewConfig_ENVDevOverridesReleaseVersion(t *testing.T) {
 	t.Setenv("ENV", "dev")
 
