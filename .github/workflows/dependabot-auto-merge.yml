@@ -1,0 +1,14 @@
+name: Dependabot Auto-Merge
+
+on: pull_request
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    name: Auto-merge
+    uses: bnema/gh-actions/.github/workflows/dependabot-auto-merge.yml@main
+    with:
+      merge-method: squash
