@@ -55,7 +55,7 @@ Active development, tested on real hardware.
 - [x] TUI installer
 - [x] LUKS2 encryption
 - [x] First-boot systemd service
-- [ ] Dank Linux desktop (niri/Hyprland), in progress
+- [x] Dank Linux desktop (niri/Hyprland)
 
 Report bugs with logs from `/var/log/archup.log`.
 
