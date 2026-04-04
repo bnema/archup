@@ -50,16 +50,16 @@ Reboot when done.
 
 ## Status
 
-Active development — tested on real hardware.
+Active development, tested on real hardware.
 
 - [x] TUI installer
 - [x] LUKS2 encryption
 - [x] First-boot systemd service
-- [ ] Dank Linux desktop (niri/Hyprland) — in progress
+- [ ] Dank Linux desktop (niri/Hyprland), in progress
 
 Report bugs with logs from `/var/log/archup.log`.
 
 ## Acknowledgments
 
-- [Omarchy](https://github.com/omakub/omakub) — modular architecture approach
-- [Charmbracelet](https://github.com/charmbracelet) — TUI toolkit (Bubble Tea, Lipgloss, Huh)
+- [Omarchy](https://github.com/omakub/omakub) for the modular architecture approach
+- [Charmbracelet](https://github.com/charmbracelet) for the TUI toolkit (Bubble Tea, Lipgloss, Huh)
