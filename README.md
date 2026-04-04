@@ -2,30 +2,30 @@
   <img src="assets/archup-logo-v2-5.png" alt="ArchUp Logo" width="600">
 </p>
 
-## What Is ArchUp?
+ArchUp is an opinionated Arch Linux installer that picks the boring defaults so you don't have to.
 
-ArchUp is an Arch Linux installer similar to archinstall but it makes the choices for you on the boring parts. The difference with Omarchy is that it's not enforcing any dotfile or app. The goal is to install Arch as fast as possible with sane defaults.
+## What It Decides
 
-**What it decides for you:**
 - Btrfs with `@` and `@home` subvolumes
 - Limine bootloader (UEFI only)
-- Chaotic-AUR enabled out of the box
+- Chaotic-AUR enabled
 - Plymouth boot splash
 - Snapper for snapshot-based rollbacks
 - NetworkManager, OpenSSH, zram, firewalld
 
-**What you choose:**
+## What You Choose
+
 - Disk and optional LUKS2 encryption
 - Hostname, user, locale, timezone, keymap
-- Kernel (linux, linux-lts, linux-zen, linux-hardened, linux-cachyos)
+- Kernel: `linux`, `linux-lts`, `linux-zen`, `linux-hardened`, `linux-cachyos`
 - AMD P-State mode (auto-detected per Zen generation)
 - GPU drivers (auto-detected)
 - Extra repos (CachyOS, AUR helper)
 - Dank Linux desktop on first boot (optional)
 
-## Get Started
+## Quick Start
 
-**Requirements:** x86\_64, UEFI, Secure Boot disabled
+**Requirements:** x86_64, UEFI, Secure Boot disabled
 
 Boot the Arch ISO and run:
 
@@ -35,31 +35,25 @@ curl -fsSL https://archup.run/install | bash
 
 Reboot when done.
 
-## What's Installed
+## What Gets Installed
 
-**Base system:**
-- Btrfs filesystem, Limine bootloader, Plymouth
-- Kernel of your choice + matching microcode
-- GPU drivers and firmware (auto-detected)
-- NetworkManager, OpenSSH, systemd-resolved, zram
+**Base packages:** `base`, `linux-firmware`, `btrfs-progs`, `limine`, `efibootmgr`, `plymouth`, `networkmanager`, `openssh`, `firewalld`, `sudo`, `neovim`, `man-db`, `git`, `zram-generator`, Fira Sans, JetBrains Mono Nerd Font
 
-**CLI tools:**
-- Neovim, Git, sudo, man pages
-- Modern utilities: fzf, ripgrep, bat, eza, zoxide, starship, btop, yazi
-- Build tools: base-devel, Go, Rust (for AUR)
+**Extra packages:** `snapper`, `snap-pac`, `base-devel`, Go, Rust/Cargo, GTK3/4/libadwaita, Qt5/6 + Wayland, GStreamer, ffmpeg, Pipewire, Bluetooth (bluez), WiFi (iwd), modern CLI tools (`eza`, `zoxide`, `fzf`, `ripgrep`, `bat`, `fd`, `btop`, `nvtop`, `yazi`, `starship`, `jq`, `git-delta`, `dust`, `duf`, `tealdeer`, `tree`)
 
-**First-boot setup (automatic):**
+**First-boot service (automatic):**
 - Snapper configured for Btrfs snapshots
 - firewalld enabled
 - SSH host keys generated
 - ble.sh and shell tooling installed
+- Optional display manager opt-in
 
 ## Status
 
-Active development — tested manually on real hardware.
+Active development — tested on real hardware.
 
-- [x] TUI installer (functional)
-- [x] LUKS2 encryption support
+- [x] TUI installer
+- [x] LUKS2 encryption
 - [x] First-boot systemd service
 - [ ] Dank Linux desktop (niri/Hyprland) — in progress
 
